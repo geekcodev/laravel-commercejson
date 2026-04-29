@@ -5,11 +5,14 @@ declare(strict_types=1);
 namespace GeekCo\CommerceJson\Models;
 
 use GeekCo\CommerceJson\Enums\ContactTypeEnum;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Contact extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'counterparty_id',
         'type',
