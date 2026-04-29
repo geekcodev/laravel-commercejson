@@ -1,0 +1,71 @@
+<?php
+
+declare(strict_types=1);
+
+namespace GeekCo\CommerceJson\Models;
+
+use GeekCo\CommerceJson\Enums\CurrencyEnum;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+class OrderItem extends Model
+{
+    use HasUuids;
+
+    protected $fillable = [
+        'order_id',
+        'product_id',
+        'variant_id',
+        'product_name',
+        'product_code',
+        'quantity',
+        'unit_code',
+        'unit_short_name',
+        'unit_full_name',
+        'unit_international',
+        'price_amount',
+        'price_currency',
+        'discount_amount',
+        'discount_currency',
+        'total_amount',
+        'total_currency',
+        'country_of_origin',
+        'customs_declaration_number',
+        'tax_rate',
+    ];
+
+    protected $casts = [
+        'quantity' => 'decimal:3',
+        'price_amount' => 'decimal:2',
+        'price_currency' => CurrencyEnum::class,
+        'discount_amount' => 'decimal:2',
+        'discount_currency' => CurrencyEnum::class,
+        'total_amount' => 'decimal:2',
+        'total_currency' => CurrencyEnum::class,
+        'tax_rate' => 'decimal:2',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+    ];
+
+    public function order(): BelongsTo
+    {
+        return $this->belongsTo(Order::class);
+    }
+
+    public function product(): BelongsTo
+    {
+        return $this->belongsTo(Product::class);
+    }
+
+    public function variant(): BelongsTo
+    {
+        return $this->belongsTo(ProductVariant::class);
+    }
+
+    public function taxes(): HasMany
+    {
+        return $this->hasMany(OrderItemTax::class);
+    }
+}

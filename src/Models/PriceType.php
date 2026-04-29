@@ -1,0 +1,39 @@
+<?php
+
+declare(strict_types=1);
+
+namespace GeekCo\CommerceJson\Models;
+
+use GeekCo\CommerceJson\Enums\CurrencyEnum;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+class PriceType extends Model
+{
+    use HasUuids;
+
+    protected $fillable = [
+        'name',
+        'currency',
+        'description',
+        'is_default',
+    ];
+
+    protected $casts = [
+        'currency' => CurrencyEnum::class,
+        'is_default' => 'boolean',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+    ];
+
+    public function offerPrices(): HasMany
+    {
+        return $this->hasMany(OfferPrice::class);
+    }
+
+    public function counterparties(): HasMany
+    {
+        return $this->hasMany(Counterparty::class);
+    }
+}

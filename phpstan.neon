@@ -1,0 +1,51 @@
+includes:
+    - vendor/phpstan/phpstan/conf/bleedingEdge.neon
+
+parameters:
+    paths:
+        - src/Console
+        - src/Events
+        - src/Exceptions
+        - src/Exchange
+        - src/Facades
+        - src/Http
+        - src/Jobs
+        - src/Models
+        - src/Rules
+        - src/Services
+        - src/Support
+        - src/Enums
+    excludePaths:
+        - src/Data/*
+        - src/database/*
+    level: 5
+    parallel:
+        maximumNumberOfProcesses: 1
+    ignoreErrors:
+        # Models use updateOrCreate() from Eloquent
+        - '#Call to an undefined static method.*updateOrCreate#'
+        # Models with HasUuids have $id property
+        - '#Access to an undefined property.*::\$id#'
+        # ResponseInterface doesn't have toArray()
+        - '#Call to an undefined method.*ResponseInterface::toArray#'
+        # factory() methods for models
+        - '#Call to an undefined static method.*::factory#'
+        # Str helper in factories
+        - '#Call to static method.*Str::#'
+        # Faker methods
+        - '#Call to an undefined method Faker.*#'
+        # duration always exists
+        - '#Offset .*duration.* on left side of \?\? always exists#'
+        # ResponseInterface properties
+        - '#Access to an undefined property.*ResponseInterface::#'
+        # Enum nullsafe unnecessary
+        - '#Using nullsafe property access.*on left side of \?\? is unnecessary#'
+        # Enum offset always exists
+        - '#Offset.*on left side of \?\? always exists#'
+        # Factory @extends
+        - '#The @extends tag.*describes.*Factory but the class extends.*CommerceJsonFactory#'
+        # Factory method overrides
+        - '#Non-static method.*overrides static method#'
+        - '#Return type static.*is not covariant with return type#'
+        # count() methods
+        - '#Call to an undefined static method.*::count#'
