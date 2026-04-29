@@ -1,0 +1,70 @@
+{
+  "name": "geekcodev/laravel-commercejson",
+  "description": "CommerceJSON v1.0.8 integration package for Laravel 12",
+  "type": "library",
+  "license": "MIT",
+  "keywords": [
+    "laravel",
+    "package",
+    "commercejson"
+  ],
+  "authors": [
+    {
+      "name": "Evgeny Semenov",
+      "email": "geekco@yandex.ru"
+    }
+  ],
+  "require": {
+    "php": "^8.4",
+    "laravel/framework": "^v13.0",
+    "spatie/laravel-data": "^4.0",
+    "guzzlehttp/guzzle": "^7.9",
+    "symfony/yaml": "^8.0"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^11.0",
+    "orchestra/testbench": "^11.0",
+    "laravel/pint": "^1.0",
+    "phpstan/phpstan": "^1.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "GeekCo\\CommerceJson\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "GeekCo\\CommerceJson\\Tests\\": "tests/",
+      "GeekCo\\CommerceJson\\Database\\Factories\\": "src/database/factories/",
+      "GeekCo\\CommerceJson\\Database\\Seeders\\": "src/database/seeders/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "GeekCo\\CommerceJson\\CommerceJsonServiceProvider"
+      ],
+      "aliases": {
+        "CommerceJson": "GeekCo\\CommerceJson\\Facades\\CommerceJson"
+      }
+    }
+  },
+  "config": {
+    "optimize-autoloader": true,
+    "preferred-install": "dist",
+    "sort-packages": true,
+    "allow-plugins": {
+      "php-http/discovery": true
+    }
+  },
+  "scripts": {
+    "test": "php vendor/bin/phpunit",
+    "test:coverage": "php vendor/bin/phpunit --coverage-html=coverage --coverage-clover=coverage.xml",
+    "test:coverage-text": "php vendor/bin/phpunit --coverage-text",
+    "analyse": "phpstan analyse",
+    "format": "pint",
+    "format:test": "pint --test"
+  },
+  "minimum-stability": "stable",
+  "prefer-stable": true
+}

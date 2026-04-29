@@ -1,0 +1,50 @@
+name: PHPStan Static Analysis
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  phpstan:
+    name: PHPStan Analysis
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        php: ['8.4']
+        laravel: ['13.*']
+        include:
+          - laravel: 13.*
+            testbench: 10.*
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, mysql, pdo_mysql
+          tools: composer:v2
+
+      - name: Install dependencies
+        run: |
+          composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" --no-interaction --no-update
+          composer update --prefer-stable --prefer-dist --no-interaction
+
+      - name: Create phpstan.neon
+        run: |
+          cat > phpstan.neon << EOF
+          includes:
+              - vendor/laravel/phpstan-laravel/extension.neon
+          parameters:
+              paths:
+                  - src/
+              level: 6
+          EOF
+
+      - name: Run PHPStan
+        run: php vendor/bin/phpstan analyse --error-format=github
