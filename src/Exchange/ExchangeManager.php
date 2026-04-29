@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace GeekCo\CommerceJson\Exchange;
 
+use DateTimeInterface;
 use GeekCo\CommerceJson\Events\SyncCompleted;
 use GeekCo\CommerceJson\Events\SyncFailed;
 use GeekCo\CommerceJson\Events\SyncStarted;
@@ -19,7 +20,6 @@ use GeekCo\CommerceJson\Jobs\Import\ImportOrdersJob;
 use GeekCo\CommerceJson\Jobs\Import\ImportProductsJob;
 use GeekCo\CommerceJson\Jobs\Sync\SyncFullJob;
 use GeekCo\CommerceJson\Jobs\Sync\SyncIncrementalJob;
-use DateTimeInterface;
 
 /**
  * Менеджер обмена данными с CommerceJSON API
