@@ -2,6 +2,7 @@
   "name": "geekcodev/laravel-commercejson",
   "description": "CommerceJSON v1.0.8 integration package for Laravel 12",
   "type": "library",
+  "homepage": "https://github.com/geekcodev/laravel-commercejson",
   "license": "MIT",
   "keywords": [
     "laravel",
@@ -11,7 +12,8 @@
   "authors": [
     {
       "name": "Evgeny Semenov",
-      "email": "geekco@yandex.ru"
+      "email": "geekco@yandex.ru",
+      "role": "Developer"
     }
   ],
   "require": {

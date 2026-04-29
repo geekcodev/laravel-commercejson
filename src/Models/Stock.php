@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace GeekCo\CommerceJson\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Stock extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'offer_id',
         'warehouse_id',
