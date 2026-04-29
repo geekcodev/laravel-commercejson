@@ -24,8 +24,7 @@ class SyncCommand extends Command
                             {--products : Только товары}
                             {--offers : Только предложения}
                             {--orders : Только заказы}
-                            {--queue : Использовать очередь}
-                            {--no-interaction : Не спрашивать подтверждение}';
+                            {--queue : Использовать очередь}';
 
     protected $description = 'Запуск синхронизации с CommerceJSON API';
 
