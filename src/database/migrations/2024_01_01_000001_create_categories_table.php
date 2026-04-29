@@ -25,14 +25,16 @@ return new class extends Migration
             $table->text('seo_keywords')->nullable();
 
             $table->timestamps();
+        });
 
-            // Self-referencing foreign key с null on delete
+        Schema::table('categories', function (Blueprint $table) {
+            // Self-referencing foreign key with null on delete
             $table->foreign('parent_id')
                 ->references('id')
                 ->on('categories')
                 ->nullOnDelete();
 
-            // Композитные индексы для производительных запросов
+            // Composite indexes for performant queries
             $table->index(['parent_id', 'is_active'], 'categories_parent_active_idx');
             $table->index(['is_active', 'sort'], 'categories_active_sort_idx');
         });
