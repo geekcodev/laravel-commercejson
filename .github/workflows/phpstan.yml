@@ -10,14 +10,10 @@ jobs:
   phpstan:
     name: PHPStan Analysis
     runs-on: ubuntu-latest
-    
+
     strategy:
       matrix:
         php: ['8.4']
-        laravel: ['13.*']
-        include:
-          - laravel: 13.*
-            testbench: 11.*
 
     steps:
       - name: Checkout code
@@ -31,20 +27,7 @@ jobs:
           tools: composer:v2
 
       - name: Install dependencies
-        run: |
-          composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" --no-interaction --no-update
-          composer update --prefer-stable --prefer-dist --no-interaction
-
-      - name: Create phpstan.neon
-        run: |
-          cat > phpstan.neon << EOF
-          includes:
-              - vendor/laravel/phpstan-laravel/extension.neon
-          parameters:
-              paths:
-                  - src/
-              level: 6
-          EOF
+        run: composer install --prefer-dist --no-interaction --no-progress
 
       - name: Run PHPStan
         run: php vendor/bin/phpstan analyse --error-format=github
