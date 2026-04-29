@@ -87,9 +87,9 @@ class ImportOffersCommand extends Command
 
             $stats = ['created' => 0, 'updated' => 0, 'failed' => 0];
 
-            $this->withProgressBar($offerList->offers, function ($offerData) use ($stats) {
+            $this->withProgressBar($offerList->offers, function ($offerData) use ($offerService, &$stats) {
                 try {
-                    DB::transaction(function () use ($offerData, $stats) {
+                    DB::transaction(function () use ($offerData, $offerService, &$stats) {
                         // Синхронизация предложения
                         $offer = $offerService->syncOffer($offerData);
 

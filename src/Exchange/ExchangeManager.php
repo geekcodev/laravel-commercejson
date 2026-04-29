@@ -19,6 +19,7 @@ use GeekCo\CommerceJson\Jobs\Import\ImportOrdersJob;
 use GeekCo\CommerceJson\Jobs\Import\ImportProductsJob;
 use GeekCo\CommerceJson\Jobs\Sync\SyncFullJob;
 use GeekCo\CommerceJson\Jobs\Sync\SyncIncrementalJob;
+use DateTimeInterface;
 
 /**
  * Менеджер обмена данными с CommerceJSON API
@@ -95,7 +96,7 @@ class ExchangeManager
         try {
             if ($useQueue) {
                 // Асинхронная синхронизация через очередь
-                SyncIncrementalJob::dispatch($since->toIso8601String());
+                SyncIncrementalJob::dispatch($since->format(\DateTime::ATOM));
             } else {
                 // Синхронная синхронизация
                 $this->syncProducts($since);
@@ -131,7 +132,7 @@ class ExchangeManager
     public function syncProducts(?\DateTime $since = null, bool $useQueue = false): array
     {
         if ($useQueue) {
-            ImportProductsJob::dispatch(updatedAfter: $since?->toIso8601String());
+            ImportProductsJob::dispatch(updatedAfter: $since?->format(DateTimeInterface::ATOM));
 
             return ['dispatched' => true];
         }
@@ -145,7 +146,7 @@ class ExchangeManager
     public function syncOffers(?\DateTime $since = null, bool $useQueue = false): array
     {
         if ($useQueue) {
-            ImportOffersJob::dispatch(updatedAfter: $since?->toIso8601String());
+            ImportOffersJob::dispatch(updatedAfter: $since?->format(DateTimeInterface::ATOM));
 
             return ['dispatched' => true];
         }
@@ -159,7 +160,7 @@ class ExchangeManager
     public function syncOrders(?\DateTime $since = null, bool $useQueue = false): array
     {
         if ($useQueue) {
-            ImportOrdersJob::dispatch(updatedAfter: $since?->toIso8601String());
+            ImportOrdersJob::dispatch(updatedAfter: $since?->format(DateTimeInterface::ATOM));
 
             return ['dispatched' => true];
         }
@@ -187,7 +188,7 @@ class ExchangeManager
     public function exportOrdersSince(\DateTime $since, int $limit = 50, bool $useQueue = false): array
     {
         if ($useQueue) {
-            ExportOrdersJob::dispatch($limit, null, $since->toIso8601String());
+            ExportOrdersJob::dispatch($limit, null, $since->format(DateTimeInterface::ATOM));
 
             return ['dispatched' => true];
         }

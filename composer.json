@@ -61,7 +61,7 @@
     "test": "php vendor/bin/phpunit",
     "test:coverage": "php vendor/bin/phpunit --coverage-html=coverage --coverage-clover=coverage.xml",
     "test:coverage-text": "php vendor/bin/phpunit --coverage-text",
-    "analyse": "phpstan analyse",
+    "analyse": "php -d memory_limit=512M vendor/bin/phpstan analyse src/",
     "format": "pint",
     "format:test": "pint --test"
   },

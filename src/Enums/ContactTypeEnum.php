@@ -68,8 +68,8 @@ enum ContactTypeEnum: string implements JsonSerializable
     public function getLocalizedName(string $locale = 'ru'): string
     {
         return match ($locale) {
-            'ru' => self::NAMES_RU[$this->value] ?? $this->name,
-            'en' => self::NAMES_EN[$this->value] ?? $this->name,
+            'ru' => self::NAMES_RU[$this->value],
+            'en' => self::NAMES_EN[$this->value],
             default => throw new InvalidArgumentException("Unsupported locale: {$locale}"),
         };
     }

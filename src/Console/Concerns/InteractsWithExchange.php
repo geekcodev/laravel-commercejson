@@ -99,6 +99,8 @@ trait InteractsWithExchange
 
     /**
      * Показать прогресс бар (кастомный метод)
+     *
+     * @param  iterable<mixed>  $items
      */
     public function processWithProgress(iterable $items, \Closure $callback): void
     {
@@ -120,6 +122,9 @@ trait InteractsWithExchange
 
     /**
      * Показать таблицу с результатами
+     *
+     * @param  array<int, string>  $headers
+     * @param  array<int, array<int, mixed>>  $rows
      */
     public function displayResults(array $headers, array $rows): void
     {
@@ -128,6 +133,8 @@ trait InteractsWithExchange
 
     /**
      * Логировать действие
+     *
+     * @param  array<string, mixed>  $context
      */
     public function logAction(string $action, array $context = []): void
     {

@@ -39,11 +39,7 @@ class CommerceJsonConnector
     protected int $retryAttempts = 3;
 
     public function __construct(
-        protected string $baseUrl {
-            get {
-                return $this->baseUrl;
-            }
-        },
+        protected string $baseUrl,
         protected string $authToken,
         protected int $timeout = 30,
         protected string $authType = 'bearer'
@@ -56,6 +52,19 @@ class CommerceJsonConnector
                 'Content-Type' => 'application/json',
             ],
         ]);
+    }
+
+    /**
+     * Handshake запрос
+     *
+     * @throws AuthenticationException
+     * @throws ValidationException
+     * @throws BusinessException
+     * @throws RateLimitException
+     */
+    public function handshake(): ResponseInterface
+    {
+        return $this->get('/handshake');
     }
 
     /**

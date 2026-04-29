@@ -24,7 +24,7 @@ class HandshakeCommand extends Command
 
         return $this->withErrorHandling(function () {
             $response = $this->connector()->handshake();
-            $data = $response->toArray();
+            $data = json_decode($response->getBody()->getContents(), true);
 
             $this->newLine();
             $this->table(
@@ -53,6 +53,8 @@ class HandshakeCommand extends Command
 
     /**
      * Показать возможности сервера (полная информация)
+     *
+     * @param  array<string, bool>  $capabilities
      */
     protected function showCapabilities(array $capabilities): void
     {
@@ -70,6 +72,8 @@ class HandshakeCommand extends Command
 
     /**
      * Показать возможности сервера (кратко)
+     *
+     * @param  array<string, bool>  $capabilities
      */
     protected function showCapabilitiesSummary(array $capabilities): void
     {
@@ -90,6 +94,8 @@ class HandshakeCommand extends Command
 
     /**
      * Показать поддерживаемые версии
+     *
+     * @param  array<int, string>  $versions
      */
     protected function showSupportedVersions(array $versions): void
     {

@@ -105,7 +105,7 @@ class ImportOrdersCommand extends Command
                                 'number' => $orderData->number,
                                 'external_id' => $orderData->externalId,
                                 'status' => $orderData->status->value,
-                                'document_type' => $orderData->documentType?->value ?? 'order',
+                                'document_type' => $orderData->documentType->value ?? 'order',
                                 'role' => $orderData->role?->value,
                                 'base_currency' => $orderData->baseCurrency,
                                 'exchange_rate' => $orderData->exchangeRate,

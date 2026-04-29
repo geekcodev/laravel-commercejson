@@ -115,6 +115,8 @@ class SyncCommand extends Command
 
     /**
      * Синхронизировать классификатор
+     *
+     * @return array{success: bool, count?: int|string, error?: string, duration: int}
      */
     private function syncClassifier(): array
     {
@@ -145,6 +147,8 @@ class SyncCommand extends Command
 
     /**
      * Синхронизировать товары
+     *
+     * @return array{success: bool, count?: int|string, error?: string, duration: int}
      */
     private function syncProducts(bool $isFull): array
     {
@@ -181,6 +185,8 @@ class SyncCommand extends Command
 
     /**
      * Синхронизировать предложения
+     *
+     * @return array{success: bool, count?: int|string, error?: string, duration: int}
      */
     private function syncOffers(bool $isFull): array
     {
@@ -217,6 +223,8 @@ class SyncCommand extends Command
 
     /**
      * Синхронизировать заказы
+     *
+     * @return array{success: bool, count?: int|string, error?: string, duration: int}
      */
     private function syncOrders(bool $isFull): array
     {
