@@ -6,6 +6,7 @@ namespace GeekCo\CommerceJson\Database\Factories;
 
 use GeekCo\CommerceJson\Models\BankAccount;
 use GeekCo\CommerceJson\Models\Counterparty;
+use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
  * @extends Factory<BankAccount>
@@ -20,9 +21,9 @@ class BankAccountFactory extends CommerceJsonFactory
             'id' => null,
             'counterparty_id' => CounterpartyFactory::new(),
             'bank_name' => fake()->company().' Банк',
-            'bik' => static::numerify('#########'),
-            'account' => static::numerify('####################'),
-            'corr_account' => static::numerify('####################'),
+            'bik' => fake()->numerify('###########'),
+            'account' => fake()->numerify('####################'),
+            'corr_account' => fake()->numerify('####################'),
             'swift' => null,
             'is_default' => false,
             'created_at' => now(),

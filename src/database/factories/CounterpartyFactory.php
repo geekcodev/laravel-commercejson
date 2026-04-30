@@ -6,6 +6,7 @@ namespace GeekCo\CommerceJson\Database\Factories;
 
 use GeekCo\CommerceJson\Enums\CounterpartyTypeEnum;
 use GeekCo\CommerceJson\Models\Counterparty;
+use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
  * @extends Factory<Counterparty>
@@ -36,7 +37,7 @@ class CounterpartyFactory extends CommerceJsonFactory
             'okfs' => $isLegalEntity ? fake()->numerify('##') : null,
             'registration_date' => fake()->dateTimeBetween('-10 years', '-1 year')->format('Y-m-d'),
             'legal_address_country' => 'RU',
-            'legal_address_region' => fake()->region(),
+            'legal_address_region' => fake()->city(),
             'legal_address_district' => null,
             'legal_address_city' => fake()->city(),
             'legal_address_street' => fake()->streetName(),
@@ -46,7 +47,7 @@ class CounterpartyFactory extends CommerceJsonFactory
             'legal_address_postal_code' => fake()->postcode(),
             'legal_address_full' => null,
             'actual_address_country' => 'RU',
-            'actual_address_region' => fake()->region(),
+            'actual_address_region' => fake()->city(),
             'actual_address_district' => null,
             'actual_address_city' => fake()->city(),
             'actual_address_street' => fake()->streetName(),

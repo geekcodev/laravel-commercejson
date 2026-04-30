@@ -7,6 +7,7 @@ namespace GeekCo\CommerceJson\Database\Factories;
 use GeekCo\CommerceJson\Models\Offer;
 use GeekCo\CommerceJson\Models\Stock;
 use GeekCo\CommerceJson\Models\Warehouse;
+use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
  * @extends Factory<Stock>

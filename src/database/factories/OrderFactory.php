@@ -10,6 +10,8 @@ use GeekCo\CommerceJson\Enums\OrderStatusEnum;
 use GeekCo\CommerceJson\Models\Counterparty;
 use GeekCo\CommerceJson\Models\Order;
 use GeekCo\CommerceJson\Models\Warehouse;
+use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Str;
 
 /**
  * @extends Factory<Order>
@@ -39,7 +41,7 @@ class OrderFactory extends CommerceJsonFactory
             'customer_counterparty_id' => null,
             'delivery_type' => 'courier',
             'delivery_address_country' => 'RU',
-            'delivery_address_region' => fake()->region(),
+            'delivery_address_region' => fake()->city(),
             'delivery_address_district' => null,
             'delivery_address_city' => fake()->city(),
             'delivery_address_street' => fake()->streetName(),

@@ -6,6 +6,7 @@ namespace GeekCo\CommerceJson\Database\Factories;
 
 use GeekCo\CommerceJson\Enums\PropertyTypeEnum;
 use GeekCo\CommerceJson\Models\PropertyDefinition;
+use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
  * @extends Factory<PropertyDefinition>

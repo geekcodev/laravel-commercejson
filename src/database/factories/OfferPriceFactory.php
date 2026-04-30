@@ -8,6 +8,7 @@ use GeekCo\CommerceJson\Enums\CurrencyEnum;
 use GeekCo\CommerceJson\Models\Offer;
 use GeekCo\CommerceJson\Models\OfferPrice;
 use GeekCo\CommerceJson\Models\PriceType;
+use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
  * @extends Factory<OfferPrice>
