@@ -18,7 +18,10 @@ class Product extends Model
 {
     use HasFactory, HasUuids, SoftDeletes;
 
-    protected const string MODEL_FACTORY_CLASS = ProductFactory::class;
+    protected static function newFactory(): ProductFactory
+    {
+        return ProductFactory::newInstance();
+    }
 
     protected $fillable = [
         'external_id',

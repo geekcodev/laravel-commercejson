@@ -15,7 +15,10 @@ class Category extends Model
 {
     use HasFactory, HasUuids;
 
-    protected const string MODEL_FACTORY_CLASS = CategoryFactory::class;
+    protected static function newFactory(): CategoryFactory
+    {
+        return CategoryFactory::newInstance();
+    }
 
     protected $fillable = [
         'parent_id',

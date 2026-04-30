@@ -16,7 +16,10 @@ class Offer extends Model
 {
     use HasFactory, HasUuids, SoftDeletes;
 
-    protected const string MODEL_FACTORY_CLASS = OfferFactory::class;
+    protected static function newFactory(): OfferFactory
+    {
+        return OfferFactory::newInstance();
+    }
 
     public const string UPDATED_AT = 'updated_at';
 

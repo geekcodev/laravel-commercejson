@@ -15,7 +15,10 @@ class PropertyDefinition extends Model
 {
     use HasFactory, HasUuids;
 
-    protected const string MODEL_FACTORY_CLASS = PropertyDefinitionFactory::class;
+    protected static function newFactory(): PropertyDefinitionFactory
+    {
+        return PropertyDefinitionFactory::newInstance();
+    }
 
     public $timestamps = false;
 

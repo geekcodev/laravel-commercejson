@@ -13,7 +13,10 @@ class Stock extends Model
 {
     use HasFactory;
 
-    protected const string MODEL_FACTORY_CLASS = StockFactory::class;
+    protected static function newFactory(): StockFactory
+    {
+        return StockFactory::newInstance();
+    }
 
     protected $fillable = [
         'offer_id',

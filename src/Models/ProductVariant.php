@@ -15,7 +15,10 @@ class ProductVariant extends Model
 {
     use HasFactory, HasUuids;
 
-    protected const string MODEL_FACTORY_CLASS = ProductVariantFactory::class;
+    protected static function newFactory(): ProductVariantFactory
+    {
+        return ProductVariantFactory::newInstance();
+    }
 
     protected $fillable = [
         'product_id',

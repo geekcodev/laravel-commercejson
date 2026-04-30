@@ -14,7 +14,10 @@ class OfferPrice extends Model
 {
     use HasFactory;
 
-    protected const string MODEL_FACTORY_CLASS = OfferPriceFactory::class;
+    protected static function newFactory(): OfferPriceFactory
+    {
+        return OfferPriceFactory::newInstance();
+    }
 
     protected $fillable = [
         'offer_id',

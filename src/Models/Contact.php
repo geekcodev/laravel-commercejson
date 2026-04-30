@@ -14,7 +14,10 @@ class Contact extends Model
 {
     use HasFactory;
 
-    protected const string MODEL_FACTORY_CLASS = ContactFactory::class;
+    protected static function newFactory(): ContactFactory
+    {
+        return ContactFactory::newInstance();
+    }
 
     protected $fillable = [
         'counterparty_id',

@@ -19,7 +19,10 @@ class Counterparty extends Model
 {
     use HasFactory, HasUuids, SoftDeletes;
 
-    protected const string MODEL_FACTORY_CLASS = CounterpartyFactory::class;
+    protected static function newFactory(): CounterpartyFactory
+    {
+        return CounterpartyFactory::newInstance();
+    }
 
     protected $fillable = [
         'external_id',
