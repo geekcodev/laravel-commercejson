@@ -22,7 +22,6 @@ class OfferFactory extends CommerceJsonFactory
             'id' => static::uuid(),
             'product_id' => ProductFactory::new(),
             'variant_id' => null,
-            'created_at' => null,
             'updated_at' => now(),
             'deleted_at' => null,
         ];
