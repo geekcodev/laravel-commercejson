@@ -98,11 +98,17 @@ class TestDatabaseSeeder extends Seeder
         }
 
         // Создаём значения свойств для товаров
-        foreach ($products->take(10) as $product) {
-            PropertyValue::factory(3)
-                ->forProperty($properties->random())
-                ->forProduct($product)
-                ->create();
+        // Для каждого товара создаём уникальные значения свойств (без дубликатов product_id + property_id)
+        $productsForProperties = $products->take(10);
+        foreach ($productsForProperties as $product) {
+            // Выбираем 3 случайных уникальных свойства для этого товара
+            $productProperties = $properties->random(3);
+            foreach ($productProperties as $property) {
+                PropertyValue::factory()
+                    ->forProperty($property)
+                    ->forProduct($product)
+                    ->create();
+            }
         }
 
         // Создаём заказы
