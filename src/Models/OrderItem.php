@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace GeekCo\CommerceJson\Models;
 
+use GeekCo\CommerceJson\Database\Factories\OrderItemFactory;
 use GeekCo\CommerceJson\Enums\CurrencyEnum;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,6 +15,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class OrderItem extends Model
 {
     use HasFactory, HasUuids;
+
+    protected const string MODEL_FACTORY_CLASS = OrderItemFactory::class;
 
     protected $fillable = [
         'order_id',

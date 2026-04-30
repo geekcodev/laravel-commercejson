@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace GeekCo\CommerceJson\Models;
 
+use GeekCo\CommerceJson\Database\Factories\PriceTypeFactory;
 use GeekCo\CommerceJson\Enums\CurrencyEnum;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -13,6 +14,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class PriceType extends Model
 {
     use HasFactory, HasUuids;
+
+    protected const string MODEL_FACTORY_CLASS = PriceTypeFactory::class;
 
     protected $fillable = [
         'name',

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace GeekCo\CommerceJson\Models;
 
+use GeekCo\CommerceJson\Database\Factories\OfferFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -15,9 +16,11 @@ class Offer extends Model
 {
     use HasFactory, HasUuids, SoftDeletes;
 
-    public const UPDATED_AT = 'updated_at';
+    protected const string MODEL_FACTORY_CLASS = OfferFactory::class;
 
-    public const CREATED_AT = null;
+    public const string UPDATED_AT = 'updated_at';
+
+    public const null CREATED_AT = null;
 
     protected $fillable = [
         'product_id',
