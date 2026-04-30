@@ -33,7 +33,7 @@ abstract class CommerceJsonFactory extends Factory
      */
     protected static function barcode(): string
     {
-        return static::numerify('############');
+        return fake()->numerify('############');
     }
 
     /**
@@ -42,8 +42,8 @@ abstract class CommerceJsonFactory extends Factory
     protected static function inn(bool $isLegalEntity = true): string
     {
         return $isLegalEntity
-            ? static::numerify('##########')  // 10 digits for legal entities
-            : static::numerify('############'); // 12 digits for individuals
+            ? fake()->numerify('##########')  // 10 digits for legal entities
+            : fake()->numerify('############'); // 12 digits for individuals
     }
 
     /**
@@ -51,7 +51,7 @@ abstract class CommerceJsonFactory extends Factory
      */
     protected static function kpp(): string
     {
-        return static::numerify('#########');
+        return fake()->numerify('#########');
     }
 
     /**
@@ -60,8 +60,8 @@ abstract class CommerceJsonFactory extends Factory
     protected static function ogrn(bool $isLegalEntity = true): string
     {
         return $isLegalEntity
-            ? static::numerify('#############')  // 13 digits for legal entities
-            : static::numerify('###############'); // 15 digits for individuals
+            ? fake()->numerify('#############')  // 13 digits for legal entities
+            : fake()->numerify('###############'); // 15 digits for individuals
     }
 
     /**
@@ -69,7 +69,7 @@ abstract class CommerceJsonFactory extends Factory
      */
     protected static function phone(): string
     {
-        return '+7 ('.static::numerify('###').') '.static::numerify('###-##-##');
+        return '+7 ('.fake()->numerify('###').') '.fake()->numerify('###-##-##');
     }
 
     /**
@@ -77,7 +77,7 @@ abstract class CommerceJsonFactory extends Factory
      */
     protected static function email(): string
     {
-        return static::safeEmail();
+        return fake()->safeEmail();
     }
 
     /**
@@ -85,7 +85,7 @@ abstract class CommerceJsonFactory extends Factory
      */
     protected static function url(): string
     {
-        return static::imageUrl();
+        return fake()->imageUrl();
     }
 
     /**
@@ -93,7 +93,7 @@ abstract class CommerceJsonFactory extends Factory
      */
     protected static function amount(int $decimals = 2): string
     {
-        return number_format(static::randomFloat($decimals, 1, 10000), $decimals, '.', '');
+        return number_format(fake()->randomFloat($decimals, 1, 10000), $decimals, '.', '');
     }
 
     /**
@@ -101,7 +101,7 @@ abstract class CommerceJsonFactory extends Factory
      */
     protected static function quantity(): string
     {
-        return number_format(static::randomFloat(3, 0.001, 1000), 3, '.', '');
+        return number_format(fake()->randomFloat(3, 0.001, 1000), 3, '.', '');
     }
 
     /**
@@ -111,14 +111,14 @@ abstract class CommerceJsonFactory extends Factory
     {
         return [
             'country' => $options['country'] ?? 'RU',
-            'region' => $options['region'] ?? static::city().'ская область',
+            'region' => $options['region'] ?? fake()->city().'ская область',
             'district' => $options['district'] ?? null,
-            'city' => $options['city'] ?? static::city(),
-            'street' => $options['street'] ?? static::streetName(),
-            'house' => $options['house'] ?? static::buildingNumber(),
+            'city' => $options['city'] ?? fake()->city(),
+            'street' => $options['street'] ?? fake()->streetName(),
+            'house' => $options['house'] ?? fake()->buildingNumber(),
             'building' => $options['building'] ?? null,
             'apartment' => $options['apartment'] ?? null,
-            'postal_code' => $options['postal_code'] ?? static::postcode(),
+            'postal_code' => $options['postal_code'] ?? fake()->postcode(),
             'full' => $options['full'] ?? null,
         ];
     }
@@ -139,9 +139,9 @@ abstract class CommerceJsonFactory extends Factory
      */
     protected static function dateTime(?string $format = null): string
     {
-        $date = static::dateTimeBetween('-1 year', 'now');
+        $date = fake()->dateTimeBetween('-1 year');
 
-        return $format ? $date->format($format) : $date->toIso8601String();
+        return $format ? $date->format($format) : $date->format(DATE_ATOM);
     }
 
     /**
@@ -149,6 +149,6 @@ abstract class CommerceJsonFactory extends Factory
      */
     protected static function date(): string
     {
-        return static::dateTimeBetween('-1 year', 'now')->format('Y-m-d');
+        return fake()->dateTimeBetween('-1 year')->format('Y-m-d');
     }
 }

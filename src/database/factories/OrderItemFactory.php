@@ -9,6 +9,8 @@ use GeekCo\CommerceJson\Models\Order;
 use GeekCo\CommerceJson\Models\OrderItem;
 use GeekCo\CommerceJson\Models\Product;
 use GeekCo\CommerceJson\Models\ProductVariant;
+use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Str;
 
 /**
  * @extends Factory<OrderItem>

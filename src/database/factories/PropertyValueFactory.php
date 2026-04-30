@@ -8,6 +8,7 @@ use GeekCo\CommerceJson\Models\Product;
 use GeekCo\CommerceJson\Models\ProductVariant;
 use GeekCo\CommerceJson\Models\PropertyDefinition;
 use GeekCo\CommerceJson\Models\PropertyValue;
+use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
  * @extends Factory<PropertyValue>

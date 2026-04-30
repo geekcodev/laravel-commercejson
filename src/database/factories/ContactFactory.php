@@ -7,6 +7,7 @@ namespace GeekCo\CommerceJson\Database\Factories;
 use GeekCo\CommerceJson\Enums\ContactTypeEnum;
 use GeekCo\CommerceJson\Models\Contact;
 use GeekCo\CommerceJson\Models\Counterparty;
+use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
  * @extends Factory<Contact>

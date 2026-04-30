@@ -6,6 +6,7 @@ namespace GeekCo\CommerceJson\Database\Factories;
 
 use GeekCo\CommerceJson\Models\Product;
 use GeekCo\CommerceJson\Models\ProductImage;
+use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
  * @extends Factory<ProductImage>

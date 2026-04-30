@@ -6,6 +6,7 @@ namespace GeekCo\CommerceJson\Database\Factories;
 
 use GeekCo\CommerceJson\Enums\CurrencyEnum;
 use GeekCo\CommerceJson\Models\PriceType;
+use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
  * @extends Factory<PriceType>
