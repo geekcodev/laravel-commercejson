@@ -11,7 +11,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('product_images', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->uuid('product_id')->index('product_images_product_id_idx');
             $table->string('url');
             $table->unsignedInteger('sort')->nullable()->default(0)->index('product_images_sort_idx');

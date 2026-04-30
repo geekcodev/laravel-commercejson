@@ -11,7 +11,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('property_values', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->uuid('property_id')->index('property_values_property_id_idx');
             $table->uuid('product_id')->nullable()->index('property_values_product_id_idx');
             $table->uuid('variant_id')->nullable()->index('property_values_variant_id_idx');

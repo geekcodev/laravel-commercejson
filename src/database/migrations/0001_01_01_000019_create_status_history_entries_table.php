@@ -11,7 +11,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('status_history_entries', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->uuid('order_id')->index('status_history_order_id_idx');
             $table->string('status')->index('status_history_status_idx');
             // changed_at с точностью до миллисекунд для корректного порядка событий

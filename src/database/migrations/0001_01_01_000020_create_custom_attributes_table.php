@@ -11,7 +11,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('custom_attributes', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->string('attributable_type');
             $table->uuid('attributable_id');
             $table->string('key', 100);

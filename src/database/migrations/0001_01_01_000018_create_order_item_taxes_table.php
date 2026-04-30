@@ -11,7 +11,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('order_item_taxes', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->uuid('order_item_id')->index('order_item_taxes_order_item_id_idx');
             $table->string('type'); // НДС, Акциз, УСН и т.д.
             $table->decimal('rate', 5, 2);

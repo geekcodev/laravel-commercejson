@@ -11,7 +11,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('bank_accounts', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->uuid('counterparty_id')->index('bank_accounts_counterparty_id_idx');
             $table->string('bank_name')->nullable();
             $table->char('bik', 9);
