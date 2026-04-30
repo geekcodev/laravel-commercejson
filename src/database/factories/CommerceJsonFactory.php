@@ -67,7 +67,7 @@ abstract class CommerceJsonFactory extends Factory
     /**
      * Generate a random phone number
      */
-    protected static function phone(): string
+    protected static function generatePhone(): string
     {
         return '+7 ('.fake()->numerify('###').') '.fake()->numerify('###-##-##');
     }
@@ -75,7 +75,7 @@ abstract class CommerceJsonFactory extends Factory
     /**
      * Generate a random email
      */
-    protected static function email(): string
+    protected static function generateEmail(): string
     {
         return fake()->safeEmail();
     }
@@ -83,7 +83,7 @@ abstract class CommerceJsonFactory extends Factory
     /**
      * Generate a random URL
      */
-    protected static function url(): string
+    protected static function generateUrl(): string
     {
         return fake()->imageUrl();
     }

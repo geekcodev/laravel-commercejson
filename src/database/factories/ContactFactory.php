@@ -22,7 +22,7 @@ class ContactFactory extends CommerceJsonFactory
             'id' => null,
             'counterparty_id' => CounterpartyFactory::new(),
             'type' => ContactTypeEnum::Email->value,
-            'value' => static::email(),
+            'value' => static::generateEmail(),
             'comment' => null,
             'created_at' => now(),
             'updated_at' => now(),
@@ -46,7 +46,7 @@ class ContactFactory extends CommerceJsonFactory
     {
         return $this->state(fn (array $attributes) => [
             'type' => ContactTypeEnum::Email->value,
-            'value' => $value ?? static::email(),
+            'value' => $value ?? static::generateEmail(),
         ]);
     }
 
@@ -57,7 +57,7 @@ class ContactFactory extends CommerceJsonFactory
     {
         return $this->state(fn (array $attributes) => [
             'type' => ContactTypeEnum::Phone->value,
-            'value' => $value ?? static::phone(),
+            'value' => $value ?? static::generatePhone(),
         ]);
     }
 
@@ -68,7 +68,7 @@ class ContactFactory extends CommerceJsonFactory
     {
         return $this->state(fn (array $attributes) => [
             'type' => ContactTypeEnum::Mobile->value,
-            'value' => $value ?? static::phone(),
+            'value' => $value ?? static::generatePhone(),
         ]);
     }
 }
