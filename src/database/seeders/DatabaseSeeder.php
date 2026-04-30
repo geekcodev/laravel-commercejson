@@ -20,6 +20,14 @@ class DatabaseSeeder extends Seeder
     {
         $this->command->info('🌱 Starting CommerceJSON database seeding...');
 
+        // Load-test profile (high-volume dataset)
+        // Enable with: COMMERCEJSON_SEED_PROFILE=load (read via config)
+        if ((string) config('commercejson.seeding.profile') === 'load') {
+            $this->call(LoadTestDatabaseSeeder::class);
+            $this->command->info('✅ CommerceJSON load-test seeding completed!');
+            return;
+        }
+
         // 1. Справочники (без foreign keys)
         $this->call([
             PriceTypeSeeder::class,
