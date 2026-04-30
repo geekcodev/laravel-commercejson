@@ -18,7 +18,7 @@ class Offer extends Model
 
     protected static function newFactory(): OfferFactory
     {
-        return new OfferFactory();
+        return new OfferFactory;
     }
 
     public const string UPDATED_AT = 'updated_at';

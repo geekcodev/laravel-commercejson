@@ -21,7 +21,7 @@ class Counterparty extends Model
 
     protected static function newFactory(): CounterpartyFactory
     {
-        return new CounterpartyFactory();
+        return new CounterpartyFactory;
     }
 
     protected $fillable = [

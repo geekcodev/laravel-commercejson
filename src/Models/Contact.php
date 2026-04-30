@@ -16,7 +16,7 @@ class Contact extends Model
 
     protected static function newFactory(): ContactFactory
     {
-        return new ContactFactory();
+        return new ContactFactory;
     }
 
     protected $fillable = [
