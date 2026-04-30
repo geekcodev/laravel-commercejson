@@ -15,7 +15,7 @@ class ProductImage extends Model
 
     protected static function newFactory(): ProductImageFactory
     {
-        return ProductImageFactory::newInstance();
+        return new ProductImageFactory();
     }
 
     protected $fillable = [

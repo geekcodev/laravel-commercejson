@@ -17,7 +17,7 @@ class PropertyDefinition extends Model
 
     protected static function newFactory(): PropertyDefinitionFactory
     {
-        return PropertyDefinitionFactory::newInstance();
+        return new PropertyDefinitionFactory();
     }
 
     public $timestamps = false;

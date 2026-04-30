@@ -26,7 +26,7 @@ class Order extends Model
 
     protected static function newFactory(): OrderFactory
     {
-        return OrderFactory::newInstance();
+        return new OrderFactory();
     }
 
     protected $fillable = [

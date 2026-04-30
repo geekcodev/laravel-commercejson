@@ -15,7 +15,7 @@ class BankAccount extends Model
 
     protected static function newFactory(): BankAccountFactory
     {
-        return BankAccountFactory::newInstance();
+        return new BankAccountFactory();
     }
 
     protected $fillable = [
