@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace GeekCo\CommerceJson\Models;
 
+use GeekCo\CommerceJson\Database\Factories\BankAccountFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,6 +12,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class BankAccount extends Model
 {
     use HasFactory;
+
+    protected const string MODEL_FACTORY_CLASS = BankAccountFactory::class;
 
     protected $fillable = [
         'counterparty_id',

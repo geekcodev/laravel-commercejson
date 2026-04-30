@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace GeekCo\CommerceJson\Models;
 
+use GeekCo\CommerceJson\Database\Factories\CategoryFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -13,6 +14,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Category extends Model
 {
     use HasFactory, HasUuids;
+
+    protected const string MODEL_FACTORY_CLASS = CategoryFactory::class;
 
     protected $fillable = [
         'parent_id',

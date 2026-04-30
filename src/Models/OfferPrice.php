@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace GeekCo\CommerceJson\Models;
 
+use GeekCo\CommerceJson\Database\Factories\OfferPriceFactory;
 use GeekCo\CommerceJson\Enums\CurrencyEnum;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -12,6 +13,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class OfferPrice extends Model
 {
     use HasFactory;
+
+    protected const string MODEL_FACTORY_CLASS = OfferPriceFactory::class;
 
     protected $fillable = [
         'offer_id',

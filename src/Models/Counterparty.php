@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace GeekCo\CommerceJson\Models;
 
+use GeekCo\CommerceJson\Database\Factories\CounterpartyFactory;
 use GeekCo\CommerceJson\Enums\CounterpartyTypeEnum;
 use GeekCo\CommerceJson\Enums\CurrencyEnum;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -17,6 +18,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Counterparty extends Model
 {
     use HasFactory, HasUuids, SoftDeletes;
+
+    protected const string MODEL_FACTORY_CLASS = CounterpartyFactory::class;
 
     protected $fillable = [
         'external_id',

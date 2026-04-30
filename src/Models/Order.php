@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace GeekCo\CommerceJson\Models;
 
+use GeekCo\CommerceJson\Database\Factories\OrderFactory;
 use GeekCo\CommerceJson\Enums\CurrencyEnum;
 use GeekCo\CommerceJson\Enums\DocumentTypeEnum;
 use GeekCo\CommerceJson\Enums\OrderStatusEnum;
@@ -22,6 +23,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Order extends Model
 {
     use HasFactory, HasUuids, SoftDeletes;
+
+    protected const string MODEL_FACTORY_CLASS = OrderFactory::class;
 
     protected $fillable = [
         'number',
