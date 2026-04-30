@@ -21,7 +21,7 @@ class BankAccountFactory extends CommerceJsonFactory
             'id' => static::uuid(),
             'counterparty_id' => CounterpartyFactory::new(),
             'bank_name' => fake()->company().' Банк',
-            'bik' => fake()->numerify('###########'),
+            'bik' => fake()->numerify('#########'),
             'account' => fake()->numerify('####################'),
             'corr_account' => fake()->numerify('####################'),
             'swift' => null,
