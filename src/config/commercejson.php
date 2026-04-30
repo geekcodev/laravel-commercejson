@@ -154,4 +154,46 @@ return [
         'warehouse' => Warehouse::class,
         'price_type' => PriceType::class,
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Seeding (testing & load generation)
+    |--------------------------------------------------------------------------
+    |
+    | Настройки генерации тестовых данных сидерами.
+    | Важно: env() используется только здесь (в конфиге), а в коде сидеров
+    | используются значения через config('commercejson.seeding.*').
+    |
+    */
+
+    'seeding' => [
+        // Профиль сидинга: 'default' | 'load'
+        'profile' => env('COMMERCEJSON_SEED_PROFILE', 'default'),
+
+        // Load profile parameters
+        'load' => [
+            'seed' => (int) env('COMMERCEJSON_SEED_SEED', 1234),
+            'run_key' => env('COMMERCEJSON_SEED_RUN_KEY'), // optional
+            'chunk' => (int) env('COMMERCEJSON_SEED_CHUNK', 1000),
+
+            'extra_categories' => (int) env('COMMERCEJSON_SEED_EXTRA_CATEGORIES', 5000),
+            'extra_counterparties' => (int) env('COMMERCEJSON_SEED_EXTRA_COUNTERPARTIES', 200),
+
+            'products' => (int) env('COMMERCEJSON_SEED_PRODUCTS', 20000),
+
+            'variants_ratio' => (float) env('COMMERCEJSON_SEED_VARIANTS_RATIO', 0.35),
+            'variants_min' => (int) env('COMMERCEJSON_SEED_VARIANTS_MIN', 2),
+            'variants_max' => (int) env('COMMERCEJSON_SEED_VARIANTS_MAX', 5),
+
+            'price_tiers' => (int) env('COMMERCEJSON_SEED_PRICE_TIERS', 2),
+            'stocks_per_offer' => (int) env('COMMERCEJSON_SEED_STOCKS_PER_OFFER', 1),
+
+            'properties' => (int) env('COMMERCEJSON_SEED_PROPERTIES', 40),
+            'product_properties' => (int) env('COMMERCEJSON_SEED_PRODUCT_PROPERTIES', 6),
+            'variant_properties' => (int) env('COMMERCEJSON_SEED_VARIANT_PROPERTIES', 3),
+
+            // reserved for future extensions
+            'orders' => (int) env('COMMERCEJSON_SEED_ORDERS', 0),
+        ],
+    ],
 ];
