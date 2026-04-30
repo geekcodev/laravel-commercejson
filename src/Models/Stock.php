@@ -15,7 +15,7 @@ class Stock extends Model
 
     protected static function newFactory(): StockFactory
     {
-        return new StockFactory();
+        return new StockFactory;
     }
 
     protected $fillable = [

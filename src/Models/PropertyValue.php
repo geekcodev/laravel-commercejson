@@ -15,7 +15,7 @@ class PropertyValue extends Model
 
     protected static function newFactory(): PropertyValueFactory
     {
-        return new PropertyValueFactory();
+        return new PropertyValueFactory;
     }
 
     public $timestamps = false;
