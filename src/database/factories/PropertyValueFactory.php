@@ -24,7 +24,7 @@ class PropertyValueFactory extends CommerceJsonFactory
             'property_id' => PropertyDefinitionFactory::new(),
             'product_id' => ProductFactory::new(),
             'variant_id' => null,
-            'value_string' => null,
+            'value_string' => fake()->sentence(3),
             'value_number' => null,
             'value_boolean' => null,
             'value_json' => null,
