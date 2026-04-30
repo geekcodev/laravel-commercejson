@@ -17,7 +17,7 @@ class Warehouse extends Model
 
     protected static function newFactory(): WarehouseFactory
     {
-        return WarehouseFactory::newInstance();
+        return new WarehouseFactory();
     }
 
     protected $fillable = [

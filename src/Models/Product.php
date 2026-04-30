@@ -20,7 +20,7 @@ class Product extends Model
 
     protected static function newFactory(): ProductFactory
     {
-        return ProductFactory::newInstance();
+        return new ProductFactory();
     }
 
     protected $fillable = [

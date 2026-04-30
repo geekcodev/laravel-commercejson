@@ -17,7 +17,7 @@ class ProductVariant extends Model
 
     protected static function newFactory(): ProductVariantFactory
     {
-        return ProductVariantFactory::newInstance();
+        return new ProductVariantFactory();
     }
 
     protected $fillable = [

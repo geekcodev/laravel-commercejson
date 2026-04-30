@@ -16,7 +16,7 @@ class Contact extends Model
 
     protected static function newFactory(): ContactFactory
     {
-        return ContactFactory::newInstance();
+        return new ContactFactory();
     }
 
     protected $fillable = [

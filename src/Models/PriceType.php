@@ -17,7 +17,7 @@ class PriceType extends Model
 
     protected static function newFactory(): PriceTypeFactory
     {
-        return PriceTypeFactory::newInstance();
+        return new PriceTypeFactory();
     }
 
     protected $fillable = [

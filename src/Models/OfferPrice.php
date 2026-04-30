@@ -16,7 +16,7 @@ class OfferPrice extends Model
 
     protected static function newFactory(): OfferPriceFactory
     {
-        return OfferPriceFactory::newInstance();
+        return new OfferPriceFactory();
     }
 
     protected $fillable = [
