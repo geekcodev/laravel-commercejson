@@ -11,7 +11,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('signatories', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->string('signatory_type');
             $table->uuid('signatory_id');
             $table->string('last_name');

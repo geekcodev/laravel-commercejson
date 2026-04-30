@@ -11,7 +11,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('stocks', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->uuid('offer_id')->index('stocks_offer_id_idx');
             $table->uuid('warehouse_id')->index('stocks_warehouse_id_idx');
             $table->decimal('quantity', 10, 3)->default(0)->index('stocks_quantity_idx');

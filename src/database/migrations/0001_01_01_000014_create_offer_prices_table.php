@@ -11,7 +11,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('offer_prices', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->uuid('offer_id')->index('offer_prices_offer_id_idx');
             $table->uuid('price_type_id')->index('offer_prices_price_type_id_idx');
 

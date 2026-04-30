@@ -11,7 +11,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('contacts', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->uuid('counterparty_id')->index('contacts_counterparty_id_idx');
             $table->string('type')->index('contacts_type_idx'); // phone, mobile, email, fax, web, etc.
             $table->string('value')->index('contacts_value_idx');
