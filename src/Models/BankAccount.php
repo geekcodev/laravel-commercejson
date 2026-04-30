@@ -13,7 +13,10 @@ class BankAccount extends Model
 {
     use HasFactory;
 
-    protected const string MODEL_FACTORY_CLASS = BankAccountFactory::class;
+    protected static function newFactory(): BankAccountFactory
+    {
+        return BankAccountFactory::newInstance();
+    }
 
     protected $fillable = [
         'counterparty_id',

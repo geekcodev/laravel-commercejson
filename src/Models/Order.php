@@ -24,7 +24,10 @@ class Order extends Model
 {
     use HasFactory, HasUuids, SoftDeletes;
 
-    protected const string MODEL_FACTORY_CLASS = OrderFactory::class;
+    protected static function newFactory(): OrderFactory
+    {
+        return OrderFactory::newInstance();
+    }
 
     protected $fillable = [
         'number',

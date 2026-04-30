@@ -15,7 +15,10 @@ class PriceType extends Model
 {
     use HasFactory, HasUuids;
 
-    protected const string MODEL_FACTORY_CLASS = PriceTypeFactory::class;
+    protected static function newFactory(): PriceTypeFactory
+    {
+        return PriceTypeFactory::newInstance();
+    }
 
     protected $fillable = [
         'name',

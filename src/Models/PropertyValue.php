@@ -13,7 +13,10 @@ class PropertyValue extends Model
 {
     use HasFactory;
 
-    protected const string MODEL_FACTORY_CLASS = PropertyValueFactory::class;
+    protected static function newFactory(): PropertyValueFactory
+    {
+        return PropertyValueFactory::newInstance();
+    }
 
     public $timestamps = false;
 

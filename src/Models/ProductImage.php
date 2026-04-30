@@ -13,7 +13,10 @@ class ProductImage extends Model
 {
     use HasFactory;
 
-    protected const string MODEL_FACTORY_CLASS = ProductImageFactory::class;
+    protected static function newFactory(): ProductImageFactory
+    {
+        return ProductImageFactory::newInstance();
+    }
 
     protected $fillable = [
         'product_id',

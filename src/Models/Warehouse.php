@@ -15,7 +15,10 @@ class Warehouse extends Model
 {
     use HasFactory, HasUuids, SoftDeletes;
 
-    protected const string MODEL_FACTORY_CLASS = WarehouseFactory::class;
+    protected static function newFactory(): WarehouseFactory
+    {
+        return WarehouseFactory::newInstance();
+    }
 
     protected $fillable = [
         'external_id',

@@ -16,7 +16,10 @@ class OrderItem extends Model
 {
     use HasFactory, HasUuids;
 
-    protected const string MODEL_FACTORY_CLASS = OrderItemFactory::class;
+    protected static function newFactory(): OrderItemFactory
+    {
+        return OrderItemFactory::newInstance();
+    }
 
     protected $fillable = [
         'order_id',
