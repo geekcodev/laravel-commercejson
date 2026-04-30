@@ -31,14 +31,14 @@
   },
   "autoload": {
     "psr-4": {
-      "GeekCo\\CommerceJson\\": "src/"
+      "GeekCo\\CommerceJson\\": "src/",
+      "GeekCo\\CommerceJson\\Database\\Factories\\": "src/database/factories/",
+      "GeekCo\\CommerceJson\\Database\\Seeders\\": "src/database/seeders/"
     }
   },
   "autoload-dev": {
     "psr-4": {
-      "GeekCo\\CommerceJson\\Tests\\": "tests/",
-      "GeekCo\\CommerceJson\\Database\\Factories\\": "src/database/factories/",
-      "GeekCo\\CommerceJson\\Database\\Seeders\\": "src/database/seeders/"
+      "GeekCo\\CommerceJson\\Tests\\": "tests/"
     }
   },
   "extra": {
