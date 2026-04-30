@@ -18,7 +18,7 @@ class ProductImageFactory extends CommerceJsonFactory
     public function definition(): array
     {
         return [
-            'id' => null,
+            'id' => static::uuid(),
             'product_id' => ProductFactory::new(),
             'url' => fake()->imageUrl(),
             'sort' => 0,

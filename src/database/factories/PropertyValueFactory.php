@@ -20,7 +20,7 @@ class PropertyValueFactory extends CommerceJsonFactory
     public function definition(): array
     {
         return [
-            'id' => null,
+            'id' => static::uuid(),
             'property_id' => PropertyDefinitionFactory::new(),
             'product_id' => ProductFactory::new(),
             'variant_id' => null,
