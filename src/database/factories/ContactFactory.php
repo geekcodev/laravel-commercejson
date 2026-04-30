@@ -19,7 +19,7 @@ class ContactFactory extends CommerceJsonFactory
     public function definition(): array
     {
         return [
-            'id' => null,
+            'id' => static::uuid(),
             'counterparty_id' => CounterpartyFactory::new(),
             'type' => ContactTypeEnum::Email->value,
             'value' => static::generateEmail(),

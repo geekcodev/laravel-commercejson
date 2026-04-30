@@ -20,7 +20,7 @@ class OfferPriceFactory extends CommerceJsonFactory
     public function definition(): array
     {
         return [
-            'id' => null,
+            'id' => static::uuid(),
             'offer_id' => OfferFactory::new(),
             'price_type_id' => PriceTypeFactory::new(),
             'price_amount' => static::amount(2),

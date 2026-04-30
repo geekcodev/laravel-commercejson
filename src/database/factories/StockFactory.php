@@ -19,7 +19,7 @@ class StockFactory extends CommerceJsonFactory
     public function definition(): array
     {
         return [
-            'id' => null,
+            'id' => static::uuid(),
             'offer_id' => OfferFactory::new(),
             'warehouse_id' => WarehouseFactory::new(),
             'quantity' => static::quantity(),
