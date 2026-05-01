@@ -29,6 +29,8 @@ docker compose exec php php artisan migrate
 docker compose exec php php artisan db:seed --class="GeekCo\\CommerceJson\\Database\\Seeders\\DatabaseSeeder"
 ```
 
+Важно для PostgreSQL: базовые сидеры используют **валидные UUID** (вместо строковых "псевдо-id"), поэтому работают одинаково на MySQL/SQLite/PostgreSQL.
+
 ### Сидинг (нагрузочный профиль)
 
 В пакете есть “load test” профиль. Значения читаются через `config('commercejson.seeding.*')`

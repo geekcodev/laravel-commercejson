@@ -16,7 +16,7 @@ class WarehouseSeeder extends Seeder
     {
         $warehouses = [
             [
-                'id' => 'wh-main-0000-0000-000000000001',
+                'id' => '00000000-0000-0000-0000-000000000101',
                 'external_id' => 'MAIN-WH',
                 'name' => 'Основной склад',
                 'code' => 'WH-MAIN',
@@ -30,7 +30,7 @@ class WarehouseSeeder extends Seeder
                 'is_default' => true,
             ],
             [
-                'id' => 'wh-spb-0000-0000-000000000002',
+                'id' => '00000000-0000-0000-0000-000000000102',
                 'external_id' => 'SPB-WH',
                 'name' => 'Санкт-Петербургский склад',
                 'code' => 'WH-SPB',
@@ -44,7 +44,7 @@ class WarehouseSeeder extends Seeder
                 'is_default' => false,
             ],
             [
-                'id' => 'wh-ekb-0000-0000-000000000003',
+                'id' => '00000000-0000-0000-0000-000000000103',
                 'external_id' => 'EKB-WH',
                 'name' => 'Екатеринбургский склад',
                 'code' => 'WH-EKB',
