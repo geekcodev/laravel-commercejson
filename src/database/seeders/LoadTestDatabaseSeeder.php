@@ -10,6 +10,7 @@ use GeekCo\CommerceJson\Models\Counterparty;
 use GeekCo\CommerceJson\Models\PriceType;
 use GeekCo\CommerceJson\Models\PropertyDefinition;
 use GeekCo\CommerceJson\Models\Warehouse;
+use Illuminate\Database\QueryException;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -81,6 +82,12 @@ class LoadTestDatabaseSeeder extends Seeder
             CategorySeeder::class,
             CounterpartySeeder::class,
         ]);
+
+        // PostgreSQL строго валидирует uuid. Если в справочниках остались "псевдо-id" — дальше всё будет падать.
+        $this->assertUuidColumn('price_types', 'id');
+        $this->assertUuidColumn('warehouses', 'id');
+        $this->assertUuidColumn('categories', 'id');
+        $this->assertUuidColumn('counterparties', 'id');
 
         if ($extraCounterparties > 0) {
             $this->seedExtraCounterparties($extraCounterparties, $chunkSize, $now, $seed);
@@ -191,6 +198,25 @@ class LoadTestDatabaseSeeder extends Seeder
 
         if (! empty($buffer)) {
             DB::table('categories')->insertOrIgnore($buffer);
+        }
+    }
+
+    private function assertUuidColumn(string $table, string $column): void
+    {
+        $invalid = DB::table($table)
+            ->whereNotNull($column)
+            ->whereRaw("{$column}::text !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'")
+            ->limit(5)
+            ->pluck($column)
+            ->all();
+
+        if (! empty($invalid)) {
+            throw new \RuntimeException(sprintf(
+                'Invalid UUID values detected in %s.%s: %s',
+                $table,
+                $column,
+                implode(', ', array_map(fn ($v) => (string) $v, $invalid))
+            ));
         }
     }
 
@@ -336,7 +362,9 @@ class LoadTestDatabaseSeeder extends Seeder
         $warehousePool = array_values($warehouseIds);
 
         while ($productSeq <= $productsCount) {
+            $batchStart = $productSeq;
             $batchSize = min($chunkSize, $productsCount - $productSeq + 1);
+            $batchEnd = $batchStart + $batchSize - 1;
 
             $products = [];
             $variants = [];
@@ -545,37 +573,44 @@ class LoadTestDatabaseSeeder extends Seeder
                 }
             }
 
-            DB::transaction(function () use ($products, $variants, $offers, $offerPrices, $stocks, $images, $propertyValues) {
-                if (! empty($products)) {
-                    DB::table('products')->insert($products);
-                }
-                if (! empty($variants)) {
-                    DB::table('product_variants')->insert($variants);
-                }
-                if (! empty($offers)) {
-                    DB::table('offers')->insert($offers);
-                }
-                if (! empty($offerPrices)) {
-                    foreach (array_chunk($offerPrices, 5000) as $chunk) {
-                        DB::table('offer_prices')->insert($chunk);
+            try {
+                DB::transaction(function () use ($products, $variants, $offers, $offerPrices, $stocks, $images, $propertyValues) {
+                    if (! empty($products)) {
+                        DB::table('products')->insert($products);
                     }
-                }
-                if (! empty($stocks)) {
-                    foreach (array_chunk($stocks, 5000) as $chunk) {
-                        DB::table('stocks')->insert($chunk);
+                    if (! empty($variants)) {
+                        DB::table('product_variants')->insert($variants);
                     }
-                }
-                if (! empty($images)) {
-                    foreach (array_chunk($images, 5000) as $chunk) {
-                        DB::table('product_images')->insert($chunk);
+                    if (! empty($offers)) {
+                        DB::table('offers')->insert($offers);
                     }
-                }
-                if (! empty($propertyValues)) {
-                    foreach (array_chunk($propertyValues, 5000) as $chunk) {
-                        DB::table('property_values')->insert($chunk);
+                    if (! empty($offerPrices)) {
+                        foreach (array_chunk($offerPrices, 5000) as $chunk) {
+                            DB::table('offer_prices')->insert($chunk);
+                        }
                     }
-                }
-            });
+                    if (! empty($stocks)) {
+                        foreach (array_chunk($stocks, 5000) as $chunk) {
+                            DB::table('stocks')->insert($chunk);
+                        }
+                    }
+                    if (! empty($images)) {
+                        foreach (array_chunk($images, 5000) as $chunk) {
+                            DB::table('product_images')->insert($chunk);
+                        }
+                    }
+                    if (! empty($propertyValues)) {
+                        foreach (array_chunk($propertyValues, 5000) as $chunk) {
+                            DB::table('property_values')->insert($chunk);
+                        }
+                    }
+                });
+            } catch (QueryException $e) {
+                throw new \RuntimeException(
+                    "LoadTestDatabaseSeeder failed while inserting batch {$batchStart}..{$batchEnd}: {$e->getMessage()}",
+                    previous: $e
+                );
+            }
         }
     }
 
