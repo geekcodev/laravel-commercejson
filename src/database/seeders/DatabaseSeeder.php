@@ -25,6 +25,7 @@ class DatabaseSeeder extends Seeder
         if ((string) config('commercejson.seeding.profile') === 'load') {
             $this->call(LoadTestDatabaseSeeder::class);
             $this->command->info('✅ CommerceJSON load-test seeding completed!');
+
             return;
         }
 

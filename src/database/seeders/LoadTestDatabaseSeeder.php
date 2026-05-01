@@ -11,6 +11,7 @@ use GeekCo\CommerceJson\Models\PriceType;
 use GeekCo\CommerceJson\Models\PropertyDefinition;
 use GeekCo\CommerceJson\Models\Warehouse;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -146,7 +147,7 @@ class LoadTestDatabaseSeeder extends Seeder
         ));
     }
 
-    private function seedExtraCategories(int $count, int $chunkSize, \Illuminate\Support\Carbon $now): void
+    private function seedExtraCategories(int $count, int $chunkSize, Carbon $now): void
     {
         $this->command?->info(" - Seeding {$count} extra categories...");
 
@@ -159,7 +160,7 @@ class LoadTestDatabaseSeeder extends Seeder
             $id = (string) Str::uuid();
 
             $parentId = null;
-            if (!empty($parentPool) && fake()->boolean(80)) {
+            if (! empty($parentPool) && fake()->boolean(80)) {
                 $parentId = $parentPool[array_rand($parentPool)];
             }
 
@@ -188,12 +189,12 @@ class LoadTestDatabaseSeeder extends Seeder
             }
         }
 
-        if (!empty($buffer)) {
+        if (! empty($buffer)) {
             DB::table('categories')->insertOrIgnore($buffer);
         }
     }
 
-    private function seedExtraCounterparties(int $count, int $chunkSize, \Illuminate\Support\Carbon $now): void
+    private function seedExtraCounterparties(int $count, int $chunkSize, Carbon $now): void
     {
         $this->command?->info(" - Seeding {$count} extra counterparties...");
 
@@ -237,12 +238,12 @@ class LoadTestDatabaseSeeder extends Seeder
             }
         }
 
-        if (!empty($buffer)) {
+        if (! empty($buffer)) {
             DB::table('counterparties')->insertOrIgnore($buffer);
         }
     }
 
-    private function seedPropertyDefinitions(int $count, \Illuminate\Support\Carbon $now): void
+    private function seedPropertyDefinitions(int $count, Carbon $now): void
     {
         $this->command?->info(" - Seeding {$count} property definitions...");
 
@@ -293,9 +294,9 @@ class LoadTestDatabaseSeeder extends Seeder
     /**
      * Основной генератор каталога с зависимостями.
      *
-     * @param array<int, array{id:string,currency:string|null}> $priceTypes
-     * @param array<int, \GeekCo\CommerceJson\Models\PropertyDefinition> $propertyDefinitions
-     * @param array<int, string> $warehouseIds
+     * @param  array<int, array{id:string,currency:string|null}>  $priceTypes
+     * @param  array<int, PropertyDefinition>  $propertyDefinitions
+     * @param  array<int, string>  $warehouseIds
      */
     private function seedCatalog(
         int $productsCount,
@@ -313,7 +314,7 @@ class LoadTestDatabaseSeeder extends Seeder
         int $productPropertiesPerEntity,
         int $variantPropertiesPerEntity,
         int $chunkSize,
-        \Illuminate\Support\Carbon $now
+        Carbon $now
     ): void {
         $this->command?->info(" - Seeding {$productsCount} products (+ variants/offers/prices/stocks/images/properties)...");
 
@@ -355,7 +356,7 @@ class LoadTestDatabaseSeeder extends Seeder
                 $barcode = str_pad((string) $productSeq, 14, '0', STR_PAD_LEFT);
 
                 $categoryId = $categoryIds[array_rand($categoryIds)];
-                $manufacturerId = !empty($manufacturerIds) && fake()->boolean(35) ? $manufacturerIds[array_rand($manufacturerIds)] : null;
+                $manufacturerId = ! empty($manufacturerIds) && fake()->boolean(35) ? $manufacturerIds[array_rand($manufacturerIds)] : null;
                 $brandOwnerId = $manufacturerId && fake()->boolean(30) ? $manufacturerIds[array_rand($manufacturerIds)] : null;
 
                 $isActive = fake()->boolean(96);
@@ -457,7 +458,7 @@ class LoadTestDatabaseSeeder extends Seeder
                 }
 
                 // Product properties
-                if ($productPropertiesPerEntity > 0 && !empty($propertyDefinitions)) {
+                if ($productPropertiesPerEntity > 0 && ! empty($propertyDefinitions)) {
                     $this->appendPropertyValues(
                         propertyValues: $propertyValues,
                         entity: 'product',
@@ -526,7 +527,7 @@ class LoadTestDatabaseSeeder extends Seeder
                             );
                         }
 
-                        if ($variantPropertiesPerEntity > 0 && !empty($propertyDefinitions)) {
+                        if ($variantPropertiesPerEntity > 0 && ! empty($propertyDefinitions)) {
                             $this->appendPropertyValues(
                                 propertyValues: $propertyValues,
                                 entity: 'variant',
@@ -543,31 +544,31 @@ class LoadTestDatabaseSeeder extends Seeder
             }
 
             DB::transaction(function () use ($products, $variants, $offers, $offerPrices, $stocks, $images, $propertyValues) {
-                if (!empty($products)) {
+                if (! empty($products)) {
                     DB::table('products')->insert($products);
                 }
-                if (!empty($variants)) {
+                if (! empty($variants)) {
                     DB::table('product_variants')->insert($variants);
                 }
-                if (!empty($offers)) {
+                if (! empty($offers)) {
                     DB::table('offers')->insert($offers);
                 }
-                if (!empty($offerPrices)) {
+                if (! empty($offerPrices)) {
                     foreach (array_chunk($offerPrices, 5000) as $chunk) {
                         DB::table('offer_prices')->insert($chunk);
                     }
                 }
-                if (!empty($stocks)) {
+                if (! empty($stocks)) {
                     foreach (array_chunk($stocks, 5000) as $chunk) {
                         DB::table('stocks')->insert($chunk);
                     }
                 }
-                if (!empty($images)) {
+                if (! empty($images)) {
                     foreach (array_chunk($images, 5000) as $chunk) {
                         DB::table('product_images')->insert($chunk);
                     }
                 }
-                if (!empty($propertyValues)) {
+                if (! empty($propertyValues)) {
                     foreach (array_chunk($propertyValues, 5000) as $chunk) {
                         DB::table('property_values')->insert($chunk);
                     }
@@ -577,9 +578,9 @@ class LoadTestDatabaseSeeder extends Seeder
     }
 
     /**
-     * @param array<int, array<string, mixed>> $offerPrices
-     * @param array<int, array{id:string,currency:string|null}> $priceTypes
-     * @param array<string, string> $currencyByPriceTypeId
+     * @param  array<int, array<string, mixed>>  $offerPrices
+     * @param  array<int, array{id:string,currency:string|null}>  $priceTypes
+     * @param  array<string, string>  $currencyByPriceTypeId
      */
     private function appendOfferPrices(
         array &$offerPrices,
@@ -588,7 +589,7 @@ class LoadTestDatabaseSeeder extends Seeder
         array $currencyByPriceTypeId,
         float $baseAmount,
         int $priceTiers,
-        \Illuminate\Support\Carbon $now
+        Carbon $now
     ): void {
         foreach ($priceTypes as $pt) {
             $ptId = $pt['id'];
@@ -646,8 +647,8 @@ class LoadTestDatabaseSeeder extends Seeder
     }
 
     /**
-     * @param array<int, array<string, mixed>> $stocks
-     * @param array<int, string> $warehousePool
+     * @param  array<int, array<string, mixed>>  $stocks
+     * @param  array<int, string>  $warehousePool
      */
     private function appendStocks(
         array &$stocks,
@@ -655,7 +656,7 @@ class LoadTestDatabaseSeeder extends Seeder
         array $warehousePool,
         string $defaultWarehouseId,
         int $perOffer,
-        \Illuminate\Support\Carbon $now
+        Carbon $now
     ): void {
         $selected = [];
         if ($perOffer === 1) {
@@ -686,8 +687,8 @@ class LoadTestDatabaseSeeder extends Seeder
     }
 
     /**
-     * @param array<int, array<string, mixed>> $propertyValues
-     * @param array<int, \GeekCo\CommerceJson\Models\PropertyDefinition> $propertyDefinitions
+     * @param  array<int, array<string, mixed>>  $propertyValues
+     * @param  array<int, PropertyDefinition>  $propertyDefinitions
      */
     private function appendPropertyValues(
         array &$propertyValues,
@@ -696,7 +697,7 @@ class LoadTestDatabaseSeeder extends Seeder
         array $propertyDefinitions,
         int $perEntity,
         int $seqStart,
-        \Illuminate\Support\Carbon $now
+        Carbon $now
     ): void {
         $count = min($perEntity, count($propertyDefinitions));
         if ($count <= 0) {
@@ -738,11 +739,11 @@ class LoadTestDatabaseSeeder extends Seeder
                     break;
                 case PropertyTypeEnum::Enum:
                     $enum = is_string($property->enum_values) ? json_decode($property->enum_values, true) : $property->enum_values;
-                    $valueString = !empty($enum) ? ($enum[array_rand($enum)]['value'] ?? fake()->word()) : fake()->word();
+                    $valueString = ! empty($enum) ? ($enum[array_rand($enum)]['value'] ?? fake()->word()) : fake()->word();
                     break;
                 case PropertyTypeEnum::Multiselect:
                     $enum = is_string($property->enum_values) ? json_decode($property->enum_values, true) : $property->enum_values;
-                    if (!empty($enum)) {
+                    if (! empty($enum)) {
                         $values = array_map(
                             fn ($e) => $e['value'] ?? null,
                             (array) $enum
@@ -786,4 +787,3 @@ class LoadTestDatabaseSeeder extends Seeder
         };
     }
 }
-

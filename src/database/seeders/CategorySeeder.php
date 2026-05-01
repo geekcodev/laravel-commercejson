@@ -16,7 +16,7 @@ class CategorySeeder extends Seeder
     {
         // Корневые категории
         $electronics = Category::updateOrCreate(
-            ['id' => 'cat-electronics-0000-000000000001'],
+            ['id' => '00000000-0000-0000-0000-000000001001'],
             [
                 'parent_id' => null,
                 'name' => 'Электроника',
@@ -27,7 +27,7 @@ class CategorySeeder extends Seeder
         );
 
         $clothing = Category::updateOrCreate(
-            ['id' => 'cat-clothing-0000-000000000002'],
+            ['id' => '00000000-0000-0000-0000-000000001002'],
             [
                 'parent_id' => null,
                 'name' => 'Одежда',
@@ -38,7 +38,7 @@ class CategorySeeder extends Seeder
         );
 
         $home = Category::updateOrCreate(
-            ['id' => 'cat-home-0000-000000000003'],
+            ['id' => '00000000-0000-0000-0000-000000001003'],
             [
                 'parent_id' => null,
                 'name' => 'Для дома',
@@ -50,7 +50,7 @@ class CategorySeeder extends Seeder
 
         // Подкатегории электроники
         $phones = Category::updateOrCreate(
-            ['id' => 'cat-phones-0000-000000000004'],
+            ['id' => '00000000-0000-0000-0000-000000001004'],
             [
                 'parent_id' => $electronics->id,
                 'name' => 'Смартфоны',
@@ -61,7 +61,7 @@ class CategorySeeder extends Seeder
         );
 
         $laptops = Category::updateOrCreate(
-            ['id' => 'cat-laptops-0000-000000000005'],
+            ['id' => '00000000-0000-0000-0000-000000001005'],
             [
                 'parent_id' => $electronics->id,
                 'name' => 'Ноутбуки',
@@ -73,7 +73,7 @@ class CategorySeeder extends Seeder
 
         // Подкатегории одежды
         $mens = Category::updateOrCreate(
-            ['id' => 'cat-mens-0000-000000000006'],
+            ['id' => '00000000-0000-0000-0000-000000001006'],
             [
                 'parent_id' => $clothing->id,
                 'name' => 'Мужская одежда',
@@ -84,7 +84,7 @@ class CategorySeeder extends Seeder
         );
 
         $womens = Category::updateOrCreate(
-            ['id' => 'cat-womens-0000-000000000007'],
+            ['id' => '00000000-0000-0000-0000-000000001007'],
             [
                 'parent_id' => $clothing->id,
                 'name' => 'Женская одежда',

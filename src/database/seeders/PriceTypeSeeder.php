@@ -17,28 +17,28 @@ class PriceTypeSeeder extends Seeder
     {
         $priceTypes = [
             [
-                'id' => 'pt-retail-0000-0000-000000000001',
+                'id' => '00000000-0000-0000-0000-000000000001',
                 'name' => 'Розничная цена',
                 'currency' => CurrencyEnum::RUB->value,
                 'description' => 'Стандартные розничные цены',
                 'is_default' => true,
             ],
             [
-                'id' => 'pt-wholesale-0000-0000-000000000002',
+                'id' => '00000000-0000-0000-0000-000000000002',
                 'name' => 'Оптовая цена',
                 'currency' => CurrencyEnum::RUB->value,
                 'description' => 'Цены для оптовых покупателей (от 10 шт)',
                 'is_default' => false,
             ],
             [
-                'id' => 'pt-dealer-0000-0000-000000000003',
+                'id' => '00000000-0000-0000-0000-000000000003',
                 'name' => 'Дилерская цена',
                 'currency' => CurrencyEnum::RUB->value,
                 'description' => 'Цены для дилеров и партнёров',
                 'is_default' => false,
             ],
             [
-                'id' => 'pt-vip-0000-0000-000000000004',
+                'id' => '00000000-0000-0000-0000-000000000004',
                 'name' => 'VIP цена',
                 'currency' => CurrencyEnum::RUB->value,
                 'description' => 'Специальные цены для VIP клиентов',

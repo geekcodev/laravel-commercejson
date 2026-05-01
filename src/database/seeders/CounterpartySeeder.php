@@ -18,7 +18,7 @@ class CounterpartySeeder extends Seeder
         $counterparties = [
             // Юридические лица
             [
-                'id' => 'cp-legal-0000-0000-000000000001',
+                'id' => '00000000-0000-0000-0000-000000002001',
                 'type' => CounterpartyTypeEnum::LegalEntity->value,
                 'name' => 'ООО "Торговый Дом"',
                 'short_name' => 'ООО "ТД"',
@@ -33,7 +33,7 @@ class CounterpartySeeder extends Seeder
                 'is_active' => true,
             ],
             [
-                'id' => 'cp-legal-0000-0000-000000000002',
+                'id' => '00000000-0000-0000-0000-000000002002',
                 'type' => CounterpartyTypeEnum::LegalEntity->value,
                 'name' => 'АО "Производственная Компания"',
                 'short_name' => 'АО "ПК"',
@@ -50,7 +50,7 @@ class CounterpartySeeder extends Seeder
 
             // ИП
             [
-                'id' => 'cp-ind-0000-0000-000000000003',
+                'id' => '00000000-0000-0000-0000-000000002003',
                 'type' => CounterpartyTypeEnum::IndividualEntrepreneur->value,
                 'name' => 'Иванов Иван Иванович',
                 'short_name' => 'ИП Иванов И.И.',
@@ -67,7 +67,7 @@ class CounterpartySeeder extends Seeder
 
             // Физические лица
             [
-                'id' => 'cp-phys-0000-0000-000000000004',
+                'id' => '00000000-0000-0000-0000-000000002004',
                 'type' => CounterpartyTypeEnum::Individual->value,
                 'name' => 'Петров Пётр Петрович',
                 'short_name' => 'Петров П.П.',
