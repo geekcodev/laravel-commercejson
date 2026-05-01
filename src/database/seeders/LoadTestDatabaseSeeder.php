@@ -83,7 +83,7 @@ class LoadTestDatabaseSeeder extends Seeder
         ]);
 
         if ($extraCounterparties > 0) {
-            $this->seedExtraCounterparties($extraCounterparties, $chunkSize, $now);
+            $this->seedExtraCounterparties($extraCounterparties, $chunkSize, $now, $seed);
         }
 
         if ($extraCategories > 0) {
@@ -194,7 +194,7 @@ class LoadTestDatabaseSeeder extends Seeder
         }
     }
 
-    private function seedExtraCounterparties(int $count, int $chunkSize, Carbon $now): void
+    private function seedExtraCounterparties(int $count, int $chunkSize, Carbon $now, int $seed): void
     {
         $this->command?->info(" - Seeding {$count} extra counterparties...");
 
