@@ -39,38 +39,60 @@ class TestDatabaseSeeder extends Seeder
         $warehouse = Warehouse::factory()->default()->create();
 
         // Создаём категории
-        $categories = Category::factory(5)->create();
+        $categories = collect();
+        for ($i = 0; $i < 5; $i++) {
+            $categories->push(Category::factory()->create());
+        }
         $parentCategory = $categories->first();
-        $childCategories = Category::factory(3)->create(['parent_id' => $parentCategory->id]);
+        $childCategories = collect();
+        for ($i = 0; $i < 3; $i++) {
+            $childCategories->push(Category::factory()->create(['parent_id' => $parentCategory->id]));
+        }
 
         // Создаём контрагентов
         $supplier = Counterparty::factory()->legalEntity()->create(['name' => 'ООО "Поставщик"']);
         $customer = Counterparty::factory()->legalEntity()->create(['name' => 'ООО "Клиент"']);
 
         // Добавляем контакты контрагентам
-        Contact::factory(3)->forCounterparty($supplier)->create();
-        Contact::factory(2)->forCounterparty($customer)->create();
+        for ($i = 0; $i < 3; $i++) {
+            Contact::factory()->forCounterparty($supplier)->create();
+        }
+        for ($i = 0; $i < 2; $i++) {
+            Contact::factory()->forCounterparty($customer)->create();
+        }
 
         // Добавляем банковские счета
-        BankAccount::factory(2)->forCounterparty($supplier)->create();
+        for ($i = 0; $i < 2; $i++) {
+            BankAccount::factory()->forCounterparty($supplier)->create();
+        }
 
         // Создаём свойства
-        $properties = PropertyDefinition::factory(5)->create();
+        $properties = collect();
+        for ($i = 0; $i < 5; $i++) {
+            $properties->push(PropertyDefinition::factory()->create());
+        }
 
         // Создаём товары
-        $products = Product::factory(20)
-            ->forCategory($categories->random())
-            ->create();
+        $products = collect();
+        for ($i = 0; $i < 20; $i++) {
+            $products->push(Product::factory()
+                ->forCategory($categories->random())
+                ->create());
+        }
 
         // Создаём варианты товаров
         foreach ($products->take(10) as $product) {
-            ProductVariant::factory(3)->forProduct($product)->create();
+            for ($i = 0; $i < 3; $i++) {
+                ProductVariant::factory()->forProduct($product)->create();
+            }
         }
 
         // Создаём изображения товаров
         foreach ($products as $product) {
             ProductImage::factory()->main()->forProduct($product)->create();
-            ProductImage::factory(3)->additional()->forProduct($product)->create();
+            for ($i = 0; $i < 3; $i++) {
+                ProductImage::factory()->additional()->forProduct($product)->create();
+            }
         }
 
         // Создаём предложения для товаров
@@ -111,11 +133,14 @@ class TestDatabaseSeeder extends Seeder
             }
         }
 
-        // Создаём заказы
-        $orders = Order::factory(30)
-            ->forCounterparty($customer)
-            ->fromWarehouse($warehouse)
-            ->create();
+        // Создаём заказы (цикл для избежания проблем с PostgreSQL и лимитом параметров)
+        $orders = collect();
+        for ($i = 0; $i < 30; $i++) {
+            $orders->push(Order::factory()
+                ->forCounterparty($customer)
+                ->fromWarehouse($warehouse)
+                ->create());
+        }
 
         // Создаём позиции заказов
         foreach ($orders as $order) {
