@@ -45,7 +45,9 @@ class LoadTestDatabaseSeeder extends Seeder
     public function run(): void
     {
         $seed = (int) config('commercejson.seeding.load.seed', 1234);
-        $chunkSize = max(100, (int) config('commercejson.seeding.load.chunk', 1000));
+        // Уменьшен по умолчанию для PostgreSQL (лимит 65535 параметров на запрос)
+        // 1000 товаров × 8 полей = 8000 параметров, что безопасно
+        $chunkSize = max(100, (int) config('commercejson.seeding.load.chunk', 500));
 
         $extraCategories = max(0, (int) config('commercejson.seeding.load.extra_categories', 5000));
         $extraCounterparties = max(0, (int) config('commercejson.seeding.load.extra_counterparties', 200));
@@ -576,13 +578,19 @@ class LoadTestDatabaseSeeder extends Seeder
             try {
                 DB::transaction(function () use ($products, $variants, $offers, $offerPrices, $stocks, $images, $propertyValues) {
                     if (! empty($products)) {
-                        DB::table('products')->insert($products);
+                        foreach (array_chunk($products, 2000) as $chunk) {
+                            DB::table('products')->insert($chunk);
+                        }
                     }
                     if (! empty($variants)) {
-                        DB::table('product_variants')->insert($variants);
+                        foreach (array_chunk($variants, 2000) as $chunk) {
+                            DB::table('product_variants')->insert($chunk);
+                        }
                     }
                     if (! empty($offers)) {
-                        DB::table('offers')->insert($offers);
+                        foreach (array_chunk($offers, 5000) as $chunk) {
+                            DB::table('offers')->insert($chunk);
+                        }
                     }
                     if (! empty($offerPrices)) {
                         foreach (array_chunk($offerPrices, 5000) as $chunk) {
@@ -600,7 +608,9 @@ class LoadTestDatabaseSeeder extends Seeder
                         }
                     }
                     if (! empty($propertyValues)) {
-                        foreach (array_chunk($propertyValues, 5000) as $chunk) {
+                        // Уменьшенный размер чанка для PostgreSQL (лимит 65535 параметров)
+                        // Каждая запись property_values имеет 8 полей, поэтому 3000 записей = 24000 параметров
+                        foreach (array_chunk($propertyValues, 3000) as $chunk) {
                             DB::table('property_values')->insert($chunk);
                         }
                     }
