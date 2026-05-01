@@ -593,7 +593,9 @@ class LoadTestDatabaseSeeder extends Seeder
                         }
                     }
                     if (! empty($offerPrices)) {
-                        foreach (array_chunk($offerPrices, 5000) as $chunk) {
+                        // offer_prices имеет 20 полей, поэтому 2000 записей = 40000 параметров
+                        // Уменьшаем до 1500 для безопасности
+                        foreach (array_chunk($offerPrices, 1500) as $chunk) {
                             DB::table('offer_prices')->insert($chunk);
                         }
                     }
