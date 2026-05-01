@@ -714,7 +714,10 @@ class LoadTestDatabaseSeeder extends Seeder
 
         $seq = $seqStart;
         foreach ($picked as $property) {
-            $type = PropertyTypeEnum::from($property->type);
+            $rawType = $property->type;
+            $type = $rawType instanceof PropertyTypeEnum
+                ? $rawType
+                : PropertyTypeEnum::from((string) $rawType);
 
             $valueString = null;
             $valueNumber = null;
