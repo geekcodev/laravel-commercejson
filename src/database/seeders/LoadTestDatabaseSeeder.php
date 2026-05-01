@@ -207,9 +207,11 @@ class LoadTestDatabaseSeeder extends Seeder
             $name = 'Контрагент '.str_pad((string) $i, 6, '0', STR_PAD_LEFT);
 
             // В таблице есть уникальные ограничения на inn/ogrn, поэтому делаем их детерминированными.
-            $seedPrefix = str_pad((string) ($seed % 100), 2, '0', STR_PAD_LEFT);
-            $inn = '77'.$seedPrefix.str_pad((string) $i, 6, '0', STR_PAD_LEFT); // 10 digits
-            $ogrn = $seedPrefix.str_pad((string) $i, 11, '0', STR_PAD_LEFT); // 13 digits
+            // Важно: базовый CounterpartySeeder использует ИНН вида 77********,
+            // поэтому здесь используем префикс 99, чтобы исключить пересечения.
+            $seed2 = $seed % 100;
+            $inn = '99'.str_pad((string) (($seed2 * 1_000_000) + $i), 8, '0', STR_PAD_LEFT); // 10 digits
+            $ogrn = '99'.str_pad((string) (($seed2 * 10_000_000_000) + $i), 11, '0', STR_PAD_LEFT); // 13 digits
 
             $buffer[] = [
                 'id' => $id,
