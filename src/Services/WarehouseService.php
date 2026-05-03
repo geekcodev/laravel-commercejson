@@ -27,8 +27,9 @@ class WarehouseService
         $query = $includeDeleted ? ['include_deleted' => 'true'] : [];
 
         $response = $this->connector->get('/warehouses', $query);
+        $responseData = json_decode($response->getBody()->getContents(), true);
 
-        return $response->json('warehouses');
+        return $responseData['warehouses'];
     }
 
     /**
@@ -44,7 +45,7 @@ class WarehouseService
             $idempotencyKey
         );
 
-        return ImportResultData::from($response->json());
+        return ImportResultData::from(json_decode($response->getBody()->getContents(), true));
     }
 
     /**

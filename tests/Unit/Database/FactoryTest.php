@@ -12,11 +12,13 @@ use GeekCo\CommerceJson\Database\Factories\OrderItemFactory;
 use GeekCo\CommerceJson\Database\Factories\ProductFactory;
 use GeekCo\CommerceJson\Database\Factories\StockFactory;
 use GeekCo\CommerceJson\Database\Factories\WarehouseFactory;
+use GeekCo\CommerceJson\Enums\CounterpartyTypeEnum;
+use GeekCo\CommerceJson\Enums\OrderStatusEnum;
+use GeekCo\CommerceJson\Enums\PaymentStatusEnum;
 use GeekCo\CommerceJson\Models\Category;
 use GeekCo\CommerceJson\Models\Order;
 use GeekCo\CommerceJson\Models\Product;
 use GeekCo\CommerceJson\Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 
 /**
  * Тесты для Factory классов
@@ -26,8 +28,6 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
  */
 class FactoryTest extends TestCase
 {
-    use RefreshDatabase;
-
     /**
      * @test
      */
@@ -127,7 +127,7 @@ class FactoryTest extends TestCase
      */
     public function product_factory_creates_multiple(): void
     {
-        $products = ProductFactory::new(10)->create();
+        $products = ProductFactory::new()->times(10)->create();
 
         $this->assertCount(10, $products);
         $this->assertEquals(10, Product::count());
@@ -179,7 +179,7 @@ class FactoryTest extends TestCase
         $this->assertInstanceOf(Order::class, $order);
         $this->assertValidUuid($order->id);
         $this->assertNotNull($order->number);
-        $this->assertEquals('new', $order->status);
+        $this->assertEquals(OrderStatusEnum::New, $order->status);
     }
 
     /**
@@ -188,22 +188,22 @@ class FactoryTest extends TestCase
     public function order_factory_with_states(): void
     {
         $newOrder = OrderFactory::new()->asNew()->create();
-        $this->assertEquals('new', $newOrder->status);
+        $this->assertEquals(OrderStatusEnum::New, $newOrder->status);
 
         $confirmedOrder = OrderFactory::new()->confirmed()->create();
-        $this->assertEquals('confirmed', $confirmedOrder->status);
+        $this->assertEquals(OrderStatusEnum::Confirmed, $confirmedOrder->status);
 
         $processingOrder = OrderFactory::new()->processing()->create();
-        $this->assertEquals('processing', $processingOrder->status);
+        $this->assertEquals(OrderStatusEnum::Processing, $processingOrder->status);
 
         $shippedOrder = OrderFactory::new()->shipped()->create();
-        $this->assertEquals('shipped', $shippedOrder->status);
+        $this->assertEquals(OrderStatusEnum::Shipped, $shippedOrder->status);
 
         $deliveredOrder = OrderFactory::new()->delivered()->create();
-        $this->assertEquals('delivered', $deliveredOrder->status);
+        $this->assertEquals(OrderStatusEnum::Delivered, $deliveredOrder->status);
 
         $cancelledOrder = OrderFactory::new()->cancelled()->create();
-        $this->assertEquals('cancelled', $cancelledOrder->status);
+        $this->assertEquals(OrderStatusEnum::Cancelled, $cancelledOrder->status);
     }
 
     /**
@@ -213,7 +213,7 @@ class FactoryTest extends TestCase
     {
         $order = OrderFactory::new()->paid(5000)->create();
 
-        $this->assertEquals('paid', $order->payment_status);
+        $this->assertEquals(PaymentStatusEnum::Paid, $order->payment_status);
         $this->assertEquals(5000.00, $order->payment_amount);
         $this->assertNotNull($order->payment_paid_at);
     }
@@ -294,7 +294,7 @@ class FactoryTest extends TestCase
     {
         $counterparty = CounterpartyFactory::new()->legalEntity()->create();
 
-        $this->assertEquals('legal_entity', $counterparty->type);
+        $this->assertEquals(CounterpartyTypeEnum::LegalEntity, $counterparty->type);
         $this->assertNotNull($counterparty->inn);
         $this->assertNotNull($counterparty->kpp);
         $this->assertEquals(10, strlen($counterparty->inn));
@@ -307,7 +307,7 @@ class FactoryTest extends TestCase
     {
         $counterparty = CounterpartyFactory::new()->individualEntrepreneur()->create();
 
-        $this->assertEquals('individual_entrepreneur', $counterparty->type);
+        $this->assertEquals(CounterpartyTypeEnum::IndividualEntrepreneur, $counterparty->type);
         $this->assertNotNull($counterparty->inn);
         $this->assertNull($counterparty->kpp);
         $this->assertEquals(12, strlen($counterparty->inn));
@@ -320,7 +320,7 @@ class FactoryTest extends TestCase
     {
         $counterparty = CounterpartyFactory::new()->individual()->create();
 
-        $this->assertEquals('individual', $counterparty->type);
+        $this->assertEquals(CounterpartyTypeEnum::Individual, $counterparty->type);
         $this->assertNull($counterparty->ogrn);
     }
 

@@ -39,7 +39,7 @@ class CounterpartyService
 
         $response = $this->connector->get('/counterparties', $query);
 
-        return CounterpartyListData::from($response->json());
+        return CounterpartyListData::from(json_decode($response->getBody()->getContents(), true));
     }
 
     /**
@@ -49,7 +49,7 @@ class CounterpartyService
     {
         $response = $this->connector->get("/counterparties/{$id}");
 
-        return CounterpartyData::from($response->json());
+        return CounterpartyData::from(json_decode($response->getBody()->getContents(), true));
     }
 
     /**
@@ -65,7 +65,7 @@ class CounterpartyService
             $idempotencyKey
         );
 
-        return ImportResultData::from($response->json());
+        return ImportResultData::from(json_decode($response->getBody()->getContents(), true));
     }
 
     /**

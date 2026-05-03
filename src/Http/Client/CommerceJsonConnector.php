@@ -17,6 +17,7 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Exception\GuzzleException;
+use GuzzleHttp\Exception\ServerException;
 use GuzzleHttp\Promise\PromiseInterface;
 use Illuminate\Support\Str;
 use Psr\Http\Message\ResponseInterface;
@@ -47,10 +48,11 @@ class CommerceJsonConnector
         $this->client = new Client([
             'base_uri' => $baseUrl,
             'timeout' => $timeout,
-            'headers' => [
-                'Accept' => 'application/json',
-                'Content-Type' => 'application/json',
-            ],
+            // Headers are now built in buildHeaders() to ensure dynamic headers are included
+            // 'headers' => [
+            //     'Accept' => 'application/json',
+            //     'Content-Type' => 'application/json',
+            // ],
         ]);
     }
 
@@ -203,6 +205,13 @@ class CommerceJsonConnector
                 // Exponential backoff
                 $delay = (2 ** $attempt) * 1000; // 2s, 4s, 8s
                 usleep($delay * 1000);
+            } catch (ServerException $e) { // Catch for 5xx errors
+                if (++$attempt >= $this->retryAttempts) {
+                    throw $e; // Re-throw generic ServerException if retries exhausted
+                }
+                // Exponential backoff
+                $delay = (2 ** $attempt) * 1000;
+                usleep($delay * 1000);
             } catch (ConnectException $e) {
                 if (++$attempt >= $this->retryAttempts) {
                     throw $e;
@@ -249,6 +258,8 @@ class CommerceJsonConnector
     protected function buildHeaders(): array
     {
         $headers = [
+            'Accept' => 'application/json',
+            'Content-Type' => 'application/json',
             'X-Request-ID' => (string) Str::uuid(),
         ];
 

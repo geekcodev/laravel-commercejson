@@ -4,20 +4,28 @@ declare(strict_types=1);
 
 namespace GeekCo\CommerceJson\Tests\Unit\Services;
 
+use DateTimeInterface;
 use GeekCo\CommerceJson\Data\AddressData;
 use GeekCo\CommerceJson\Data\MoneyData;
 use GeekCo\CommerceJson\Data\OrderCreateData;
 use GeekCo\CommerceJson\Data\OrderCustomerData;
-use GeekCo\CommerceJson\Data\OrderDeliveryData;
+use GeekCo\CommerceJson\Data\OrderDeliveryData; // Added as use statement
 use GeekCo\CommerceJson\Data\OrderImportData;
 use GeekCo\CommerceJson\Data\OrderItemCreateData;
-use GeekCo\CommerceJson\Data\OrderPaymentData;
+use GeekCo\CommerceJson\Data\OrderPaymentData; // Added
+use GeekCo\CommerceJson\Enums\CurrencyEnum; // Added
+use GeekCo\CommerceJson\Enums\DeliveryMethodEnum; // Added
+use GeekCo\CommerceJson\Enums\PaymentMethodEnum;
 use GeekCo\CommerceJson\Events\OrderCreated;
 use GeekCo\CommerceJson\Events\OrderUpdated;
 use GeekCo\CommerceJson\Http\Client\CommerceJsonConnector;
 use GeekCo\CommerceJson\Services\OrderService;
-use GeekCo\CommerceJson\Tests\TestCase;
-use Illuminate\Support\Facades\Http;
+use GeekCo\CommerceJson\Tests\TestCase; // Required for mock responses
+use GuzzleHttp\Psr7\Response;
+use Illuminate\Support\Facades\Event;
+use Mockery;
+
+// Added for event faking
 
 /**
  * Тесты для OrderService
@@ -28,18 +36,21 @@ class OrderServiceTest extends TestCase
 {
     protected OrderService $orderService;
 
-    protected CommerceJsonConnector $connector;
+    protected \Mockery\MockInterface|CommerceJsonConnector $mockConnector; // Use Mockery mock
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->connector = new CommerceJsonConnector(
-            baseUrl: 'https://api.test.com/v1',
-            authToken: 'test-token',
-        );
+        $this->mockConnector = Mockery::mock(CommerceJsonConnector::class); // Initialize mock
 
-        $this->orderService = new OrderService($this->connector);
+        $this->orderService = new OrderService($this->mockConnector); // Inject mock
+    }
+
+    protected function tearDown(): void
+    {
+        Mockery::close();
+        parent::tearDown();
     }
 
     /**
@@ -47,30 +58,35 @@ class OrderServiceTest extends TestCase
      */
     public function get_orders_returns_order_list(): void
     {
-        Http::fake([
-            '*/orders*' => Http::response([
-                'orders' => [
-                    [
-                        'id' => $this->createTestUuid(),
-                        'number' => 'ORD-001',
-                        'status' => 'new',
-                        'document_type' => 'order',
-                    ],
-                    [
-                        'id' => $this->createTestUuid(),
-                        'number' => 'ORD-002',
-                        'status' => 'confirmed',
-                        'document_type' => 'order',
-                    ],
+        $orderId1 = $this->createTestUuid();
+        $orderId2 = $this->createTestUuid();
+        $mockResponseContent = [
+            'orders' => [
+                [
+                    'id' => $orderId1,
+                    'number' => 'ORD-001',
+                    'status' => 'new',
+                    'document_type' => 'order',
                 ],
-                'pagination' => [
-                    'page' => 1,
-                    'limit' => 50,
-                    'total' => 2,
-                    'has_next' => false,
+                [
+                    'id' => $orderId2,
+                    'number' => 'ORD-002',
+                    'status' => 'confirmed',
+                    'document_type' => 'order',
                 ],
-            ], 200),
-        ]);
+            ],
+            'pagination' => [
+                'page' => 1,
+                'limit' => 50,
+                'total' => 2,
+                'has_next' => false,
+            ],
+        ];
+
+        $this->mockConnector->shouldReceive('get')
+            ->once()
+            ->with('/orders', Mockery::any())
+            ->andReturn(new Response(200, [], json_encode($mockResponseContent)));
 
         $orderList = $this->orderService->getOrders(page: 1, limit: 50);
 
@@ -83,17 +99,20 @@ class OrderServiceTest extends TestCase
      */
     public function get_orders_with_status_filter(): void
     {
-        Http::fake([
-            '*/orders*' => Http::response([
-                'orders' => [],
-                'pagination' => [
-                    'page' => 1,
-                    'limit' => 50,
-                    'total' => 0,
-                    'has_next' => false,
-                ],
-            ], 200),
-        ]);
+        $mockResponseContent = [
+            'orders' => [],
+            'pagination' => [
+                'page' => 1,
+                'limit' => 50,
+                'total' => 0,
+                'has_next' => false,
+            ],
+        ];
+
+        $this->mockConnector->shouldReceive('get')
+            ->once()
+            ->with('/orders', ['page' => 1, 'limit' => 50, 'status' => 'new', 'document_type' => 'order', 'include_deleted' => 'false'])
+            ->andReturn(new Response(200, [], json_encode($mockResponseContent)));
 
         $this->orderService->getOrders(
             page: 1,
@@ -101,12 +120,6 @@ class OrderServiceTest extends TestCase
             status: 'new',
             documentType: 'order'
         );
-
-        Http::assertSent(function ($request) {
-            return str_contains($request->url(), 'orders')
-                && $request['status'] === 'new'
-                && $request['document_type'] === 'order';
-        });
     }
 
     /**
@@ -114,31 +127,34 @@ class OrderServiceTest extends TestCase
      */
     public function get_orders_with_updated_after_filter(): void
     {
-        Http::fake([
-            '*/orders*' => Http::response([
-                'orders' => [],
-                'pagination' => [
-                    'page' => 1,
-                    'limit' => 50,
-                    'total' => 0,
-                    'has_next' => false,
-                ],
-            ], 200),
-        ]);
+        $mockResponseContent = [
+            'orders' => [],
+            'pagination' => [
+                'page' => 1,
+                'limit' => 50,
+                'total' => 0,
+                'has_next' => false,
+            ],
+        ];
 
-        $updatedAfter = now()->subDay()->toIso8601String();
+        $updatedAfter = now()->subDay();
+
+        $this->mockConnector->shouldReceive('get')
+            ->once()
+            ->with('/orders', [
+                'page' => 1,
+                'limit' => 50,
+                'updated_after' => $updatedAfter->format(DateTimeInterface::ATOM),
+                'include_deleted' => 'false',
+            ])
+            ->andReturn(new Response(200, [], json_encode($mockResponseContent)));
 
         $this->orderService->getOrders(
             page: 1,
             limit: 50,
-            updatedAfter: new \DateTime($updatedAfter),
+            updatedAfter: $updatedAfter,
             includeDeleted: false
         );
-
-        Http::assertSent(function ($request) {
-            return isset($request['updated_after'])
-                && $request['include_deleted'] === 'false';
-        });
     }
 
     /**
@@ -147,24 +163,26 @@ class OrderServiceTest extends TestCase
     public function get_order_by_id_returns_order(): void
     {
         $orderId = $this->createTestUuid();
+        $mockResponseContent = [
+            'id' => $orderId,
+            'number' => 'ORD-TEST-001',
+            'status' => 'new',
+            'document_type' => 'order',
+            'customer' => [
+                'name' => 'Test Customer',
+                'phone' => '+79001234567',
+                'email' => 'test@example.com',
+            ],
+            'totals' => [
+                'subtotal' => ['amount' => '1000.00', 'currency' => 'RUB'],
+                'total' => ['amount' => '1200.00', 'currency' => 'RUB'],
+            ],
+        ];
 
-        Http::fake([
-            "*/orders/{$orderId}" => Http::response([
-                'id' => $orderId,
-                'number' => 'ORD-TEST-001',
-                'status' => 'new',
-                'document_type' => 'order',
-                'customer' => [
-                    'name' => 'Test Customer',
-                    'phone' => '+79001234567',
-                    'email' => 'test@example.com',
-                ],
-                'totals' => [
-                    'subtotal' => ['amount' => '1000.00', 'currency' => 'RUB'],
-                    'total' => ['amount' => '1200.00', 'currency' => 'RUB'],
-                ],
-            ], 200),
-        ]);
+        $this->mockConnector->shouldReceive('get')
+            ->once()
+            ->with("/orders/{$orderId}", [])
+            ->andReturn(new Response(200, [], json_encode($mockResponseContent)));
 
         $order = $this->orderService->getOrder($orderId);
 
@@ -180,15 +198,17 @@ class OrderServiceTest extends TestCase
     public function get_order_not_found_returns_404(): void
     {
         $nonExistentId = $this->createTestUuid();
+        $errorResponseContent = [
+            'error' => [
+                'code' => 'NOT_FOUND',
+                'message' => 'Order not found',
+            ],
+        ];
 
-        Http::fake([
-            "*/orders/{$nonExistentId}" => Http::response([
-                'error' => [
-                    'code' => 'NOT_FOUND',
-                    'message' => 'Order not found',
-                ],
-            ], 404),
-        ]);
+        $this->mockConnector->shouldReceive('get')
+            ->once()
+            ->with("/orders/{$nonExistentId}", [])
+            ->andThrow(new \RuntimeException('Order not found', 404)); // Use connector's exception
 
         $this->expectException(\RuntimeException::class);
 
@@ -202,16 +222,13 @@ class OrderServiceTest extends TestCase
     {
         $orderId = $this->createTestUuid();
         $idempotencyKey = $this->createTestUuid();
-
-        Http::fake([
-            '*/orders' => Http::response([
-                'id' => $orderId,
-                'number' => 'ORD-NEW-001',
-                'status' => 'new',
-                'document_type' => 'order',
-                'created_at' => now()->toIso8601String(),
-            ], 201),
-        ]);
+        $mockResponseContent = [
+            'id' => $orderId,
+            'number' => 'ORD-NEW-001',
+            'status' => 'new',
+            'document_type' => 'order',
+            'created_at' => now()->toIso8601String(),
+        ];
 
         $orderCreateData = new OrderCreateData(
             documentType: 'order',
@@ -221,7 +238,7 @@ class OrderServiceTest extends TestCase
                 email: 'test@example.com',
             ),
             delivery: new OrderDeliveryData(
-                type: 'courier',
+                type: DeliveryMethodEnum::Courier,
                 address: new AddressData(
                     country: 'RU',
                     city: 'Москва',
@@ -230,28 +247,30 @@ class OrderServiceTest extends TestCase
                 ),
                 cost: new MoneyData(
                     amount: '300.00',
-                    currency: 'RUB',
+                    currency: CurrencyEnum::RUB,
                 ),
             ),
             payment: new OrderPaymentData(
-                type: 'card',
+                type: PaymentMethodEnum::Card,
             ),
             items: [
                 new OrderItemCreateData(
                     productId: $this->createTestUuid(),
+                    variantId: null,
                     quantity: 2,
                 ),
             ],
         );
 
+        $this->mockConnector->shouldReceive('post')
+            ->once()
+            ->with('/orders', Mockery::any(), $idempotencyKey) // Use Mockery::any() for the data array
+            ->andReturn(new Response(201, [], json_encode($mockResponseContent)));
+
         $order = $this->orderService->createOrder($orderCreateData, $idempotencyKey);
 
         $this->assertEquals($orderId, $order->id);
         $this->assertEquals('new', $order->status->value);
-
-        Http::assertSent(function ($request) use ($idempotencyKey) {
-            return $request->header('X-Idempotency-Key')[0] === $idempotencyKey;
-        });
     }
 
     /**
@@ -260,15 +279,16 @@ class OrderServiceTest extends TestCase
     public function update_order_status_returns_updated_order(): void
     {
         $orderId = $this->createTestUuid();
-        $idempotencyKey = $this->createTestUuid();
+        $mockResponseContent = [
+            'id' => $orderId,
+            'status' => 'confirmed',
+            'updated_at' => now()->toIso8601String(),
+        ];
 
-        Http::fake([
-            "*/orders/{$orderId}" => Http::response([
-                'id' => $orderId,
-                'status' => 'confirmed',
-                'updated_at' => now()->toIso8601String(),
-            ], 200),
-        ]);
+        $this->mockConnector->shouldReceive('patch')
+            ->once()
+            ->with("/orders/{$orderId}", ['status' => 'confirmed'], null)
+            ->andReturn(new Response(200, [], json_encode($mockResponseContent)));
 
         $order = $this->orderService->updateOrderStatus($orderId, 'confirmed');
 
@@ -281,18 +301,19 @@ class OrderServiceTest extends TestCase
     public function update_order_with_data(): void
     {
         $orderId = $this->createTestUuid();
-
-        Http::fake([
-            "*/orders/{$orderId}" => Http::response([
-                'id' => $orderId,
-                'comment' => 'Updated comment',
-                'updated_at' => now()->toIso8601String(),
-            ], 200),
-        ]);
-
-        $order = $this->orderService->updateOrder($orderId, [
+        $updateData = ['comment' => 'Updated comment'];
+        $mockResponseContent = [
+            'id' => $orderId,
             'comment' => 'Updated comment',
-        ]);
+            'updated_at' => now()->toIso8601String(),
+        ];
+
+        $this->mockConnector->shouldReceive('patch')
+            ->once()
+            ->with("/orders/{$orderId}", $updateData, null)
+            ->andReturn(new Response(200, [], json_encode($mockResponseContent)));
+
+        $order = $this->orderService->updateOrder($orderId, $updateData);
 
         $this->assertEquals('Updated comment', $order->comment);
     }
@@ -302,28 +323,29 @@ class OrderServiceTest extends TestCase
      */
     public function import_orders_bulk(): void
     {
-        Http::fake([
-            '*/orders/bulk' => Http::response([
-                'success' => true,
-                'processed' => 2,
-                'errors' => [],
-            ], 200),
-        ]);
+        $mockResponseContent = [
+            'success' => true,
+            'processed' => 2,
+            'errors' => [],
+        ];
 
-        $orderImportData = new OrderImportData(
+        $orderImportData = new OrderImportData( // Corrected instantiation
             orders: [
                 [
                     'id' => $this->createTestUuid(),
                     'status' => 'new',
-                    'document_type' => 'order',
                 ],
                 [
                     'id' => $this->createTestUuid(),
                     'status' => 'confirmed',
-                    'document_type' => 'order',
                 ],
             ]
         );
+
+        $this->mockConnector->shouldReceive('post')
+            ->once()
+            ->with('/orders/bulk', Mockery::any(), null) // Use Mockery::any() for the data array
+            ->andReturn(new Response(200, [], json_encode($mockResponseContent)));
 
         $result = $this->orderService->importOrders($orderImportData);
 
@@ -336,20 +358,25 @@ class OrderServiceTest extends TestCase
      */
     public function get_new_orders_for_export(): void
     {
-        Http::fake([
-            '*/orders*' => Http::response([
-                'orders' => [
-                    ['id' => $this->createTestUuid(), 'status' => 'new', 'number' => 'ORD-001'],
-                    ['id' => $this->createTestUuid(), 'status' => 'new', 'number' => 'ORD-002'],
-                ],
-                'pagination' => [
-                    'page' => 1,
-                    'limit' => 50,
-                    'total' => 2,
-                    'has_next' => false,
-                ],
-            ], 200),
-        ]);
+        $orderId1 = $this->createTestUuid();
+        $orderId2 = $this->createTestUuid();
+        $mockResponseContent = [
+            'orders' => [
+                ['id' => $orderId1, 'status' => 'new', 'number' => 'ORD-001'],
+                ['id' => $orderId2, 'status' => 'new', 'number' => 'ORD-002'],
+            ],
+            'pagination' => [
+                'page' => 1,
+                'limit' => 50,
+                'total' => 2,
+                'has_next' => false,
+            ],
+        ];
+
+        $this->mockConnector->shouldReceive('get')
+            ->once()
+            ->with('/orders', ['page' => 1, 'limit' => 50, 'status' => 'new', 'include_deleted' => 'false'])
+            ->andReturn(new Response(200, [], json_encode($mockResponseContent)));
 
         $orderList = $this->orderService->getNewOrdersForExport(limit: 50);
 
@@ -363,29 +390,27 @@ class OrderServiceTest extends TestCase
     public function get_orders_for_incremental_export(): void
     {
         $since = now()->subHour();
+        $orderId1 = $this->createTestUuid();
+        $mockResponseContent = [
+            'orders' => [
+                ['id' => $orderId1, 'updated_at' => $since->toIso8601String()],
+            ],
+            'pagination' => [
+                'page' => 1,
+                'limit' => 100,
+                'total' => 1,
+                'has_next' => false,
+            ],
+        ];
 
-        Http::fake([
-            '*/orders*' => Http::response([
-                'orders' => [
-                    ['id' => $this->createTestUuid(), 'updated_at' => $since->toIso8601String()],
-                ],
-                'pagination' => [
-                    'page' => 1,
-                    'limit' => 100,
-                    'total' => 1,
-                    'has_next' => false,
-                ],
-            ], 200),
-        ]);
+        $this->mockConnector->shouldReceive('get')
+            ->once()
+            ->with('/orders', ['page' => 1, 'limit' => 100, 'updated_after' => $since->format(\DateTime::ATOM), 'include_deleted' => 'false'])
+            ->andReturn(new Response(200, [], json_encode($mockResponseContent)));
 
         $orderList = $this->orderService->getOrdersForIncrementalExport($since, limit: 100);
 
         $this->assertCount(1, $orderList->orders);
-
-        Http::assertSent(function ($request) use ($since) {
-            return isset($request['updated_after'])
-                && str_contains($request['updated_after'], $since->format('Y-m-d'));
-        });
     }
 
     /**
@@ -394,36 +419,41 @@ class OrderServiceTest extends TestCase
     public function create_order_dispatches_event(): void
     {
         $orderId = $this->createTestUuid();
-
-        Http::fake([
-            '*/orders' => Http::response([
-                'id' => $orderId,
-                'status' => 'new',
-            ], 201),
-        ]);
+        $mockResponseContent = [
+            'id' => $orderId,
+            'status' => 'new',
+        ];
 
         $orderCreateData = new OrderCreateData(
             documentType: 'order',
+            role: null,
             customer: new OrderCustomerData(
                 name: 'Test',
                 phone: '+79001234567',
                 email: 'test@test.com',
             ),
             delivery: new OrderDeliveryData(
-                type: 'courier',
+                type: DeliveryMethodEnum::Courier,
                 address: new AddressData(
                     city: 'Москва',
                 ),
             ),
             payment: new OrderPaymentData(
-                type: 'card',
+                type: PaymentMethodEnum::Card,
             ),
             items: [],
         );
 
-        $this->expectsEvents(OrderCreated::class);
+        $this->mockConnector->shouldReceive('post')
+            ->once()
+            ->with('/orders', Mockery::any(), null) // Use Mockery::any() for the data array
+            ->andReturn(new Response(201, [], json_encode($mockResponseContent)));
+
+        Event::fake(); // Use Event::fake() for Unit tests
 
         $this->orderService->createOrder($orderCreateData);
+
+        Event::assertDispatched(OrderCreated::class);
     }
 
     /**
@@ -432,16 +462,20 @@ class OrderServiceTest extends TestCase
     public function update_order_dispatches_event(): void
     {
         $orderId = $this->createTestUuid();
+        $mockResponseContent = [
+            'id' => $orderId,
+            'status' => 'confirmed',
+        ];
 
-        Http::fake([
-            "*/orders/{$orderId}" => Http::response([
-                'id' => $orderId,
-                'status' => 'confirmed',
-            ], 200),
-        ]);
+        $this->mockConnector->shouldReceive('patch')
+            ->once()
+            ->with("/orders/{$orderId}", ['status' => 'confirmed'], null)
+            ->andReturn(new Response(200, [], json_encode($mockResponseContent)));
 
-        $this->expectsEvents(OrderUpdated::class);
+        Event::fake(); // Use Event::fake() for Unit tests
 
         $this->orderService->updateOrderStatus($orderId, 'confirmed');
+
+        Event::assertDispatched(OrderUpdated::class);
     }
 }

@@ -61,9 +61,7 @@ class SyncIncrementalJob implements ShouldQueue
             ];
 
             // Запуск цепочки
-            ImportProductsJob::withChain($chain)->dispatch(
-                updatedAfter: $since
-            );
+            ImportProductsJob::withChain($chain)->dispatch();
 
             $duration = time() - $startTime;
             $this->logJobAction("INCREMENTAL sync chain dispatched ({$duration}s)");

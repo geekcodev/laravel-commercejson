@@ -44,7 +44,7 @@ class OrderService
 
         $response = $this->connector->get('/orders', $query);
 
-        return OrderListData::from($response->json());
+        return OrderListData::from(json_decode($response->getBody()->getContents(), true));
     }
 
     /**
@@ -54,7 +54,7 @@ class OrderService
     {
         $response = $this->connector->get("/orders/{$id}");
 
-        return OrderData::from($response->json());
+        return OrderData::from(json_decode($response->getBody()->getContents(), true));
     }
 
     /**
@@ -68,10 +68,12 @@ class OrderService
             $idempotencyKey
         );
 
-        // Dispatch event
-        event(new OrderCreated($response->json('id')));
+        $responseData = json_decode($response->getBody()->getContents(), true);
 
-        return OrderData::from($response->json());
+        // Dispatch event
+        event(new OrderCreated($responseData['id']));
+
+        return OrderData::from($responseData);
     }
 
     /**
@@ -90,7 +92,7 @@ class OrderService
         // Dispatch event
         event(new OrderUpdated($id));
 
-        return OrderData::from($response->json());
+        return OrderData::from(json_decode($response->getBody()->getContents(), true));
     }
 
     /**
@@ -104,7 +106,7 @@ class OrderService
             $idempotencyKey
         );
 
-        return ImportResultData::from($response->json());
+        return ImportResultData::from(json_decode($response->getBody()->getContents(), true));
     }
 
     /**

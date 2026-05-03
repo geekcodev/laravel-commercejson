@@ -40,7 +40,7 @@ class OfferService
 
         $response = $this->connector->get('/offers', $query);
 
-        return OfferListData::from($response->json());
+        return OfferListData::from(json_decode($response->getBody()->getContents(), true));
     }
 
     /**
@@ -54,7 +54,7 @@ class OfferService
             $idempotencyKey
         );
 
-        return ImportResultData::from($response->json());
+        return ImportResultData::from(json_decode($response->getBody()->getContents(), true));
     }
 
     /**
@@ -65,8 +65,9 @@ class OfferService
     public function getPriceTypes(): array
     {
         $response = $this->connector->get('/offers/price-types');
+        $responseData = json_decode($response->getBody()->getContents(), true);
 
-        return $response->json('price_types');
+        return $responseData['price_types'];
     }
 
     /**
@@ -77,8 +78,9 @@ class OfferService
     public function getWarehouses(): array
     {
         $response = $this->connector->get('/warehouses');
+        $responseData = json_decode($response->getBody()->getContents(), true);
 
-        return $response->json('warehouses');
+        return $responseData['warehouses'];
     }
 
     /**
@@ -116,7 +118,9 @@ class OfferService
                 'product_id' => $offerData->productId,
                 'variant_id' => $offerData->variantId,
             ],
-            []
+            [
+                'updated_at' => now(),
+            ]
         );
     }
 }

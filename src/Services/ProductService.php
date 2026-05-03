@@ -15,6 +15,7 @@ use GeekCo\CommerceJson\Models\Offer;
 use GeekCo\CommerceJson\Models\Product;
 use GeekCo\CommerceJson\Support\Mappers\ProductMapper;
 use Illuminate\Support\Collection;
+use DateTimeInterface;
 
 /**
  * Сервис для работы с товарами
@@ -48,7 +49,7 @@ class ProductService
 
         $response = $this->connector->get('/catalog/products', $query);
 
-        return ProductListData::from($response->json());
+        return ProductListData::from(json_decode($response->getBody()->getContents(), true));
     }
 
     /**
@@ -58,7 +59,7 @@ class ProductService
     {
         $response = $this->connector->get("/catalog/products/{$id}");
 
-        return ProductData::from($response->json());
+        return ProductData::from(json_decode($response->getBody()->getContents(), true));
     }
 
     /**
@@ -80,7 +81,7 @@ class ProductService
             $idempotencyKey
         );
 
-        return ImportResultData::from($response->json());
+        return ImportResultData::from(json_decode($response->getBody()->getContents(), true));
     }
 
     /**
@@ -93,7 +94,7 @@ class ProductService
         // Dispatch event
         event(new ProductDeactivated($id));
 
-        return ProductData::from($response->json());
+        return ProductData::from(json_decode($response->getBody()->getContents(), true));
     }
 
     /**
@@ -150,12 +151,12 @@ class ProductService
         $query = array_filter([
             'page' => $page,
             'limit' => $limit,
-            'updated_after' => $updatedAfter?->format(\DateTime::ATOM),
+            'updated_after' => $updatedAfter?->format(DateTimeInterface::ATOM),
         ]);
 
         $response = $this->connector->get('/offers', $query);
 
-        return OfferListData::from($response->json());
+        return OfferListData::from(json_decode($response->getBody()->getContents(), true));
     }
 
     /**

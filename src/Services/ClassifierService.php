@@ -33,7 +33,7 @@ class ClassifierService
 
         $response = $this->connector->get('/catalog/classifier', $query);
 
-        return ClassifierData::from($response->json());
+        return ClassifierData::from(json_decode($response->getBody()->getContents(), true));
     }
 
     /**
@@ -50,7 +50,7 @@ class ClassifierService
         // Dispatch event
         event(new ClassifierImported);
 
-        return ImportResultData::from($response->json());
+        return ImportResultData::from(json_decode($response->getBody()->getContents(), true));
     }
 
     /**
