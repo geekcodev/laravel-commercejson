@@ -4,20 +4,42 @@ declare(strict_types=1);
 
 namespace GeekCo\CommerceJson\Services;
 
+use DateTime;
+use DateTimeInterface;
+use GeekCo\CommerceJson\Bus\CommandBusInterface;
+use GeekCo\CommerceJson\Commands\UpsertCounterpartyCommand;
 use GeekCo\CommerceJson\Data\CounterpartyData;
 use GeekCo\CommerceJson\Data\CounterpartyListData;
 use GeekCo\CommerceJson\Data\ImportResultData;
-use GeekCo\CommerceJson\Http\Client\CommerceJsonConnector;
+use GeekCo\CommerceJson\Http\Client\HttpClientInterface;
 use GeekCo\CommerceJson\Models\Counterparty;
 
 /**
  * Сервис для работы с контрагентами
  */
-class CounterpartyService
+class CounterpartyService implements ServiceInterface
 {
     public function __construct(
-        protected CommerceJsonConnector $connector
+        protected HttpClientInterface $http,
+        protected CommandBusInterface $commandBus
     ) {}
+
+    public function setHttpClient(HttpClientInterface $http): static
+    {
+        $this->http = $http;
+
+        return $this;
+    }
+
+    public function getHttpClient(): HttpClientInterface
+    {
+        return $this->http;
+    }
+
+    public function getCommandBus(): CommandBusInterface
+    {
+        return $this->commandBus;
+    }
 
     /**
      * Получить список контрагентов с пагинацией
@@ -26,20 +48,20 @@ class CounterpartyService
         int $page = 1,
         int $limit = 100,
         ?string $type = null,
-        ?\DateTime $updatedAfter = null,
+        ?DateTime $updatedAfter = null,
         bool $includeDeleted = false
     ): CounterpartyListData {
         $query = array_filter([
             'page' => $page,
             'limit' => $limit,
             'type' => $type,
-            'updated_after' => $updatedAfter?->format(\DateTime::ATOM),
+            'updated_after' => $updatedAfter?->format(DateTimeInterface::ATOM),
             'include_deleted' => $includeDeleted ? 'true' : 'false',
         ]);
 
-        $response = $this->connector->get('/counterparties', $query);
+        $response = $this->http->get('/counterparties', $query);
 
-        return CounterpartyListData::from(json_decode($response->getBody()->getContents(), true));
+        return CounterpartyListData::from($response->data);
     }
 
     /**
@@ -47,9 +69,9 @@ class CounterpartyService
      */
     public function getCounterparty(string $id): CounterpartyData
     {
-        $response = $this->connector->get("/counterparties/{$id}");
+        $response = $this->http->get("/counterparties/{$id}");
 
-        return CounterpartyData::from(json_decode($response->getBody()->getContents(), true));
+        return CounterpartyData::from($response->data);
     }
 
     /**
@@ -59,13 +81,13 @@ class CounterpartyService
      */
     public function importCounterparties(array $counterparties, ?string $idempotencyKey = null): ImportResultData
     {
-        $response = $this->connector->post(
+        $response = $this->http->post(
             '/counterparties',
             ['counterparties' => $counterparties],
             $idempotencyKey
         );
 
-        return ImportResultData::from(json_decode($response->getBody()->getContents(), true));
+        return ImportResultData::from($response->data);
     }
 
     /**
@@ -73,28 +95,8 @@ class CounterpartyService
      */
     public function syncCounterparty(CounterpartyData $counterpartyData): Counterparty
     {
-        return Counterparty::updateOrCreate(
-            ['id' => $counterpartyData->id],
-            [
-                'external_id' => $counterpartyData->externalId ?? null,
-                'type' => $counterpartyData->type->value,
-                'name' => $counterpartyData->name,
-                'short_name' => $counterpartyData->shortName ?? null,
-                'inn' => $counterpartyData->inn ?? null,
-                'kpp' => $counterpartyData->kpp ?? null,
-                'ogrn' => $counterpartyData->ogrn ?? null,
-                'okved' => $counterpartyData->okved ?? null,
-                'okpo' => $counterpartyData->okpo ?? null,
-                'okopf' => $counterpartyData->okopf ?? null,
-                'okfs' => $counterpartyData->okfs ?? null,
-                'registration_date' => $counterpartyData->registrationDate ?? null,
-                'legal_address_full' => $counterpartyData->legalAddress->full ?? null,
-                'actual_address_full' => $counterpartyData->actualAddress->full ?? null,
-                'price_type_id' => $counterpartyData->priceTypeId ?? null,
-                'credit_limit_amount' => $counterpartyData->creditLimit?->amount ?? null,
-                'credit_limit_currency' => $counterpartyData->creditLimit?->currency ?? null,
-                'is_active' => $counterpartyData->isActive ?? true,
-            ]
-        );
+        $command = new UpsertCounterpartyCommand($counterpartyData);
+
+        return $this->commandBus->dispatch($command);
     }
 }

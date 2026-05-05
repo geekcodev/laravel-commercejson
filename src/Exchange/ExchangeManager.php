@@ -12,7 +12,7 @@ use GeekCo\CommerceJson\Exchange\Export\OrderExporter;
 use GeekCo\CommerceJson\Exchange\Import\ClassifierImporter;
 use GeekCo\CommerceJson\Exchange\Import\OrderImporter;
 use GeekCo\CommerceJson\Exchange\Import\ProductImporter;
-use GeekCo\CommerceJson\Http\Client\CommerceJsonConnector;
+use GeekCo\CommerceJson\Http\Client\HttpClientInterface;
 use GeekCo\CommerceJson\Jobs\Export\ExportOrdersJob;
 use GeekCo\CommerceJson\Jobs\Import\ImportClassifierJob;
 use GeekCo\CommerceJson\Jobs\Import\ImportOffersJob;
@@ -29,7 +29,7 @@ use GeekCo\CommerceJson\Jobs\Sync\SyncIncrementalJob;
 class ExchangeManager
 {
     public function __construct(
-        protected CommerceJsonConnector $connector,
+        protected HttpClientInterface $http,
         protected ProductImporter $productImporter,
         protected OrderImporter $orderImporter,
         protected ClassifierImporter $classifierImporter,
@@ -41,13 +41,13 @@ class ExchangeManager
      */
     public function checkConnection(): array
     {
-        $handshake = $this->connector->handshake();
+        $response = $this->http->get('/handshake');
 
         return [
             'connected' => true,
-            'version' => $handshake->version,
-            'server_time' => $handshake->serverTime,
-            'capabilities' => $handshake->capabilities,
+            'version' => $response->data['version'] ?? 'unknown',
+            'server_time' => $response->data['server_time'] ?? null,
+            'capabilities' => $response->data['capabilities'] ?? [],
         ];
     }
 
@@ -96,7 +96,7 @@ class ExchangeManager
         try {
             if ($useQueue) {
                 // Асинхронная синхронизация через очередь
-                SyncIncrementalJob::dispatch($since->format(\DateTime::ATOM));
+                SyncIncrementalJob::dispatch($since->format(DateTimeInterface::ATOM));
             } else {
                 // Синхронная синхронизация
                 $this->syncProducts($since);

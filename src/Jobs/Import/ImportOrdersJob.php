@@ -6,15 +6,12 @@ namespace GeekCo\CommerceJson\Jobs\Import;
 
 use GeekCo\CommerceJson\Events\OrderImported;
 use GeekCo\CommerceJson\Jobs\Concerns\InteractsWithCommerceJson;
-use GeekCo\CommerceJson\Models\Order;
-use GeekCo\CommerceJson\Models\OrderItem;
 use GeekCo\CommerceJson\Services\OrderService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\DB;
 
 /**
  * Job: Импорт страницы заказов
@@ -70,50 +67,17 @@ class ImportOrdersJob implements ShouldQueue
 
         $stats = ['created' => 0, 'updated' => 0, 'failed' => 0];
 
-        // Синхронизация с БД
+        // Синхронизация с БД через Service (использует CommandBus внутри)
         foreach ($orderList->orders as $orderData) {
             try {
-                DB::transaction(function () use ($orderData, $stats) {
-                    // Синхронизация заказа
-                    $order = Order::updateOrCreate(
-                        ['id' => $orderData->id],
-                        [
-                            'number' => $orderData->number,
-                            'external_id' => $orderData->externalId,
-                            'status' => $orderData->status->value,
-                            'document_type' => $orderData->documentType?->value ?? 'order',
-                            'counterparty_id' => $orderData->counterpartyId,
-                            'warehouse_id' => $orderData->warehouseId,
-                            'customer_name' => $orderData->customer?->name,
-                            'customer_email' => $orderData->customer?->email,
-                            'totals_total_amount' => $orderData->totals->total->amount,
-                            'totals_total_currency' => $orderData->totals->total->currency,
-                            'deleted_at' => $orderData->deletedAt,
-                        ]
-                    );
+                // Синхронизация заказа через CommandBus
+                $order = $orderService->syncOrder($orderData);
 
-                    if ($order->wasRecentlyCreated) {
-                        $stats['created']++;
-                    } else {
-                        $stats['updated']++;
-                    }
-
-                    // Синхронизация позиций (упрощённо)
-                    if (! empty($orderData->items)) {
-                        foreach ($orderData->items as $itemData) {
-                            OrderItem::updateOrCreate(
-                                ['id' => $itemData->id],
-                                [
-                                    'order_id' => $order->id,
-                                    'product_id' => $itemData->productId,
-                                    'quantity' => $itemData->quantity,
-                                    'price_amount' => $itemData->price->amount,
-                                    'total_amount' => $itemData->total->amount,
-                                ]
-                            );
-                        }
-                    }
-                });
+                if ($order->wasRecentlyCreated) {
+                    $stats['created']++;
+                } else {
+                    $stats['updated']++;
+                }
 
                 // Dispatch event для каждого заказа
                 event(new OrderImported(

@@ -5,22 +5,44 @@ declare(strict_types=1);
 namespace GeekCo\CommerceJson\Services;
 
 use DateTimeInterface;
+use GeekCo\CommerceJson\Bus\CommandBusInterface;
+use GeekCo\CommerceJson\Commands\UpsertCategoryCommand;
+use GeekCo\CommerceJson\Commands\UpsertPriceTypeCommand;
+use GeekCo\CommerceJson\Commands\UpsertPropertyDefinitionCommand;
+use GeekCo\CommerceJson\Data\CategoryData;
 use GeekCo\CommerceJson\Data\ClassifierData;
 use GeekCo\CommerceJson\Data\ImportResultData;
+use GeekCo\CommerceJson\Data\PriceTypeData;
+use GeekCo\CommerceJson\Data\PropertyDefinitionData;
 use GeekCo\CommerceJson\Events\ClassifierImported;
-use GeekCo\CommerceJson\Http\Client\CommerceJsonConnector;
-use GeekCo\CommerceJson\Models\Category;
-use GeekCo\CommerceJson\Models\PriceType;
-use GeekCo\CommerceJson\Models\PropertyDefinition;
+use GeekCo\CommerceJson\Http\Client\HttpClientInterface;
 
 /**
  * Сервис для работы с классификатором (категории, свойства, типы цен)
  */
-class ClassifierService
+class ClassifierService implements ServiceInterface
 {
     public function __construct(
-        protected CommerceJsonConnector $connector
+        protected HttpClientInterface $http,
+        protected CommandBusInterface $commandBus
     ) {}
+
+    public function setHttpClient(HttpClientInterface $http): static
+    {
+        $this->http = $http;
+
+        return $this;
+    }
+
+    public function getHttpClient(): HttpClientInterface
+    {
+        return $this->http;
+    }
+
+    public function getCommandBus(): CommandBusInterface
+    {
+        return $this->commandBus;
+    }
 
     /**
      * Получить классификатор
@@ -31,9 +53,9 @@ class ClassifierService
             ? ['updated_after' => $updatedAfter->format(DateTimeInterface::ATOM)]
             : [];
 
-        $response = $this->connector->get('/catalog/classifier', $query);
+        $response = $this->http->get('/catalog/classifier', $query);
 
-        return ClassifierData::from(json_decode($response->getBody()->getContents(), true));
+        return ClassifierData::from($response->data);
     }
 
     /**
@@ -41,7 +63,7 @@ class ClassifierService
      */
     public function importClassifier(ClassifierData $classifier, ?string $idempotencyKey = null): ImportResultData
     {
-        $response = $this->connector->post(
+        $response = $this->http->post(
             '/catalog/classifier',
             $classifier->toArray(),
             $idempotencyKey
@@ -50,7 +72,7 @@ class ClassifierService
         // Dispatch event
         event(new ClassifierImported);
 
-        return ImportResultData::from(json_decode($response->getBody()->getContents(), true));
+        return ImportResultData::from($response->data);
     }
 
     /**
@@ -64,20 +86,8 @@ class ClassifierService
         $count = 0;
 
         foreach ($categories as $categoryData) {
-            Category::updateOrCreate(
-                ['id' => $categoryData['id']],
-                [
-                    'parent_id' => $categoryData['parent_id'] ?? null,
-                    'name' => $categoryData['name'],
-                    'code' => $categoryData['code'] ?? null,
-                    'sort' => $categoryData['sort'] ?? 0,
-                    'is_active' => $categoryData['is_active'] ?? true,
-                    'image_url' => $categoryData['image_url'] ?? null,
-                    'seo_title' => $categoryData['seo']['title'] ?? null,
-                    'seo_description' => $categoryData['seo']['description'] ?? null,
-                    'seo_keywords' => $categoryData['seo']['keywords'] ?? null,
-                ]
-            );
+            $command = new UpsertCategoryCommand(CategoryData::from($categoryData));
+            $this->commandBus->dispatch($command);
 
             $count++;
 
@@ -101,23 +111,8 @@ class ClassifierService
         $count = 0;
 
         foreach ($properties as $propertyData) {
-            PropertyDefinition::updateOrCreate(
-                ['id' => $propertyData['id']],
-                [
-                    'name' => $propertyData['name'],
-                    'code' => $propertyData['code'] ?? null,
-                    'type' => $propertyData['type'],
-                    'unit' => $propertyData['unit'] ?? null,
-                    'is_filterable' => $propertyData['is_filterable'] ?? false,
-                    'is_required' => $propertyData['is_required'] ?? false,
-                    'use_for_catalog' => $propertyData['use_for_catalog'] ?? true,
-                    'use_for_offers' => $propertyData['use_for_offers'] ?? false,
-                    'use_for_documents' => $propertyData['use_for_documents'] ?? false,
-                    'enum_values' => $propertyData['enum_values'] ?? null,
-                    'applies_to_all' => $propertyData['applies_to_all'] ?? false,
-                    'category_ids' => $propertyData['category_ids'] ?? null,
-                ]
-            );
+            $command = new UpsertPropertyDefinitionCommand(PropertyDefinitionData::from($propertyData));
+            $this->commandBus->dispatch($command);
 
             $count++;
         }
@@ -136,15 +131,8 @@ class ClassifierService
         $count = 0;
 
         foreach ($priceTypes as $priceTypeData) {
-            PriceType::updateOrCreate(
-                ['id' => $priceTypeData['id']],
-                [
-                    'name' => $priceTypeData['name'],
-                    'currency' => $priceTypeData['currency'] ?? 'RUB',
-                    'description' => $priceTypeData['description'] ?? null,
-                    'is_default' => $priceTypeData['is_default'] ?? false,
-                ]
-            );
+            $command = new UpsertPriceTypeCommand(PriceTypeData::from($priceTypeData));
+            $this->commandBus->dispatch($command);
 
             $count++;
         }

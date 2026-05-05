@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace GeekCo\CommerceJson\Services;
 
+use DateTime;
+use DateTimeInterface;
+use GeekCo\CommerceJson\Bus\CommandBusInterface;
+use GeekCo\CommerceJson\Commands\UpsertOrderCommand;
 use GeekCo\CommerceJson\Data\ImportResultData;
 use GeekCo\CommerceJson\Data\OrderCreateData;
 use GeekCo\CommerceJson\Data\OrderData;
@@ -11,16 +15,44 @@ use GeekCo\CommerceJson\Data\OrderImportData;
 use GeekCo\CommerceJson\Data\OrderListData;
 use GeekCo\CommerceJson\Events\OrderCreated;
 use GeekCo\CommerceJson\Events\OrderUpdated;
-use GeekCo\CommerceJson\Http\Client\CommerceJsonConnector;
+use GeekCo\CommerceJson\Http\Client\HttpClientInterface;
+use GeekCo\CommerceJson\Models\Order;
 
 /**
  * Сервис для работы с заказами
  */
-class OrderService
+class OrderService implements ServiceInterface
 {
     public function __construct(
-        protected CommerceJsonConnector $connector
+        protected HttpClientInterface $http,
+        protected CommandBusInterface $commandBus
     ) {}
+
+    /**
+     * {@inheritDoc}
+     */
+    public function setHttpClient(HttpClientInterface $http): static
+    {
+        $this->http = $http;
+
+        return $this;
+    }
+
+    /**
+     * Получить HTTP клиент
+     */
+    public function getHttpClient(): HttpClientInterface
+    {
+        return $this->http;
+    }
+
+    /**
+     * Получить CommandBus
+     */
+    public function getCommandBus(): CommandBusInterface
+    {
+        return $this->commandBus;
+    }
 
     /**
      * Получить список заказов с пагинацией
@@ -30,7 +62,7 @@ class OrderService
         int $limit = 100,
         ?string $status = null,
         ?string $documentType = null,
-        ?\DateTime $updatedAfter = null,
+        ?DateTime $updatedAfter = null,
         bool $includeDeleted = false
     ): OrderListData {
         $query = array_filter([
@@ -38,13 +70,13 @@ class OrderService
             'limit' => $limit,
             'status' => $status,
             'document_type' => $documentType,
-            'updated_after' => $updatedAfter?->format(\DateTime::ATOM),
+            'updated_after' => $updatedAfter?->format(DateTimeInterface::ATOM),
             'include_deleted' => $includeDeleted ? 'true' : 'false',
         ]);
 
-        $response = $this->connector->get('/orders', $query);
+        $response = $this->http->get('/orders', $query);
 
-        return OrderListData::from(json_decode($response->getBody()->getContents(), true));
+        return OrderListData::from($response->data);
     }
 
     /**
@@ -52,9 +84,9 @@ class OrderService
      */
     public function getOrder(string $id): OrderData
     {
-        $response = $this->connector->get("/orders/{$id}");
+        $response = $this->http->get("/orders/{$id}");
 
-        return OrderData::from(json_decode($response->getBody()->getContents(), true));
+        return OrderData::from($response->data);
     }
 
     /**
@@ -62,18 +94,18 @@ class OrderService
      */
     public function createOrder(OrderCreateData $order, ?string $idempotencyKey = null): OrderData
     {
-        $response = $this->connector->post(
+        $response = $this->http->post(
             '/orders',
             $order->toArray(),
             $idempotencyKey
         );
 
-        $responseData = json_decode($response->getBody()->getContents(), true);
+        $orderData = OrderData::from($response->data);
 
         // Dispatch event
-        event(new OrderCreated($responseData['id']));
+        event(new OrderCreated($response->data['id']));
 
-        return OrderData::from($responseData);
+        return $orderData;
     }
 
     /**
@@ -83,7 +115,7 @@ class OrderService
      */
     public function updateOrder(string $id, array $data, ?string $idempotencyKey = null): OrderData
     {
-        $response = $this->connector->patch(
+        $response = $this->http->patch(
             "/orders/{$id}",
             $data,
             $idempotencyKey
@@ -92,7 +124,7 @@ class OrderService
         // Dispatch event
         event(new OrderUpdated($id));
 
-        return OrderData::from(json_decode($response->getBody()->getContents(), true));
+        return OrderData::from($response->data);
     }
 
     /**
@@ -100,13 +132,13 @@ class OrderService
      */
     public function importOrders(OrderImportData $importData, ?string $idempotencyKey = null): ImportResultData
     {
-        $response = $this->connector->post(
+        $response = $this->http->post(
             '/orders/bulk',
             $importData->toArray(),
             $idempotencyKey
         );
 
-        return ImportResultData::from(json_decode($response->getBody()->getContents(), true));
+        return ImportResultData::from($response->data);
     }
 
     /**
@@ -132,12 +164,22 @@ class OrderService
     /**
      * Получить заказы для выгрузки по дате обновления
      */
-    public function getOrdersForIncrementalExport(\DateTime $since, int $limit = 100): OrderListData
+    public function getOrdersForIncrementalExport(DateTime $since, int $limit = 100): OrderListData
     {
         return $this->getOrders(
             page: 1,
             limit: $limit,
             updatedAfter: $since
         );
+    }
+
+    /**
+     * Синхронизировать заказ с локальной БД
+     */
+    public function syncOrder(OrderData $orderData): Order
+    {
+        $command = new UpsertOrderCommand($orderData);
+
+        return $this->commandBus->dispatch($command);
     }
 }

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace GeekCo\CommerceJson\Exchange\Import;
 
 use GeekCo\CommerceJson\Services\ProductService;
-use GeekCo\CommerceJson\Support\Mappers\ProductMapper;
 
 /**
  * Импортер товаров
@@ -13,8 +12,7 @@ use GeekCo\CommerceJson\Support\Mappers\ProductMapper;
 class ProductImporter
 {
     public function __construct(
-        protected ProductService $productService,
-        protected ProductMapper $mapper
+        protected ProductService $productService
     ) {}
 
     /**
@@ -36,7 +34,7 @@ class ProductImporter
 
             foreach ($productList->products as $productData) {
                 try {
-                    $this->mapper->toModel($productData);
+                    $this->productService->syncProduct($productData);
                     $stats['imported']++;
                 } catch (\Exception $e) {
                     $stats['failed']++;
@@ -69,12 +67,8 @@ class ProductImporter
 
             foreach ($offerList->offers as $offerData) {
                 try {
-                    // Синхронизация предложения
-                    $offer = $this->productService->syncOffer($offerData);
+                    $this->productService->syncOffer($offerData);
                     $stats['imported']++;
-
-                    // Синхронизация цен и остатков
-                    // ... (детальная реализация)
                 } catch (\Exception $e) {
                     $stats['failed']++;
                     logger()->error('Failed to import offer: '.$e->getMessage());
