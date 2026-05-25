@@ -23,8 +23,8 @@ class HandshakeCommand extends Command
         $this->info('Checking CommerceJSON API connection...');
 
         return $this->withErrorHandling(function () {
-            $response = $this->connector()->handshake();
-            $data = json_decode($response->getBody()->getContents(), true);
+            $response = $this->http()->get('/handshake');
+            $data = $response->data;
 
             $this->newLine();
             $this->table(

@@ -10,16 +10,14 @@ use GeekCo\CommerceJson\Services\OrderService;
 /**
  * Экспортер заказов
  */
-class OrderExporter
+class OrderExporter implements ExporterInterface
 {
     public function __construct(
         protected OrderService $orderService
     ) {}
 
     /**
-     * Экспортировать новые заказы
-     *
-     * @return array{exported: int, failed: int}
+     * {@inheritDoc}
      */
     public function export(int $limit = 50): array
     {
@@ -49,29 +47,28 @@ class OrderExporter
     {
         $stats = ['exported' => 0, 'failed' => 0];
 
-        $exportData = [];
-        foreach ($orders as $order) {
-            $exportData[] = [
-                'id' => $order->id,
-                'external_id' => $order->external_id,
-                'status' => $order->status,
-                'document_type' => $order->document_type,
-                'comment' => $order->comment,
-            ];
+        if (empty($orders)) {
+            return $stats;
         }
 
-        if (! empty($exportData)) {
-            $result = $this->orderService->importOrders(
-                OrderImportData::from(['orders' => $exportData])
-            );
+        $exportData = array_map(fn ($order) => [
+            'id' => $order->id,
+            'external_id' => $order->external_id,
+            'status' => $order->status,
+            'document_type' => $order->document_type,
+            'comment' => $order->comment,
+        ], $orders);
 
-            $stats['exported'] = $result->processed;
+        $result = $this->orderService->importOrders(
+            OrderImportData::from(['orders' => $exportData])
+        );
 
-            if (! empty($result->errors)) {
-                $stats['failed'] = count($result->errors);
-                foreach ($result->errors as $error) {
-                    logger()->error("Export error: {$error->message}");
-                }
+        $stats['exported'] = $result->processed;
+
+        if (! empty($result->errors)) {
+            $stats['failed'] = count($result->errors);
+            foreach ($result->errors as $error) {
+                logger()->error("Export error: {$error->message}");
             }
         }
 

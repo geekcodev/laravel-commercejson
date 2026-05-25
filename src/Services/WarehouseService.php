@@ -4,18 +4,38 @@ declare(strict_types=1);
 
 namespace GeekCo\CommerceJson\Services;
 
+use GeekCo\CommerceJson\Bus\CommandBusInterface;
+use GeekCo\CommerceJson\Commands\UpsertWarehouseCommand;
 use GeekCo\CommerceJson\Data\ImportResultData;
-use GeekCo\CommerceJson\Http\Client\CommerceJsonConnector;
-use GeekCo\CommerceJson\Models\Warehouse;
+use GeekCo\CommerceJson\Data\WarehouseData;
+use GeekCo\CommerceJson\Http\Client\HttpClientInterface;
 
 /**
  * Сервис для работы со складами
  */
-class WarehouseService
+class WarehouseService implements ServiceInterface
 {
     public function __construct(
-        protected CommerceJsonConnector $connector
+        protected HttpClientInterface $http,
+        protected CommandBusInterface $commandBus
     ) {}
+
+    public function setHttpClient(HttpClientInterface $http): static
+    {
+        $this->http = $http;
+
+        return $this;
+    }
+
+    public function getHttpClient(): HttpClientInterface
+    {
+        return $this->http;
+    }
+
+    public function getCommandBus(): CommandBusInterface
+    {
+        return $this->commandBus;
+    }
 
     /**
      * Получить список складов
@@ -26,9 +46,9 @@ class WarehouseService
     {
         $query = $includeDeleted ? ['include_deleted' => 'true'] : [];
 
-        $response = $this->connector->get('/warehouses', $query);
+        $response = $this->http->get('/warehouses', $query);
 
-        return $response->json('warehouses');
+        return $response->data['warehouses'];
     }
 
     /**
@@ -38,13 +58,13 @@ class WarehouseService
      */
     public function importWarehouses(array $warehouses, ?string $idempotencyKey = null): ImportResultData
     {
-        $response = $this->connector->post(
+        $response = $this->http->post(
             '/warehouses',
             ['warehouses' => $warehouses],
             $idempotencyKey
         );
 
-        return ImportResultData::from($response->json());
+        return ImportResultData::from($response->data);
     }
 
     /**
@@ -58,26 +78,7 @@ class WarehouseService
         $count = 0;
 
         foreach ($warehouses as $warehouseData) {
-            Warehouse::updateOrCreate(
-                ['id' => $warehouseData['id']],
-                [
-                    'external_id' => $warehouseData['external_id'] ?? null,
-                    'name' => $warehouseData['name'],
-                    'code' => $warehouseData['code'] ?? null,
-                    'address_country' => $warehouseData['address']['country'] ?? null,
-                    'address_region' => $warehouseData['address']['region'] ?? null,
-                    'address_district' => $warehouseData['address']['district'] ?? null,
-                    'address_city' => $warehouseData['address']['city'] ?? null,
-                    'address_street' => $warehouseData['address']['street'] ?? null,
-                    'address_house' => $warehouseData['address']['house'] ?? null,
-                    'address_building' => $warehouseData['address']['building'] ?? null,
-                    'address_apartment' => $warehouseData['address']['apartment'] ?? null,
-                    'address_postal_code' => $warehouseData['address']['postal_code'] ?? null,
-                    'address_full' => $warehouseData['address']['full'] ?? null,
-                    'is_active' => $warehouseData['is_active'] ?? true,
-                    'is_default' => $warehouseData['is_default'] ?? false,
-                ]
-            );
+            $this->commandBus->dispatch(new UpsertWarehouseCommand(WarehouseData::from($warehouseData)));
 
             $count++;
         }

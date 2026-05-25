@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace GeekCo\CommerceJson\Jobs\Concerns;
 
-use GeekCo\CommerceJson\Http\Client\CommerceJsonConnector;
+use GeekCo\CommerceJson\Http\Client\Exceptions\ConnectionException;
+use GeekCo\CommerceJson\Http\Client\HttpClientInterface;
 
 /**
  * Trait для Queue Jobs работы с CommerceJSON
@@ -12,11 +13,11 @@ use GeekCo\CommerceJson\Http\Client\CommerceJsonConnector;
 trait InteractsWithCommerceJson
 {
     /**
-     * Получить HTTP коннектор
+     * Получить HTTP клиент
      */
-    protected function connector(): CommerceJsonConnector
+    protected function http(): HttpClientInterface
     {
-        return app(CommerceJsonConnector::class);
+        return app(HttpClientInterface::class);
     }
 
     /**
@@ -25,9 +26,13 @@ trait InteractsWithCommerceJson
     protected function checkConnection(): bool
     {
         try {
-            $this->connector()->handshake();
+            $this->http()->get('/handshake');
 
             return true;
+        } catch (ConnectionException $e) {
+            logger()->error('CommerceJSON connection check failed: '.$e->getMessage());
+
+            return false;
         } catch (\Exception $e) {
             logger()->error('CommerceJSON connection check failed: '.$e->getMessage());
 

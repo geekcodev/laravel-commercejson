@@ -9,16 +9,14 @@ use GeekCo\CommerceJson\Services\ClassifierService;
 /**
  * Импортер классификатора
  */
-class ClassifierImporter
+class ClassifierImporter implements ImporterInterface
 {
     public function __construct(
         protected ClassifierService $classifierService
     ) {}
 
     /**
-     * Импортировать классификатор
-     *
-     * @return array{categories: int, properties: int, priceTypes: int}
+     * {@inheritDoc}
      */
     public function import(): array
     {

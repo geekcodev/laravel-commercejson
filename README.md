@@ -53,6 +53,20 @@
 
 ## Установка
 
+После установки пакета и публикации конфига, маршруты автоматически регистрируются в `CommerceJsonServiceProvider`:
+
+```php
+// Автоматическая регистрация в boot() методе
+$this->loadRoutesFrom(__DIR__.'/routes/api.php');
+```
+
+**Готовые REST API endpoints** становятся доступны по префиксу `/api/commercejson`:
+- `/api/commercejson/products` — товары
+- `/api/commercejson/orders` — заказы
+- `/api/commercejson/categories` — категории
+- `/api/commercejson/offers` — предложения
+- `/api/commercejson/counterparties` — контрагенты
+
 ```bash
 composer require geekcodev/laravel-commercejson
 ```
@@ -120,30 +134,115 @@ $newOrder = CommerceJson::orders()->createOrder($orderData);
 CommerceJson::offers()->importOffers($offerImportData);
 ```
 
-### Использование сервисов
+### Два способа работы с пакетом
+
+#### 1. REST API (Headless CMS) — рекомендуется для frontend
+
+Пакет предоставляет готовые REST API endpoints. Используйте HTTP запросы из вашего frontend приложения:
+
+```javascript
+// Frontend (React/Vue/Next.js) или мобильное приложение
+const response = await fetch('https://your-app.test/api/commercejson/products');
+const products = await response.json();
+
+// Или через axios
+const { data } = await axios.get('/api/commercejson/products');
+
+// Создать заказ
+const { data: order } = await axios.post('/api/commercejson/orders', {
+  number: 'ORD-001',
+  status: 'new',
+  items: [...]
+});
+```
+
+**Преимущества:**
+- ✅ Готовые endpoints из коробки
+- ✅ Не нужно писать контроллеры
+- ✅ Идеально для React/Vue/Next.js frontend
+- ✅ Мобильные приложения получают доступ к API
+- ✅ CQRS архитектура внутри контроллеров
+
+#### 2. Сервисы — для кастомной бизнес-логики
+
+Если вам нужна кастомная логика, используйте сервисы напрямую:
 
 ```php
 use GeekCo\CommerceJson\Services\ProductService;
 use GeekCo\CommerceJson\Services\OrderService;
+use GeekCo\CommerceJson\Http\Client\HttpClientInterface;
 
-class ProductController extends Controller
+class OrderController extends Controller
 {
     public function __construct(
-        private ProductService $productService,
+        private HttpClientInterface $http,
         private OrderService $orderService
     ) {}
 
     public function index()
     {
-        $products = $this->productService->getProducts();
-        return view('products.index', compact('products'));
+        // Чтение через HTTP API
+        $orders = $this->orderService->getOrders(page: 1, limit: 100);
+        return view('orders.index', compact('orders'));
     }
 
     public function store(OrderCreateData $data)
     {
+        // Создание через HTTP API + сохранение через CommandBus
         $order = $this->orderService->createOrder($data);
         return response()->json($order);
     }
+}
+```
+
+### Тестирование
+
+```php
+use GeekCo\CommerceJson\Tests\TestCase;
+use GeekCo\CommerceJson\Http\Client\HttpClientInterface;
+use Mockery;
+
+class ProductServiceTest extends TestCase
+{
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->mockHttp = Mockery::mock(HttpClientInterface::class);
+        $this->productService = new ProductService($this->mockHttp, ...);
+    }
+
+    /** @test */
+    public function get_products_returns_product_list(): void
+    {
+        $this->mockHttp->shouldReceive('get')
+            ->once()
+            ->andReturn(new ResponseDto(200, [], $mockResponse, ...));
+        
+        $products = $this->productService->getProducts(page: 1, limit: 100);
+        $this->assertCount(10, $products->products);
+    }
+}
+```
+
+#### Использование factory для Data-классов
+
+```php
+// Создание тестовых данных
+$productData = ProductData::factory()->from([
+    'id' => 'uuid-here',
+    'name' => 'Test Product',
+    'code' => 'TEST-001',
+    'is_active' => true,
+]);
+
+// В тестах
+protected function createProductData(array $attributes = []): ProductData
+{
+    return ProductData::factory()->from([
+        'id' => $this->createTestUuid(),
+        'name' => 'Test Product',
+        ...$attributes,
+    ]);
 }
 ```
 
@@ -171,35 +270,222 @@ php artisan commercejson:export-orders --limit=50
 
 ## Архитектура
 
+Пакет использует архитектурные паттерны **CQRS** (Command Query Responsibility Segregation) и **Repository** для разделения операций чтения и записи, что обеспечивает:
+
+- **Чёткое разделение ответственности** — команды для записи, запросы для чтения
+- **Тестируемость** — легко мокировать зависимости через интерфейсы
+- **Масштабируемость** — независимое масштабирование чтения/записи
+- **Поддерживаемость** — понятная структура кода
+- **Headless CMS** — готовые REST API контроллеры и роуты из коробки
+
+### Готовые REST API endpoints
+
+Пакет автоматически регистрирует маршруты с префиксом `/api/commercejson`:
+
+| Метод | URI | Контроллер | Описание |
+|-------|-----|------------|----------|
+| GET | `/api/commercejson/products` | ProductController | Список товаров (paginated) |
+| GET | `/api/commercejson/products/{id}` | ProductController | Получить товар по ID |
+| POST | `/api/commercejson/products` | ProductController | Создать товар |
+| PUT/PATCH | `/api/commercejson/products/{id}` | ProductController | Обновить товар |
+| DELETE | `/api/commercejson/products/{id}` | ProductController | Удалить товар |
+| GET | `/api/commercejson/orders` | OrderController | Список заказов (paginated) |
+| GET | `/api/commercejson/orders/{id}` | OrderController | Получить заказ по ID |
+| POST | `/api/commercejson/orders` | OrderController | Создать заказ |
+| PUT/PATCH | `/api/commercejson/orders/{id}` | OrderController | Обновить заказ |
+| DELETE | `/api/commercejson/orders/{id}` | OrderController | Удалить заказ |
+| GET | `/api/commercejson/categories` | CategoryController | Список категорий (paginated) |
+| GET | `/api/commercejson/categories/{id}` | CategoryController | Получить категорию по ID |
+| POST | `/api/commercejson/categories` | CategoryController | Создать категорию |
+| PUT/PATCH | `/api/commercejson/categories/{id}` | CategoryController | Обновить категорию |
+| DELETE | `/api/commercejson/categories/{id}` | CategoryController | Удалить категорию |
+| GET | `/api/commercejson/offers` | OfferController | Список предложений (paginated) |
+| GET | `/api/commercejson/offers/{id}` | OfferController | Получить предложение по ID |
+| POST | `/api/commercejson/offers` | OfferController | Создать предложение |
+| PUT/PATCH | `/api/commercejson/offers/{id}` | OfferController | Обновить предложение |
+| DELETE | `/api/commercejson/offers/{id}` | OfferController | Удалить предложение |
+| GET | `/api/commercejson/counterparties` | CounterpartyController | Список контрагентов (paginated) |
+| GET | `/api/commercejson/counterparties/{id}` | CounterpartyController | Получить контрагента по ID |
+| POST | `/api/commercejson/counterparties` | CounterpartyController | Создать контрагента |
+| PUT/PATCH | `/api/commercejson/counterparties/{id}` | CounterpartyController | Обновить контрагента |
+| DELETE | `/api/commercejson/counterparties/{id}` | CounterpartyController | Удалить контрагента |
+
+**Пример запроса:**
+```bash
+# Получить список товаров
+curl -X GET "https://your-app.test/api/commercejson/products?page=1&limit=20" \
+  -H "Accept: application/json"
+
+# Создать товар
+curl -X POST "https://your-app.test/api/commercejson/products" \
+  -H "Accept: application/json" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Product 1", "code": "PROD-001", "is_active": true}'
+```
+
 ### Структура пакета
 
 ```
 src/
-├── CommerceJsonServiceProvider.php
+├── CommerceJsonServiceProvider.php    # Регистрация сервисов
 ├── config/
-│   └── commercejson.php
+│   └── commercejson.php               # Конфигурация
 ├── Http/Client/
-│   └── CommerceJsonConnector.php
-├── Services/
+│   ├── HttpClientInterface.php        # Интерфейс HTTP клиента
+│   ├── CommerceJsonHttpClient.php     # Реализация HTTP клиента
+│   ├── RetryStrategyInterface.php     # Стратегия повторных попыток
+│   ├── ExponentialBackoffStrategy.php # Экспоненциальная задержка
+│   └── Dto/                           # DTO для запросов/ответов
+├── Commands/                          # Команды (запись)
+│   ├── CommandInterface.php
+│   ├── CreateProductCommand.php
+│   └── ...
+├── Queries/                           # Запросы (чтение)
+│   ├── QueryInterface.php
+│   ├── GetProductQuery.php
+│   └── ...
+├── Handlers/
+│   ├── Commands/                      # Обработчики команд
+│   │   ├── HandlerInterface.php
+│   │   ├── CreateProductCommandHandler.php
+│   │   └── ...
+│   └── Queries/                       # Обработчики запросов
+│       ├── QueryHandlerInterface.php
+│       ├── GetProductQueryHandler.php
+│       └── ...
+├── Bus/
+│   ├── CommandBusInterface.php        # Шина команд
+│   └── QueryBusInterface.php          # Шина запросов
+├── Repositories/                      # Репозитории
+│   ├── BaseRepository.php
+│   ├── ProductRepository.php
+│   └── ...
+├── Services/                          # Сервисы (бизнес-логика)
+│   ├── ServiceInterface.php
 │   ├── ProductService.php
 │   ├── OrderService.php
 │   ├── OfferService.php
 │   ├── ClassifierService.php
 │   ├── WarehouseService.php
 │   └── CounterpartyService.php
-├── Models/                  (23 модели)
-├── Data/                    (49 DTO-классов)
-├── Enums/                   (11 перечислений)
-├── Jobs/                    (7 очередей заданий)
-├── Console/Commands/        (7 команд)
-├── Events/                  (11 событий)
-├── Exceptions/              (6 исключений)
+├── Http/Controllers/                  # API контроллеры
+│   ├── ProductController.php
+│   ├── OrderController.php
+│   └── ...
+├── Exchange/
+│   ├── Import/                        # Импорт данных
+│   │   ├── ImporterInterface.php
+│   │   ├── ProductImporter.php
+│   │   └── ...
+│   └── Export/                        # Экспорт данных
+│       ├── ExporterInterface.php
+│       └── OrderExporter.php
+├── Jobs/                              # Очереди заданий
+│   ├── Import/
+│   ├── Export/
+│   └── Sync/
+├── Console/Commands/                  # Artisan команды
+├── Events/                            # События
+├── Exceptions/                        # Исключения
+│   ├── SyncException.php
+│   └── Http/Client/Exceptions/        # HTTP исключения
+├── Models/                            # Eloquent модели (23)
+├── Data/                              # Data-класси (49 DTO)
+├── Enums/                             # Перечисления (11)
 ├── Facades/
 │   └── CommerceJson.php
 └── database/
-    ├── migrations/          (24 миграции)
-    ├── factories/           (17 фабрик)
-    └── seeders/             (7 сидеров)
+    ├── migrations/                    # Миграции (24)
+    ├── factories/                     # Фабрики (17)
+    └── seeders/                       # Сидеры (7)
+```
+
+### Компоненты архитектуры
+
+#### 1. HTTP Client Layer
+```php
+use GeekCo\CommerceJson\Http\Client\HttpClientInterface;
+
+// Внедрение зависимости
+public function __construct(
+    private HttpClientInterface $http
+) {}
+
+// Использование
+$response = $this->http->get('/catalog/products', ['page' => 1]);
+$data = $response->data; // Массив данных
+```
+
+#### 2. Command/Query Bus
+```php
+use GeekCo\CommerceJson\Bus\CommandBusInterface;
+use GeekCo\CommerceJson\Bus\QueryBusInterface;
+use GeekCo\CommerceJson\Commands\CreateProductCommand;
+use GeekCo\CommerceJson\Queries\GetProductQuery;
+
+// Команда (запись)
+$command = new CreateProductCommand($productData);
+$product = $this->commandBus->dispatch($command);
+
+// Запрос (чтение)
+$query = new GetProductQuery($id);
+$product = $this->queryBus->ask($query);
+```
+
+#### 3. Services (бизнес-логика)
+```php
+use GeekCo\CommerceJson\Services\ProductService;
+
+public function __construct(
+    private ProductService $productService
+) {}
+
+// Чтение через HTTP API
+$products = $this->productService->getProducts(page: 1, limit: 100);
+
+// Запись через CommandBus
+$product = $this->productService->syncProduct($productData);
+```
+
+#### 4. Controllers (API endpoints)
+```php
+use GeekCo\CommerceJson\Http\Controllers\ProductController;
+
+// GET /api/commercejson/products
+public function index(Request $request): JsonResponse
+{
+    $query = new GetProductsQuery(perPage: 15);
+    $products = $this->queryBus->ask($query);
+    
+    return response()->json(ProductData::collect($products->items()));
+}
+
+// POST /api/commercejson/products
+public function store(Request $request): JsonResponse
+{
+    $command = new CreateProductCommand(ProductData::from($request->all()));
+    $product = $this->commandBus->dispatch($command);
+    
+    return response()->json(ProductData::from($product), 201);
+}
+```
+
+#### 5. Exceptions
+```php
+use GeekCo\CommerceJson\Http\Client\Exceptions\AuthenticationException;
+use GeekCo\CommerceJson\Http\Client\Exceptions\ValidationException;
+use GeekCo\CommerceJson\Http\Client\Exceptions\BusinessException;
+use GeekCo\CommerceJson\Http\Client\Exceptions\RateLimitException;
+
+try {
+    $this->http->post('/orders', $data);
+} catch (AuthenticationException $e) {
+    // 401, 403
+} catch (ValidationException $e) {
+    // 400 - $e->errorsAsString()
+} catch (BusinessException $e) {
+    // 422, 429
+}
 ```
 
 ### Таблицы базы данных
@@ -413,11 +699,14 @@ protected function schedule(Schedule $schedule): void
 
 ## Обработка ошибок
 
+### HTTP исключения
+
 ```php
-use GeekCo\CommerceJson\Exceptions\AuthenticationException;
-use GeekCo\CommerceJson\Exceptions\ValidationException;
-use GeekCo\CommerceJson\Exceptions\BusinessException;
-use GeekCo\CommerceJson\Exceptions\RateLimitException;
+use GeekCo\CommerceJson\Http\Client\Exceptions\AuthenticationException;
+use GeekCo\CommerceJson\Http\Client\Exceptions\ValidationException;
+use GeekCo\CommerceJson\Http\Client\Exceptions\BusinessException;
+use GeekCo\CommerceJson\Http\Client\Exceptions\RateLimitException;
+use GeekCo\CommerceJson\Http\Client\Exceptions\ConnectionException;
 
 try {
     $order = CommerceJson::orders()->createOrder($data);
@@ -425,17 +714,35 @@ try {
     // 401, 403 - Неверные учётные данные
     Log::error('Ошибка авторизации: ' . $e->getMessage());
 } catch (ValidationException $e) {
-    // 400 - Неверные данные
+    // 400 - Ошибка валидации
+    Log::error('Валидация: ' . $e->errorsAsString());
     foreach ($e->errors() as $error) {
         Log::error($error);
     }
 } catch (BusinessException $e) {
-    // 422 - Бизнес-ошибка
-    Log::error('Бизнес-ошибка: ' . $e->getBusinessCode());
+    // 422, 429 - Бизнес-ошибка или rate limit
+    Log::error('Бизнес-ошибка [' . $e->getCode() . ']: ' . $e->getMessage());
 } catch (RateLimitException $e) {
-    // 429 - Слишком много запросов
-    $retryAfter = $e->retryAfter(); // секунд
+    // 429 - Превышен лимит запросов
+    $retryAfter = $e->retryAfter(); // секунд до повторной попытки
+    $retryAt = $e->retryAt();       // DateTime для повторной попытки
     Log::warning("Превышен лимит запросов. Повтор через {$retryAfter}с");
+} catch (ConnectionException $e) {
+    // Ошибка соединения
+    Log::error('Ошибка соединения: ' . $e->getMessage());
+}
+```
+
+### Бизнес исключения
+
+```php
+use GeekCo\CommerceJson\Exceptions\SyncException;
+
+try {
+    CommerceJson::syncFull();
+} catch (SyncException $e) {
+    Log::error('Синхронизация [' . $e->getSyncType() . ']: ' . $e->getMessage());
+    $lastSync = $e->getLastSyncTime(); // DateTime последней успешной синхронизации
 }
 ```
 

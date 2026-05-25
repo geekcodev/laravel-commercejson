@@ -141,7 +141,7 @@ abstract class CommerceJsonFactory extends Factory
     {
         $date = fake()->dateTimeBetween('-1 year');
 
-        return $format ? $date->format($format) : $date->format(DATE_ATOM);
+        return $format ? $date->format($format) : $date->format(\DateTimeInterface::ATOM);
     }
 
     /**

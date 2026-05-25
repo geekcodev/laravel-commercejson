@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace GeekCo\CommerceJson\Console\Concerns;
 
-use GeekCo\CommerceJson\Exceptions\AuthenticationException;
-use GeekCo\CommerceJson\Exceptions\BusinessException;
-use GeekCo\CommerceJson\Exceptions\RateLimitException;
+use Exception;
 use GeekCo\CommerceJson\Exceptions\SyncException;
-use GeekCo\CommerceJson\Exceptions\ValidationException;
-use GeekCo\CommerceJson\Http\Client\CommerceJsonConnector;
+use GeekCo\CommerceJson\Http\Client\Exceptions\AuthenticationException;
+use GeekCo\CommerceJson\Http\Client\Exceptions\BusinessException;
+use GeekCo\CommerceJson\Http\Client\Exceptions\ConnectionException;
+use GeekCo\CommerceJson\Http\Client\Exceptions\RateLimitException;
+use GeekCo\CommerceJson\Http\Client\Exceptions\ValidationException;
+use GeekCo\CommerceJson\Http\Client\HttpClientInterface;
+use Traversable;
 
 /**
  * Trait для Console Commands работы с CommerceJSON
@@ -17,11 +20,11 @@ use GeekCo\CommerceJson\Http\Client\CommerceJsonConnector;
 trait InteractsWithExchange
 {
     /**
-     * Получить HTTP коннектор
+     * Получить HTTP клиент
      */
-    public function connector(): CommerceJsonConnector
+    public function http(): HttpClientInterface
     {
-        return app(CommerceJsonConnector::class);
+        return app(HttpClientInterface::class);
     }
 
     /**
@@ -30,10 +33,10 @@ trait InteractsWithExchange
     public function checkConnection(): bool
     {
         try {
-            $this->connector()->handshake();
+            $this->http()->get('/handshake');
 
             return true;
-        } catch (\Exception $e) {
+        } catch (ConnectionException|Exception $e) {
             $this->error('Connection failed: '.$e->getMessage());
 
             return false;
@@ -55,22 +58,22 @@ trait InteractsWithExchange
             return 1;
         } catch (ValidationException $e) {
             $this->error('Validation error: '.$e->getMessage());
-            $this->warn('Details: '.$e->errorsAsString());
+            $this->warn('Details: '.($e->errorsAsString() ?? 'No details'));
 
             return 1;
         } catch (BusinessException $e) {
-            $this->error('Business error ['.$e->getBusinessCode().']: '.$e->getMessage());
+            $this->error('Business error ['.$e->getCode().']: '.$e->getMessage());
 
             return 1;
         } catch (RateLimitException $e) {
-            $this->warn('Rate limited. Retry after '.$e->retryAfter().' seconds');
+            $this->warn('Rate limited. Retry after '.$e->getRetryAfter().' seconds');
 
             return 1;
         } catch (SyncException $e) {
             $this->error('Sync error ['.$e->getSyncType().']: '.$e->getMessage());
 
             return 1;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->error('Unexpected error: '.$e->getMessage());
 
             if ($this->option('verbose')) {
@@ -104,7 +107,7 @@ trait InteractsWithExchange
      */
     public function processWithProgress(iterable $items, \Closure $callback): void
     {
-        if ($items instanceof \Traversable) {
+        if ($items instanceof Traversable) {
             $items = iterator_to_array($items);
         }
 

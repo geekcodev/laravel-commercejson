@@ -6,15 +6,12 @@ namespace GeekCo\CommerceJson\Jobs\Import;
 
 use GeekCo\CommerceJson\Events\OffersImported;
 use GeekCo\CommerceJson\Jobs\Concerns\InteractsWithCommerceJson;
-use GeekCo\CommerceJson\Models\OfferPrice;
-use GeekCo\CommerceJson\Models\Stock;
 use GeekCo\CommerceJson\Services\OfferService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\DB;
 
 /**
  * Job: Импорт страницы предложений
@@ -68,57 +65,27 @@ class ImportOffersJob implements ShouldQueue
 
         $stats = ['created' => 0, 'updated' => 0, 'failed' => 0];
 
-        // Синхронизация с БД
+        // Синхронизация с БД через Service
         foreach ($offerList->offers as $offerData) {
             try {
-                DB::transaction(function () use ($offerData, $offerService, &$stats) {
-                    // Синхронизация предложения
-                    $offer = $offerService->syncOffer($offerData);
+                // Синхронизация предложения через CommandBus
+                $offer = $offerService->syncOffer($offerData);
 
-                    if ($offer->wasRecentlyCreated) {
-                        $stats['created']++;
-                    } else {
-                        $stats['updated']++;
-                    }
+                if ($offer->wasRecentlyCreated) {
+                    $stats['created']++;
+                } else {
+                    $stats['updated']++;
+                }
 
-                    // Синхронизация цен
-                    if (! empty($offerData->prices)) {
-                        foreach ($offerData->prices as $priceData) {
-                            OfferPrice::updateOrCreate(
-                                [
-                                    'offer_id' => $offer->id,
-                                    'price_type_id' => $priceData->priceTypeId,
-                                    'min_quantity' => $priceData->minQuantity ?? 0,
-                                ],
-                                [
-                                    'price_amount' => $priceData->price->amount,
-                                    'price_currency' => $priceData->price->currency,
-                                    'price_with_discount_amount' => $priceData->priceWithDiscount?->amount,
-                                    'discount_percent' => $priceData->discountPercent,
-                                    'unit_code' => $priceData->unit?->code,
-                                    'valid_from' => $priceData->validFrom,
-                                    'valid_to' => $priceData->validTo,
-                                ]
-                            );
-                        }
-                    }
+                // Синхронизация цен через Service
+                if (! empty($offerData->prices)) {
+                    $offerService->syncOfferPrices($offer, $offerData->prices);
+                }
 
-                    // Синхронизация остатков
-                    if (! empty($offerData->stocks)) {
-                        foreach ($offerData->stocks as $stockData) {
-                            Stock::updateOrCreate(
-                                [
-                                    'offer_id' => $offer->id,
-                                    'warehouse_id' => $stockData->warehouseId,
-                                ],
-                                [
-                                    'quantity' => $stockData->quantity,
-                                    'quantity_reserved' => $stockData->quantityReserved,
-                                ]
-                            );
-                        }
-                    }
-                });
+                // Синхронизация остатков через Service
+                if (! empty($offerData->stocks)) {
+                    $offerService->syncStocks($offer, $offerData->stocks);
+                }
             } catch (\Exception $e) {
                 $stats['failed']++;
                 $this->logJobError('Failed to sync offer: '.$e->getMessage());

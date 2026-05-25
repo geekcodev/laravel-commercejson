@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace GeekCo\CommerceJson\Facades;
 
 use GeekCo\CommerceJson\CommerceJsonServiceProvider;
-use GeekCo\CommerceJson\Http\Client\CommerceJsonConnector;
+use GeekCo\CommerceJson\Http\Client\HttpClientInterface;
 use GeekCo\CommerceJson\Services\ClassifierService;
 use GeekCo\CommerceJson\Services\CounterpartyService;
 use GeekCo\CommerceJson\Services\OfferService;
@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Facade;
 /**
  * Facade для CommerceJSON
  *
- * @method static CommerceJsonConnector connector()
+ * @method static HttpClientInterface http()
  * @method static ProductService products()
  * @method static OrderService orders()
  * @method static OfferService offers()
@@ -38,11 +38,11 @@ class CommerceJson extends Facade
     }
 
     /**
-     * Получить HTTP коннектор
+     * Получить HTTP клиент
      */
-    public static function connector(): CommerceJsonConnector
+    public static function http(): HttpClientInterface
     {
-        return app(CommerceJsonConnector::class);
+        return app(HttpClientInterface::class);
     }
 
     /**

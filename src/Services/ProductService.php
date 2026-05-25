@@ -4,27 +4,49 @@ declare(strict_types=1);
 
 namespace GeekCo\CommerceJson\Services;
 
+use DateTimeInterface;
+use GeekCo\CommerceJson\Bus\CommandBusInterface;
+use GeekCo\CommerceJson\Bus\QueryBusInterface;
+use GeekCo\CommerceJson\Commands\UpsertOfferCommand;
+use GeekCo\CommerceJson\Commands\UpsertProductCommand;
 use GeekCo\CommerceJson\Data\ImportResultData;
 use GeekCo\CommerceJson\Data\OfferData;
 use GeekCo\CommerceJson\Data\OfferListData;
 use GeekCo\CommerceJson\Data\ProductData;
 use GeekCo\CommerceJson\Data\ProductListData;
 use GeekCo\CommerceJson\Events\ProductDeactivated;
-use GeekCo\CommerceJson\Http\Client\CommerceJsonConnector;
+use GeekCo\CommerceJson\Http\Client\HttpClientInterface;
 use GeekCo\CommerceJson\Models\Offer;
 use GeekCo\CommerceJson\Models\Product;
-use GeekCo\CommerceJson\Support\Mappers\ProductMapper;
 use Illuminate\Support\Collection;
 
 /**
  * Сервис для работы с товарами
  */
-class ProductService
+class ProductService implements ServiceInterface
 {
     public function __construct(
-        protected CommerceJsonConnector $connector,
-        protected ProductMapper $mapper
+        protected HttpClientInterface $http,
+        protected CommandBusInterface $commandBus,
+        protected QueryBusInterface $queryBus
     ) {}
+
+    public function setHttpClient(HttpClientInterface $http): static
+    {
+        $this->http = $http;
+
+        return $this;
+    }
+
+    public function getHttpClient(): HttpClientInterface
+    {
+        return $this->http;
+    }
+
+    public function getCommandBus(): CommandBusInterface
+    {
+        return $this->commandBus;
+    }
 
     /**
      * Получить список товаров с пагинацией
@@ -36,19 +58,19 @@ class ProductService
         int $limit = 100,
         ?string $categoryId = null,
         ?bool $isActive = null,
-        ?\DateTime $updatedAfter = null
+        ?DateTimeInterface $updatedAfter = null
     ): ProductListData {
         $query = array_filter([
             'page' => $page,
             'limit' => $limit,
             'category_id' => $categoryId,
             'is_active' => $isActive,
-            'updated_after' => $updatedAfter?->format(\DateTime::ATOM),
+            'updated_after' => $updatedAfter?->format(DateTimeInterface::ATOM),
         ]);
 
-        $response = $this->connector->get('/catalog/products', $query);
+        $response = $this->http->get('/catalog/products', $query);
 
-        return ProductListData::from($response->json());
+        return ProductListData::from($response->data);
     }
 
     /**
@@ -56,9 +78,9 @@ class ProductService
      */
     public function getProduct(string $id): ProductData
     {
-        $response = $this->connector->get("/catalog/products/{$id}");
+        $response = $this->http->get("/catalog/products/{$id}");
 
-        return ProductData::from($response->json());
+        return ProductData::from($response->data);
     }
 
     /**
@@ -74,13 +96,13 @@ class ProductService
                 : $product;
         }, $products);
 
-        $response = $this->connector->post(
+        $response = $this->http->post(
             '/catalog/products',
             ['products' => $productsArray],
             $idempotencyKey
         );
 
-        return ImportResultData::from($response->json());
+        return ImportResultData::from($response->data);
     }
 
     /**
@@ -88,12 +110,12 @@ class ProductService
      */
     public function deactivateProduct(string $id): ProductData
     {
-        $response = $this->connector->delete("/catalog/products/{$id}");
+        $response = $this->http->delete("/catalog/products/{$id}");
 
         // Dispatch event
         event(new ProductDeactivated($id));
 
-        return ProductData::from($response->json());
+        return ProductData::from($response->data);
     }
 
     /**
@@ -101,7 +123,7 @@ class ProductService
      *
      * @return \Generator<ProductData>
      */
-    public function lazyGetProducts(?\DateTime $updatedAfter = null): \Generator
+    public function lazyGetProducts(?DateTimeInterface $updatedAfter = null): \Generator
     {
         $page = 1;
         $limit = 100;
@@ -126,7 +148,7 @@ class ProductService
      *
      * @return Collection<int, ProductData>
      */
-    public function getAllProducts(?\DateTime $updatedAfter = null): Collection
+    public function getAllProducts(?DateTimeInterface $updatedAfter = null): Collection
     {
         return Collection::make(iterator_to_array($this->lazyGetProducts($updatedAfter)));
     }
@@ -136,7 +158,9 @@ class ProductService
      */
     public function syncProduct(ProductData $productData): Product
     {
-        return $this->mapper->toModel($productData);
+        $command = new UpsertProductCommand($productData);
+
+        return $this->commandBus->dispatch($command);
     }
 
     /**
@@ -145,17 +169,17 @@ class ProductService
     public function getOffers(
         int $page = 1,
         int $limit = 200,
-        ?\DateTime $updatedAfter = null
+        ?DateTimeInterface $updatedAfter = null
     ): OfferListData {
         $query = array_filter([
             'page' => $page,
             'limit' => $limit,
-            'updated_after' => $updatedAfter?->format(\DateTime::ATOM),
+            'updated_after' => $updatedAfter?->format(DateTimeInterface::ATOM),
         ]);
 
-        $response = $this->connector->get('/offers', $query);
+        $response = $this->http->get('/offers', $query);
 
-        return OfferListData::from($response->json());
+        return OfferListData::from($response->data);
     }
 
     /**
@@ -163,13 +187,9 @@ class ProductService
      */
     public function syncOffer(OfferData $offerData): Offer
     {
-        return Offer::updateOrCreate(
-            [
-                'product_id' => $offerData->productId,
-                'variant_id' => $offerData->variantId,
-            ],
-            []
-        );
+        $command = new UpsertOfferCommand($offerData);
+
+        return $this->commandBus->dispatch($command);
     }
 
     /**

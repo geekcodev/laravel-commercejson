@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace GeekCo\CommerceJson\Exchange\Import;
 
+use GeekCo\CommerceJson\Bus\CommandBusInterface;
+use GeekCo\CommerceJson\Commands\UpsertOrderCommand;
 use GeekCo\CommerceJson\Data\OrderData;
 use GeekCo\CommerceJson\Models\Order;
 use GeekCo\CommerceJson\Services\OrderService;
@@ -14,7 +16,8 @@ use GeekCo\CommerceJson\Services\OrderService;
 class OrderImporter
 {
     public function __construct(
-        protected OrderService $orderService
+        protected OrderService $orderService,
+        protected CommandBusInterface $commandBus
     ) {}
 
     /**
@@ -55,18 +58,8 @@ class OrderImporter
      */
     protected function syncOrder(OrderData $orderData): Order
     {
-        return Order::updateOrCreate(
-            ['id' => $orderData->id],
-            [
-                'number' => $orderData->number,
-                'external_id' => $orderData->externalId,
-                'status' => $orderData->status->value,
-                'document_type' => $orderData->documentType?->value ?? 'order',
-                'counterparty_id' => $orderData->counterpartyId,
-                'warehouse_id' => $orderData->warehouseId,
-                'totals_total_amount' => $orderData->totals->total->amount,
-                'totals_total_currency' => $orderData->totals->total->currency,
-            ]
-        );
+        $command = new UpsertOrderCommand($orderData);
+
+        return $this->commandBus->dispatch($command);
     }
 }

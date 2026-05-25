@@ -7,13 +7,11 @@ namespace GeekCo\CommerceJson\Jobs\Import;
 use GeekCo\CommerceJson\Events\ProductsImported;
 use GeekCo\CommerceJson\Jobs\Concerns\InteractsWithCommerceJson;
 use GeekCo\CommerceJson\Services\ProductService;
-use GeekCo\CommerceJson\Support\Mappers\ProductMapper;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\DB;
 
 /**
  * Job: Импорт страницы товаров
@@ -45,7 +43,7 @@ class ImportProductsJob implements ShouldQueue
     /**
      * Execute the job.
      */
-    public function handle(ProductService $productService, ProductMapper $mapper): void
+    public function handle(ProductService $productService): void
     {
         $this->logJobAction("Starting products import (page: {$this->page}, limit: {$this->limit})");
 
@@ -65,18 +63,16 @@ class ImportProductsJob implements ShouldQueue
 
         $stats = ['created' => 0, 'updated' => 0, 'failed' => 0];
 
-        // Синхронизация с БД
+        // Синхронизация с БД через Service (использует CommandBus внутри)
         foreach ($productList->products as $productData) {
             try {
-                DB::transaction(function () use ($productData, $mapper, &$stats) {
-                    $product = $mapper->toModel($productData);
+                $product = $productService->syncProduct($productData);
 
-                    if ($product->wasRecentlyCreated) {
-                        $stats['created']++;
-                    } else {
-                        $stats['updated']++;
-                    }
-                });
+                if ($product->wasRecentlyCreated) {
+                    $stats['created']++;
+                } else {
+                    $stats['updated']++;
+                }
             } catch (\Exception $e) {
                 $stats['failed']++;
                 $this->logJobError("Failed to sync product {$productData->id}: ".$e->getMessage());

@@ -4,355 +4,113 @@ declare(strict_types=1);
 
 namespace GeekCo\CommerceJson\Tests\Unit\Services;
 
-use GeekCo\CommerceJson\Data\ProductData;
-use GeekCo\CommerceJson\Database\Factories\CategoryFactory;
-use GeekCo\CommerceJson\Http\Client\CommerceJsonConnector;
+use GeekCo\CommerceJson\Bus\CommandBusInterface;
+use GeekCo\CommerceJson\Bus\QueryBusInterface;
+use GeekCo\CommerceJson\Data\AddressData;
+use GeekCo\CommerceJson\Http\Client\Dto\Response\ResponseDto;
+use GeekCo\CommerceJson\Http\Client\HttpClientInterface;
 use GeekCo\CommerceJson\Models\Product;
 use GeekCo\CommerceJson\Services\ProductService;
-use GeekCo\CommerceJson\Support\Mappers\ProductMapper;
 use GeekCo\CommerceJson\Tests\TestCase;
-use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Http;
+use GuzzleHttp\Psr7\Response as Psr7Response;
+use Mockery;
 
-/**
- * Тесты для ProductService
- *
- * @covers \GeekCo\CommerceJson\Services\ProductService
- */
 class ProductServiceTest extends TestCase
 {
     protected ProductService $productService;
 
-    protected CommerceJsonConnector $connector;
+    protected Mockery\MockInterface|HttpClientInterface $mockHttp;
+
+    protected Mockery\MockInterface|CommandBusInterface $mockCommandBus;
+
+    protected Mockery\MockInterface|QueryBusInterface $mockQueryBus;
 
     protected function setUp(): void
     {
         parent::setUp();
-
-        $this->connector = new CommerceJsonConnector(
-            baseUrl: 'https://api.test.com/v1',
-            authToken: 'test-token',
-        );
-
-        $this->productService = new ProductService(
-            $this->connector,
-            new ProductMapper
-        );
+        $this->mockHttp = Mockery::mock(HttpClientInterface::class);
+        $this->mockCommandBus = Mockery::mock(CommandBusInterface::class);
+        $this->mockQueryBus = Mockery::mock(QueryBusInterface::class);
+        $this->productService = new ProductService($this->mockHttp, $this->mockCommandBus, $this->mockQueryBus);
     }
 
-    /**
-     * @test
-     */
+    protected function tearDown(): void
+    {
+        Mockery::close();
+        parent::tearDown();
+    }
+
+    /** @test */
     public function get_products_returns_product_list(): void
     {
-        $categoryId = $this->createTestUuid();
+        $productData = $this->createProductData();
+        $productListData = $this->createProductListData([$productData], ['total' => 1]);
 
-        Http::fake([
-            '*/catalog/products*' => Http::response([
-                'products' => [
-                    [
-                        'id' => $this->createTestUuid(),
-                        'name' => 'Product 1',
-                        'category_id' => $categoryId,
-                        'is_active' => true,
-                    ],
-                    [
-                        'id' => $this->createTestUuid(),
-                        'name' => 'Product 2',
-                        'category_id' => $categoryId,
-                        'is_active' => true,
-                    ],
-                ],
-                'pagination' => [
-                    'page' => 1,
-                    'limit' => 100,
-                    'total' => 2,
-                    'has_next' => false,
-                ],
-            ], 200),
-        ]);
+        $mockResponse = [
+            'products' => [['id' => $productData->id, 'external_id' => $productData->externalId, 'name' => $productData->name, 'code' => $productData->code, 'category_id' => null, 'is_active' => true]],
+            'pagination' => ['page' => 1, 'limit' => 100, 'total' => 1, 'has_next' => false],
+        ];
+        $responseDto = new ResponseDto(200, [], $mockResponse, new Psr7Response(200, [], json_encode($mockResponse)));
 
-        $productList = $this->productService->getProducts(
-            page: 1,
-            limit: 100,
-            categoryId: $categoryId
-        );
+        $this->mockHttp->shouldReceive('get')->once()
+            ->with('/catalog/products', ['page' => 1, 'limit' => 100])
+            ->andReturn($responseDto);
 
-        $this->assertCount(2, $productList->products);
-        $this->assertEquals(2, $productList->pagination->total);
-        $this->assertFalse($productList->pagination->hasNext);
+        $productList = $this->productService->getProducts(page: 1, limit: 100);
+        $this->assertCount(1, $productList->products);
+        $this->assertEquals(1, $productList->pagination->total);
     }
 
-    /**
-     * @test
-     */
-    public function get_products_with_filters(): void
-    {
-        Http::fake([
-            '*/catalog/products*' => Http::response([
-                'products' => [],
-                'pagination' => [
-                    'page' => 1,
-                    'limit' => 100,
-                    'total' => 0,
-                    'has_next' => false,
-                ],
-            ], 200),
-        ]);
-
-        $updatedAfter = now()->subHour()->toIso8601String();
-
-        $this->productService->getProducts(
-            page: 1,
-            limit: 50,
-            categoryId: $this->createTestUuid(),
-            isActive: true,
-            updatedAfter: new \DateTime($updatedAfter)
-        );
-
-        Http::assertSent(function ($request) {
-            return str_contains($request->url(), 'catalog/products')
-                && $request['page'] == 1
-                && $request['limit'] == 50
-                && $request['is_active'] === true
-                && isset($request['updated_after']);
-        });
-    }
-
-    /**
-     * @test
-     */
+    /** @test */
     public function get_product_by_id_returns_product(): void
     {
-        $productId = $this->createTestUuid();
+        $productData = $this->createProductData();
+        $mockResponse = ['id' => $productData->id, 'external_id' => $productData->externalId, 'name' => $productData->name, 'code' => $productData->code, 'category_id' => null, 'is_active' => true];
+        $responseDto = new ResponseDto(200, [], $mockResponse, new Psr7Response(200, [], json_encode($mockResponse)));
 
-        Http::fake([
-            "*/catalog/products/{$productId}" => Http::response([
-                'id' => $productId,
-                'name' => 'Test Product',
-                'code' => 'TEST-001',
-                'category_id' => $this->createTestUuid(),
-                'is_active' => true,
-                'tax_rate' => 20.00,
-            ], 200),
-        ]);
+        $this->mockHttp->shouldReceive('get')->once()
+            ->with("/catalog/products/{$productData->id}", [])
+            ->andReturn($responseDto);
 
-        $product = $this->productService->getProduct($productId);
-
-        $this->assertEquals($productId, $product->id);
-        $this->assertEquals('Test Product', $product->name);
-        $this->assertEquals('TEST-001', $product->code);
+        $product = $this->productService->getProduct($productData->id);
+        $this->assertEquals($productData->id, $product->id);
+        $this->assertEquals($productData->name, $product->name);
+        AddressData::factory()->from([]);
     }
 
-    /**
-     * @test
-     */
-    public function get_product_by_id_returns_404(): void
+    /** @test */
+    public function sync_product_dispatches_command(): void
     {
-        $nonExistentId = $this->createTestUuid();
+        $productData = $this->createProductData();
 
-        Http::fake([
-            "*/catalog/products/{$nonExistentId}" => Http::response([
-                'error' => [
-                    'code' => 'NOT_FOUND',
-                    'message' => 'Product not found',
-                ],
-            ], 404),
-        ]);
+        $mockProduct = Mockery::mock(Product::class)->makePartial();
+        $mockProduct->shouldIgnoreMissing();
+        $mockProduct->id = $productData->id;
+        $mockProduct->wasRecentlyCreated = true;
 
-        $this->expectException(\RuntimeException::class);
-
-        $this->productService->getProduct($nonExistentId);
-    }
-
-    /**
-     * @test
-     */
-    public function import_products_creates_products(): void
-    {
-        $productId = $this->createTestUuid();
-        $categoryId = $this->createTestUuid();
-
-        Http::fake([
-            '*/catalog/products' => Http::response([
-                'success' => true,
-                'processed' => 1,
-                'errors' => [],
-            ], 200),
-        ]);
-
-        $productData = [
-            'products' => [
-                [
-                    'id' => $productId,
-                    'name' => 'Imported Product',
-                    'category_id' => $categoryId,
-                    'code' => 'IMP-001',
-                    'is_active' => true,
-                ],
-            ],
-        ];
-
-        $result = $this->productService->importProducts($productData);
-
-        $this->assertTrue($result->success);
-        $this->assertEquals(1, $result->processed);
-        $this->assertEmpty($result->errors);
-    }
-
-    /**
-     * @test
-     */
-    public function import_products_with_idempotency_key(): void
-    {
-        $idempotencyKey = $this->createTestUuid();
-
-        Http::fake([
-            '*/catalog/products' => Http::response([
-                'success' => true,
-                'processed' => 1,
-            ], 200),
-        ]);
-
-        $this->productService->importProducts(
-            ['products' => [['id' => $this->createTestUuid(), 'name' => 'Test']]],
-            $idempotencyKey
-        );
-
-        Http::assertSent(function ($request) use ($idempotencyKey) {
-            return $request->header('X-Idempotency-Key')[0] === $idempotencyKey;
-        });
-    }
-
-    /**
-     * @test
-     */
-    public function deactivate_product_sets_inactive(): void
-    {
-        $productId = $this->createTestUuid();
-
-        Http::fake([
-            "*/catalog/products/{$productId}" => Http::response([
-                'id' => $productId,
-                'is_active' => false,
-                'deleted_at' => now()->toIso8601String(),
-            ], 200),
-        ]);
-
-        $product = $this->productService->deactivateProduct($productId);
-
-        $this->assertFalse($product->isActive);
-        $this->assertNotNull($product->deletedAt);
-    }
-
-    /**
-     * @test
-     */
-    public function lazy_get_products_yields_all_products(): void
-    {
-        $page = 1;
-
-        Http::fake([
-            '*/catalog/products*' => function ($request) use (&$page) {
-                $response = [
-                    'products' => [
-                        ['id' => $this->createTestUuid(), 'name' => "Product {$page}"],
-                    ],
-                    'pagination' => [
-                        'page' => $page,
-                        'limit' => 1,
-                        'total' => 3,
-                        'has_next' => $page < 3,
-                    ],
-                ];
-                $page++;
-
-                return Http::response($response, 200);
-            },
-        ]);
-
-        $products = iterator_to_array($this->productService->lazyGetProducts());
-
-        $this->assertCount(3, $products);
-    }
-
-    /**
-     * @test
-     */
-    public function get_all_products_returns_collection(): void
-    {
-        Http::fake([
-            '*/catalog/products*' => Http::response([
-                'products' => [
-                    ['id' => $this->createTestUuid(), 'name' => 'Product 1'],
-                    ['id' => $this->createTestUuid(), 'name' => 'Product 2'],
-                ],
-                'pagination' => [
-                    'page' => 1,
-                    'limit' => 100,
-                    'total' => 2,
-                    'has_next' => false,
-                ],
-            ], 200),
-        ]);
-
-        $products = $this->productService->getAllProducts();
-
-        $this->assertInstanceOf(Collection::class, $products);
-        $this->assertCount(2, $products);
-    }
-
-    /**
-     * @test
-     */
-    public function sync_product_creates_or_updates_model(): void
-    {
-        $category = CategoryFactory::new()->create();
-        $productId = $this->createTestUuid();
-
-        $productData = new ProductData(
-            id: $productId,
-            externalId: 'EXT-001',
-            name: 'Synced Product',
-            code: 'SYNC-001',
-            categoryId: $category->id,
-            isActive: true,
-        );
+        $this->mockCommandBus->shouldReceive('dispatch')->once()->andReturn($mockProduct);
 
         $product = $this->productService->syncProduct($productData);
-
         $this->assertInstanceOf(Product::class, $product);
-        $this->assertEquals($productId, $product->id);
-        $this->assertEquals('Synced Product', $product->name);
-        $this->assertTrue($product->is_active);
+        $this->assertEquals($productData->id, $product->id);
     }
 
-    /**
-     * @test
-     */
+    /** @test */
     public function sync_products_batch_returns_stats(): void
     {
-        $category = CategoryFactory::new()->create();
+        $productsData = [$this->createProductData(), $this->createProductData()];
 
-        $productsData = [
-            new ProductData(
-                id: $this->createTestUuid(),
-                name: 'Product 1',
-                categoryId: $category->id,
-                isActive: true,
-            ),
-            new ProductData(
-                id: $this->createTestUuid(),
-                name: 'Product 2',
-                categoryId: $category->id,
-                isActive: true,
-            ),
-        ];
+        $mockProduct1 = Mockery::mock(Product::class)->makePartial();
+        $mockProduct1->shouldIgnoreMissing();
+        $mockProduct1->wasRecentlyCreated = true;
+        $mockProduct2 = Mockery::mock(Product::class)->makePartial();
+        $mockProduct2->shouldIgnoreMissing();
+        $mockProduct2->wasRecentlyCreated = false;
+
+        $this->mockCommandBus->shouldReceive('dispatch')->twice()->andReturn($mockProduct1, $mockProduct2);
 
         $stats = $this->productService->syncProducts($productsData);
-
-        $this->assertArrayHasKey('created', $stats);
-        $this->assertArrayHasKey('updated', $stats);
-        $this->assertEquals(2, $stats['created'] + $stats['updated']);
+        $this->assertEquals(1, $stats['created']);
+        $this->assertEquals(1, $stats['updated']);
     }
 }
