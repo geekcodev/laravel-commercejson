@@ -68,7 +68,8 @@ class ProductService implements ServiceInterface
             'updated_after' => $updatedAfter?->format(DateTimeInterface::ATOM),
         ]);
 
-        $response = $this->http->get('/catalog/products', $query);
+        $configPath = config('commercejson.external_api_endpoints.products', '/catalog/products');
+        $response = $this->http->get($configPath, $query);
 
         return ProductListData::from($response->data);
     }
@@ -78,7 +79,8 @@ class ProductService implements ServiceInterface
      */
     public function getProduct(string $id): ProductData
     {
-        $response = $this->http->get("/catalog/products/{$id}");
+        $configPath = config('commercejson.external_api_endpoints.products', '/catalog/products');
+        $response = $this->http->get("{$configPath}/{$id}");
 
         return ProductData::from($response->data);
     }
@@ -96,8 +98,9 @@ class ProductService implements ServiceInterface
                 : $product;
         }, $products);
 
+        $configPath = config('commercejson.external_api_endpoints.products', '/catalog/products');
         $response = $this->http->post(
-            '/catalog/products',
+            $configPath,
             ['products' => $productsArray],
             $idempotencyKey
         );
@@ -110,7 +113,8 @@ class ProductService implements ServiceInterface
      */
     public function deactivateProduct(string $id): ProductData
     {
-        $response = $this->http->delete("/catalog/products/{$id}");
+        $configPath = config('commercejson.external_api_endpoints.products', '/catalog/products');
+        $response = $this->http->delete("{$configPath}/{$id}");
 
         // Dispatch event
         event(new ProductDeactivated($id));
@@ -177,7 +181,8 @@ class ProductService implements ServiceInterface
             'updated_after' => $updatedAfter?->format(DateTimeInterface::ATOM),
         ]);
 
-        $response = $this->http->get('/offers', $query);
+        $configPath = config('commercejson.external_api_endpoints.offers', '/offers');
+        $response = $this->http->get($configPath, $query);
 
         return OfferListData::from($response->data);
     }

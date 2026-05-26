@@ -53,7 +53,8 @@ class ClassifierService implements ServiceInterface
             ? ['updated_after' => $updatedAfter->format(DateTimeInterface::ATOM)]
             : [];
 
-        $response = $this->http->get('/catalog/classifier', $query);
+        $configPath = config('commercejson.external_api_endpoints.classifier', '/catalog/classifier');
+        $response = $this->http->get($configPath, $query);
 
         return ClassifierData::from($response->data);
     }
@@ -63,8 +64,9 @@ class ClassifierService implements ServiceInterface
      */
     public function importClassifier(ClassifierData $classifier, ?string $idempotencyKey = null): ImportResultData
     {
+        $configPath = config('commercejson.external_api_endpoints.classifier', '/catalog/classifier');
         $response = $this->http->post(
-            '/catalog/classifier',
+            $configPath,
             $classifier->toArray(),
             $idempotencyKey
         );

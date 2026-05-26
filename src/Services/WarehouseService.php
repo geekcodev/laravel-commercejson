@@ -46,7 +46,8 @@ class WarehouseService implements ServiceInterface
     {
         $query = $includeDeleted ? ['include_deleted' => 'true'] : [];
 
-        $response = $this->http->get('/warehouses', $query);
+        $configPath = config('commercejson.external_api_endpoints.warehouses', '/warehouses');
+        $response = $this->http->get($configPath, $query);
 
         return $response->data['warehouses'];
     }
@@ -58,8 +59,9 @@ class WarehouseService implements ServiceInterface
      */
     public function importWarehouses(array $warehouses, ?string $idempotencyKey = null): ImportResultData
     {
+        $configPath = config('commercejson.external_api_endpoints.warehouses', '/warehouses');
         $response = $this->http->post(
-            '/warehouses',
+            $configPath,
             ['warehouses' => $warehouses],
             $idempotencyKey
         );

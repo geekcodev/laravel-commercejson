@@ -23,7 +23,8 @@ class HandshakeCommand extends Command
         $this->info('Checking CommerceJSON API connection...');
 
         return $this->withErrorHandling(function () {
-            $response = $this->http()->get('/handshake');
+            $configPath = config('commercejson.external_api_endpoints.handshake', '/handshake');
+            $response = $this->http()->get($configPath);
             $data = $response->data;
 
             $this->newLine();

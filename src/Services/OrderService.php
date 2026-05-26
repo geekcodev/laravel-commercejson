@@ -74,7 +74,8 @@ class OrderService implements ServiceInterface
             'include_deleted' => $includeDeleted ? 'true' : 'false',
         ]);
 
-        $response = $this->http->get('/orders', $query);
+        $configPath = config('commercejson.external_api_endpoints.orders', '/orders');
+        $response = $this->http->get($configPath, $query);
 
         return OrderListData::from($response->data);
     }
@@ -84,7 +85,8 @@ class OrderService implements ServiceInterface
      */
     public function getOrder(string $id): OrderData
     {
-        $response = $this->http->get("/orders/{$id}");
+        $configPath = config('commercejson.external_api_endpoints.orders', '/orders');
+        $response = $this->http->get("{$configPath}/{$id}");
 
         return OrderData::from($response->data);
     }
@@ -94,8 +96,9 @@ class OrderService implements ServiceInterface
      */
     public function createOrder(OrderCreateData $order, ?string $idempotencyKey = null): OrderData
     {
+        $configPath = config('commercejson.external_api_endpoints.orders', '/orders');
         $response = $this->http->post(
-            '/orders',
+            $configPath,
             $order->toArray(),
             $idempotencyKey
         );
@@ -115,8 +118,9 @@ class OrderService implements ServiceInterface
      */
     public function updateOrder(string $id, array $data, ?string $idempotencyKey = null): OrderData
     {
+        $configPath = config('commercejson.external_api_endpoints.orders', '/orders');
         $response = $this->http->patch(
-            "/orders/{$id}",
+            "{$configPath}/{$id}",
             $data,
             $idempotencyKey
         );
@@ -132,8 +136,9 @@ class OrderService implements ServiceInterface
      */
     public function importOrders(OrderImportData $importData, ?string $idempotencyKey = null): ImportResultData
     {
+        $configPath = config('commercejson.external_api_endpoints.orders_bulk', '/orders/bulk');
         $response = $this->http->post(
-            '/orders/bulk',
+            $configPath,
             $importData->toArray(),
             $idempotencyKey
         );

@@ -41,7 +41,8 @@ class ExchangeManager
      */
     public function checkConnection(): array
     {
-        $response = $this->http->get('/handshake');
+        $configPath = config('commercejson.external_api_endpoints.handshake', '/handshake');
+        $response = $this->http->get($configPath);
 
         return [
             'connected' => true,
