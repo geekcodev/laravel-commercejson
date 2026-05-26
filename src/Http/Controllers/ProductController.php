@@ -26,7 +26,7 @@ class ProductController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = new GetProductsQuery(
-            perPage: (int) ($request->get('per_page', 15))
+            perPage: (int) ($request->input('per_page', 15))
         );
         $products = $this->queryBus->ask($query);
 

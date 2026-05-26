@@ -26,7 +26,8 @@ trait InteractsWithCommerceJson
     protected function checkConnection(): bool
     {
         try {
-            $this->http()->get('/handshake');
+            $configPath = config('commercejson.external_api_endpoints.handshake', '/handshake');
+            $this->http()->get($configPath);
 
             return true;
         } catch (ConnectionException $e) {

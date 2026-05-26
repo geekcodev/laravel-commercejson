@@ -63,7 +63,8 @@ class OfferService implements ServiceInterface
             'updated_after' => $updatedAfter?->format(DateTimeInterface::ATOM),
         ]);
 
-        $response = $this->http->get('/offers', $query);
+        $configPath = config('commercejson.external_api_endpoints.offers', '/offers');
+        $response = $this->http->get($configPath, $query);
 
         return OfferListData::from($response->data);
     }
@@ -73,8 +74,9 @@ class OfferService implements ServiceInterface
      */
     public function importOffers(OfferImportData $importData, ?string $idempotencyKey = null): ImportResultData
     {
+        $configPath = config('commercejson.external_api_endpoints.offers', '/offers');
         $response = $this->http->post(
-            '/offers',
+            $configPath,
             $importData->toArray(),
             $idempotencyKey
         );
@@ -89,7 +91,8 @@ class OfferService implements ServiceInterface
      */
     public function getPriceTypes(): array
     {
-        $response = $this->http->get('/offers/price-types');
+        $configPath = config('commercejson.external_api_endpoints.price_types', '/offers/price-types');
+        $response = $this->http->get($configPath);
 
         return $response->data['price_types'];
     }
@@ -101,7 +104,8 @@ class OfferService implements ServiceInterface
      */
     public function getWarehouses(): array
     {
-        $response = $this->http->get('/warehouses');
+        $configPath = config('commercejson.external_api_endpoints.warehouses', '/warehouses');
+        $response = $this->http->get($configPath);
 
         return $response->data['warehouses'];
     }

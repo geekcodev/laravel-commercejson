@@ -39,6 +39,42 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | API Routes Settings
+    |--------------------------------------------------------------------------
+    |
+    | Настройки маршрутов API для входящих запросов (от 1С к сайту)
+    |
+    */
+    'api_routes' => [
+        // Префикс для всех маршрутов API пакета
+        'prefix' => env('COMMERCEJSON_API_PREFIX', 'api/commercejson'),
+
+        // Middleware для защиты маршрутов API (кроме handshake)
+        'middleware' => ['api', 'auth:sanctum'], // Пример: ['api', 'auth:sanctum'] или ['api', 'commercejson.auth']
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | External API Endpoints
+    |--------------------------------------------------------------------------
+    |
+    | Пути к эндпоинтам внешней системы 1С, используемые для исходящих запросов.
+    |
+    */
+    'external_api_endpoints' => [
+        'handshake' => '/handshake',
+        'classifier' => '/catalog/classifier',
+        'products' => '/catalog/products',
+        'offers' => '/offers',
+        'price_types' => '/offers/price-types',
+        'orders' => '/orders',
+        'orders_bulk' => '/orders/bulk',
+        'counterparties' => '/counterparties',
+        'warehouses' => '/warehouses',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Exchange Settings
     |--------------------------------------------------------------------------
     |

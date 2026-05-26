@@ -7,29 +7,30 @@
 ![GitHub Actions (main)](https://img.shields.io/github/actions/workflow/status/geekcodev/laravel-commercejson/phpstan.yml?branch=main&label=phpstan&style=flat-square)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](LICENSE)
 
-Пакет для интеграции с CommerceJSON API v1.0.8 в Laravel 12+. Предназначен для обмена данными с системами 1С и другими ERP-системами, поддерживающими стандарт CommerceJSON.
+Пакет для интеграции с CommerceJSON API v1.0.8 в Laravel 12+. Предназначен для обмена данными с системами 1С и другими
+ERP-системами, поддерживающими стандарт CommerceJSON.
 
 ## Оглавление
 
 - [Возможности](#возможности)
 - [Установка](#установка)
 - [Использование](#использование)
-  - [Быстрый старт](#быстрый-старт)
-  - [Использование сервисов](#использование-сервисов)
-  - [Console-команды](#console-команды)
+    - [Быстрый старт](#быстрый-старт)
+    - [Использование сервисов](#использование-сервисов)
+    - [Console-команды](#console-команды)
 - [Архитектура](#архитектура)
-  - [Структура пакета](#структура-пакета)
-  - [Таблицы базы данных](#таблицы-базы-данных)
+    - [Структура пакета](#структура-пакета)
+    - [Таблицы базы данных](#таблицы-базы-данных)
 - [Тестирование](#тестирование)
-  - [Покрытие кода](#покрытие-кода)
+    - [Покрытие кода](#покрытие-кода)
 - [Документация](#документация)
-  - [Доступные методы](#доступные-методы)
-  - [События](#события)
+    - [Доступные методы](#доступные-методы)
+    - [События](#события)
 - [Конфигурация](#конфигурация)
 - [Синхронизация](#синхронизация)
-  - [Полная синхронизация](#полная-синхронизация)
-  - [Инкрементальная синхронизация](#инкрементальная-синхронизация)
-  - [Планирование синхронизации](#планирование-синхронизации)
+    - [Полная синхронизация](#полная-синхронизация)
+    - [Инкрементальная синхронизация](#инкрементальная-синхронизация)
+    - [Планирование синхронизации](#планирование-синхронизации)
 - [Обработка ошибок](#обработка-ошибок)
 - [Очереди заданий](#очереди-заданий)
 - [Чеклист для production](#чеклист-для-production)
@@ -61,6 +62,7 @@ $this->loadRoutesFrom(__DIR__.'/routes/api.php');
 ```
 
 **Готовые REST API endpoints** становятся доступны по префиксу `/api/commercejson`:
+
 - `/api/commercejson/products` — товары
 - `/api/commercejson/orders` — заказы
 - `/api/commercejson/categories` — категории
@@ -146,17 +148,18 @@ const response = await fetch('https://your-app.test/api/commercejson/products');
 const products = await response.json();
 
 // Или через axios
-const { data } = await axios.get('/api/commercejson/products');
+const {data} = await axios.get('/api/commercejson/products');
 
 // Создать заказ
-const { data: order } = await axios.post('/api/commercejson/orders', {
-  number: 'ORD-001',
-  status: 'new',
-  items: [...]
+const {data: order} = await axios.post('/api/commercejson/orders', {
+    number: 'ORD-001',
+    status: 'new',
+    items: [...]
 });
 ```
 
 **Преимущества:**
+
 - ✅ Готовые endpoints из коробки
 - ✅ Не нужно писать контроллеры
 - ✅ Идеально для React/Vue/Next.js frontend
@@ -270,7 +273,8 @@ php artisan commercejson:export-orders --limit=50
 
 ## Архитектура
 
-Пакет использует архитектурные паттерны **CQRS** (Command Query Responsibility Segregation) и **Repository** для разделения операций чтения и записи, что обеспечивает:
+Пакет использует архитектурные паттерны **CQRS** (Command Query Responsibility Segregation) и **Repository** для
+разделения операций чтения и записи, что обеспечивает:
 
 - **Чёткое разделение ответственности** — команды для записи, запросы для чтения
 - **Тестируемость** — легко мокировать зависимости через интерфейсы
@@ -282,35 +286,36 @@ php artisan commercejson:export-orders --limit=50
 
 Пакет автоматически регистрирует маршруты с префиксом `/api/commercejson`:
 
-| Метод | URI | Контроллер | Описание |
-|-------|-----|------------|----------|
-| GET | `/api/commercejson/products` | ProductController | Список товаров (paginated) |
-| GET | `/api/commercejson/products/{id}` | ProductController | Получить товар по ID |
-| POST | `/api/commercejson/products` | ProductController | Создать товар |
-| PUT/PATCH | `/api/commercejson/products/{id}` | ProductController | Обновить товар |
-| DELETE | `/api/commercejson/products/{id}` | ProductController | Удалить товар |
-| GET | `/api/commercejson/orders` | OrderController | Список заказов (paginated) |
-| GET | `/api/commercejson/orders/{id}` | OrderController | Получить заказ по ID |
-| POST | `/api/commercejson/orders` | OrderController | Создать заказ |
-| PUT/PATCH | `/api/commercejson/orders/{id}` | OrderController | Обновить заказ |
-| DELETE | `/api/commercejson/orders/{id}` | OrderController | Удалить заказ |
-| GET | `/api/commercejson/categories` | CategoryController | Список категорий (paginated) |
-| GET | `/api/commercejson/categories/{id}` | CategoryController | Получить категорию по ID |
-| POST | `/api/commercejson/categories` | CategoryController | Создать категорию |
-| PUT/PATCH | `/api/commercejson/categories/{id}` | CategoryController | Обновить категорию |
-| DELETE | `/api/commercejson/categories/{id}` | CategoryController | Удалить категорию |
-| GET | `/api/commercejson/offers` | OfferController | Список предложений (paginated) |
-| GET | `/api/commercejson/offers/{id}` | OfferController | Получить предложение по ID |
-| POST | `/api/commercejson/offers` | OfferController | Создать предложение |
-| PUT/PATCH | `/api/commercejson/offers/{id}` | OfferController | Обновить предложение |
-| DELETE | `/api/commercejson/offers/{id}` | OfferController | Удалить предложение |
-| GET | `/api/commercejson/counterparties` | CounterpartyController | Список контрагентов (paginated) |
-| GET | `/api/commercejson/counterparties/{id}` | CounterpartyController | Получить контрагента по ID |
-| POST | `/api/commercejson/counterparties` | CounterpartyController | Создать контрагента |
-| PUT/PATCH | `/api/commercejson/counterparties/{id}` | CounterpartyController | Обновить контрагента |
-| DELETE | `/api/commercejson/counterparties/{id}` | CounterpartyController | Удалить контрагента |
+| Метод     | URI                                     | Контроллер             | Описание                        |
+|-----------|-----------------------------------------|------------------------|---------------------------------|
+| GET       | `/api/commercejson/products`            | ProductController      | Список товаров (paginated)      |
+| GET       | `/api/commercejson/products/{id}`       | ProductController      | Получить товар по ID            |
+| POST      | `/api/commercejson/products`            | ProductController      | Создать товар                   |
+| PUT/PATCH | `/api/commercejson/products/{id}`       | ProductController      | Обновить товар                  |
+| DELETE    | `/api/commercejson/products/{id}`       | ProductController      | Удалить товар                   |
+| GET       | `/api/commercejson/orders`              | OrderController        | Список заказов (paginated)      |
+| GET       | `/api/commercejson/orders/{id}`         | OrderController        | Получить заказ по ID            |
+| POST      | `/api/commercejson/orders`              | OrderController        | Создать заказ                   |
+| PUT/PATCH | `/api/commercejson/orders/{id}`         | OrderController        | Обновить заказ                  |
+| DELETE    | `/api/commercejson/orders/{id}`         | OrderController        | Удалить заказ                   |
+| GET       | `/api/commercejson/categories`          | CategoryController     | Список категорий (paginated)    |
+| GET       | `/api/commercejson/categories/{id}`     | CategoryController     | Получить категорию по ID        |
+| POST      | `/api/commercejson/categories`          | CategoryController     | Создать категорию               |
+| PUT/PATCH | `/api/commercejson/categories/{id}`     | CategoryController     | Обновить категорию              |
+| DELETE    | `/api/commercejson/categories/{id}`     | CategoryController     | Удалить категорию               |
+| GET       | `/api/commercejson/offers`              | OfferController        | Список предложений (paginated)  |
+| GET       | `/api/commercejson/offers/{id}`         | OfferController        | Получить предложение по ID      |
+| POST      | `/api/commercejson/offers`              | OfferController        | Создать предложение             |
+| PUT/PATCH | `/api/commercejson/offers/{id}`         | OfferController        | Обновить предложение            |
+| DELETE    | `/api/commercejson/offers/{id}`         | OfferController        | Удалить предложение             |
+| GET       | `/api/commercejson/counterparties`      | CounterpartyController | Список контрагентов (paginated) |
+| GET       | `/api/commercejson/counterparties/{id}` | CounterpartyController | Получить контрагента по ID      |
+| POST      | `/api/commercejson/counterparties`      | CounterpartyController | Создать контрагента             |
+| PUT/PATCH | `/api/commercejson/counterparties/{id}` | CounterpartyController | Обновить контрагента            |
+| DELETE    | `/api/commercejson/counterparties/{id}` | CounterpartyController | Удалить контрагента             |
 
 **Пример запроса:**
+
 ```bash
 # Получить список товаров
 curl -X GET "https://your-app.test/api/commercejson/products?page=1&limit=20" \
@@ -403,6 +408,7 @@ src/
 ### Компоненты архитектуры
 
 #### 1. HTTP Client Layer
+
 ```php
 use GeekCo\CommerceJson\Http\Client\HttpClientInterface;
 
@@ -417,6 +423,7 @@ $data = $response->data; // Массив данных
 ```
 
 #### 2. Command/Query Bus
+
 ```php
 use GeekCo\CommerceJson\Bus\CommandBusInterface;
 use GeekCo\CommerceJson\Bus\QueryBusInterface;
@@ -433,6 +440,7 @@ $product = $this->queryBus->ask($query);
 ```
 
 #### 3. Services (бизнес-логика)
+
 ```php
 use GeekCo\CommerceJson\Services\ProductService;
 
@@ -448,6 +456,7 @@ $product = $this->productService->syncProduct($productData);
 ```
 
 #### 4. Controllers (API endpoints)
+
 ```php
 use GeekCo\CommerceJson\Http\Controllers\ProductController;
 
@@ -471,6 +480,7 @@ public function store(Request $request): JsonResponse
 ```
 
 #### 5. Exceptions
+
 ```php
 use GeekCo\CommerceJson\Http\Client\Exceptions\AuthenticationException;
 use GeekCo\CommerceJson\Http\Client\Exceptions\ValidationException;
@@ -491,6 +501,7 @@ try {
 ### Таблицы базы данных
 
 **24 таблицы:**
+
 - `categories` — категории товаров (иерархия)
 - `price_types` — типы цен (розница, опт, дилер)
 - `warehouses` — склады
@@ -541,9 +552,11 @@ composer test:coverage-text
 
 ### Покрытие кода
 
-Текущее покрытие: [![Code Coverage](https://img.shields.io/codecov/c/github/geekcodev/laravel-commercejson/main?style=flat-square)](https://codecov.io/gh/geekcodev/laravel-commercejson)
+Текущее
+покрытие: [![Code Coverage](https://img.shields.io/codecov/c/github/geekcodev/laravel-commercejson/main?style=flat-square)](https://codecov.io/gh/geekcodev/laravel-commercejson)
 
 Минимальные требования к покрытию:
+
 - Services: 85%
 - Models: 80%
 - Jobs: 80%
@@ -785,6 +798,7 @@ SyncFullJob::dispatch();
 ## История версий
 
 ### 1.0.0 (2026-04-24)
+
 - Начальный выпуск
 - Поддержка CommerceJSON v1.0.8
 - 24 миграции

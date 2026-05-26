@@ -26,7 +26,7 @@ class CategoryController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = new GetCategoriesQuery(
-            perPage: (int) ($request->get('per_page', 15))
+            perPage: (int) ($request->input('per_page', 15))
         );
         $categories = $this->queryBus->ask($query);
 

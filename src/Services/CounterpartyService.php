@@ -59,7 +59,8 @@ class CounterpartyService implements ServiceInterface
             'include_deleted' => $includeDeleted ? 'true' : 'false',
         ]);
 
-        $response = $this->http->get('/counterparties', $query);
+        $configPath = config('commercejson.external_api_endpoints.counterparties', '/counterparties');
+        $response = $this->http->get($configPath, $query);
 
         return CounterpartyListData::from($response->data);
     }
@@ -69,7 +70,8 @@ class CounterpartyService implements ServiceInterface
      */
     public function getCounterparty(string $id): CounterpartyData
     {
-        $response = $this->http->get("/counterparties/{$id}");
+        $configPath = config('commercejson.external_api_endpoints.counterparties', '/counterparties');
+        $response = $this->http->get("{$configPath}/{$id}");
 
         return CounterpartyData::from($response->data);
     }
@@ -81,8 +83,9 @@ class CounterpartyService implements ServiceInterface
      */
     public function importCounterparties(array $counterparties, ?string $idempotencyKey = null): ImportResultData
     {
+        $configPath = config('commercejson.external_api_endpoints.counterparties', '/counterparties');
         $response = $this->http->post(
-            '/counterparties',
+            $configPath,
             ['counterparties' => $counterparties],
             $idempotencyKey
         );
