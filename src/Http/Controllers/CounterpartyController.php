@@ -26,7 +26,7 @@ class CounterpartyController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = new GetCounterpartiesQuery(
-            perPage: (int) ($request->get('per_page', 15))
+            perPage: (int) ($request->input('per_page', 15))
         );
         $counterparties = $this->queryBus->ask($query);
 

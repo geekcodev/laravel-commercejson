@@ -26,7 +26,7 @@ class OrderController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = new GetOrdersQuery(
-            perPage: (int) ($request->get('per_page', 15))
+            perPage: (int) ($request->input('per_page', 15))
         );
         $orders = $this->queryBus->ask($query);
 

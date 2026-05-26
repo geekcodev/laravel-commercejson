@@ -26,7 +26,7 @@ class OfferController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = new GetOffersQuery(
-            perPage: (int) ($request->get('per_page', 15))
+            perPage: (int) ($request->input('per_page', 15))
         );
         $offers = $this->queryBus->ask($query);
 
