@@ -4,14 +4,12 @@ declare(strict_types=1);
 
 namespace GeekCo\CommerceJson\Http\Controllers;
 
-use GeekCo\CommerceJson\Bus\CommandBusInterface;
 use GeekCo\CommerceJson\Bus\QueryBusInterface;
 use GeekCo\CommerceJson\Commands\CreateCounterpartyCommand;
-use GeekCo\CommerceJson\Commands\DeleteCounterpartyCommand;
-use GeekCo\CommerceJson\Commands\UpdateCounterpartyCommand;
 use GeekCo\CommerceJson\Data\CounterpartyData;
 use GeekCo\CommerceJson\Queries\GetCounterpartiesQuery;
 use GeekCo\CommerceJson\Queries\GetCounterpartyQuery;
+use Illuminate\Contracts\Bus\Dispatcher;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Spatie\LaravelData\DataCollection;
@@ -19,7 +17,7 @@ use Spatie\LaravelData\DataCollection;
 class CounterpartyController extends Controller
 {
     public function __construct(
-        private readonly CommandBusInterface $commandBus,
+        private readonly Dispatcher $commandBus,
         private readonly QueryBusInterface $queryBus
     ) {}
 
@@ -55,23 +53,5 @@ class CounterpartyController extends Controller
         $counterparty = $this->commandBus->dispatch($command);
 
         return response()->json(CounterpartyData::from($counterparty), 201);
-    }
-
-    public function update(Request $request, string $id): JsonResponse
-    {
-        $counterparty = $this->queryBus->ask(new GetCounterpartyQuery($id));
-        $command = new UpdateCounterpartyCommand($counterparty, CounterpartyData::from($request->all()));
-        $counterparty = $this->commandBus->dispatch($command);
-
-        return response()->json(CounterpartyData::from($counterparty));
-    }
-
-    public function destroy(string $id): JsonResponse
-    {
-        $counterparty = $this->queryBus->ask(new GetCounterpartyQuery($id));
-        $command = new DeleteCounterpartyCommand($counterparty);
-        $this->commandBus->dispatch($command);
-
-        return response()->json(['message' => 'Counterparty deleted']);
     }
 }

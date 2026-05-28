@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace GeekCo\CommerceJson\Services;
 
 use DateTimeInterface;
-use GeekCo\CommerceJson\Bus\CommandBusInterface;
 use GeekCo\CommerceJson\Commands\UpsertCategoryCommand;
 use GeekCo\CommerceJson\Commands\UpsertPriceTypeCommand;
 use GeekCo\CommerceJson\Commands\UpsertPropertyDefinitionCommand;
@@ -16,6 +15,7 @@ use GeekCo\CommerceJson\Data\PriceTypeData;
 use GeekCo\CommerceJson\Data\PropertyDefinitionData;
 use GeekCo\CommerceJson\Events\ClassifierImported;
 use GeekCo\CommerceJson\Http\Client\HttpClientInterface;
+use Illuminate\Contracts\Bus\Dispatcher;
 
 /**
  * Сервис для работы с классификатором (категории, свойства, типы цен)
@@ -24,7 +24,7 @@ class ClassifierService implements ServiceInterface
 {
     public function __construct(
         protected HttpClientInterface $http,
-        protected CommandBusInterface $commandBus
+        protected Dispatcher $commandBus
     ) {}
 
     public function setHttpClient(HttpClientInterface $http): static
@@ -39,7 +39,7 @@ class ClassifierService implements ServiceInterface
         return $this->http;
     }
 
-    public function getCommandBus(): CommandBusInterface
+    public function getCommandBus(): Dispatcher
     {
         return $this->commandBus;
     }

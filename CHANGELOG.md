@@ -7,10 +7,36 @@
 
 ## [Невыпущенное]
 
+### Изменено
+- Роуты переписаны под OpenAPI спецификацию v1.0.8
+- CommandBus заменён с самописного на Laravel `Bus::map()`
+- Все DTO переведены на snake_case (убраны `#[MapName(SnakeCaseMapper::class)]`)
+- Тесты мигрированы с PHPUnit на Pest PHP 3.8
+- QueryBusInterface вынесен из `src/Bus/` в `src/Bus/` (удалён CommandBus)
+- PHPStan конфигурация: добавлены в анализ Data/Handlers/Queries/Repositories/Commands
+
 ### Добавлено
-- Подготовка к начальному выпуску
-- GitHub Actions workflows
-- Полная документация
+- `ClassifierController` — GET + POST `/catalog/classifier`
+- `WarehouseController` — GET + POST `/warehouses`
+- `GetWarehousesQuery`, `GetPriceTypesQuery` + handlers
+- `RepositoryInterface::all()` и `RepositoryInterface::updateOrCreate()`
+- 37 Pest-тестов (180 assertions) — Feature-тесты на все контроллеры + Unit-тест HTTP-клиента
+
+### Исправлено
+- `SeoMetaData` — nullable типы (приводили к TypeError)
+- `CategoryData::is_active` — default `false` → `true` (по спецификации)
+- `ImportResultData::warnings` — `array` → `?array` (TypeError при null)
+- `CommerceJsonHttpClientTest` — 12 методов без префикса `test_` (PHPUnit 11 не находил)
+- `test()->instance()` → `app()->instance()` для совместимости с IDE
+- `ProductService::getProducts()` — удалён мёртвый `@param $filters` из docblock
+
+### Удалено
+- Старые PHPUnit-тесты (82 теста → 37 Pest-тестов)
+- `src/Bus/CommandBus.php`, `src/Bus/CommandBusInterface.php` (заменён на Laravel Bus)
+- `src/Bus/QueryBusInterface.php`, `src/Bus/QueryBus.php` — восстановлены (живой QueryBus)
+- Мёртвый код: `UpdateProductCommand`, `UpdateCounterpartyCommand`, `DeleteOrderCommand`, `DeleteOfferCommand`
+- `CategoryController` (нет роутов; категории через `/catalog/classifier`)
+- `OfferController::show()` (нет роута `GET /offers/{id}`)
 
 ## [1.0.0] — 2026-04-24
 
@@ -88,9 +114,6 @@
 - README.md
 - CONTRIBUTING.md
 - CHANGELOG.md
-- TESTS_README.md
-- PACKAGE_ARCHITECTURE.md
-- DATABASE_OPTIMIZATION.md
 
 ### Безопасность
 - Валидация входных данных через Data-классы

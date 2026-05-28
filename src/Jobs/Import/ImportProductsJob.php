@@ -92,7 +92,7 @@ class ImportProductsJob implements ShouldQueue
         );
 
         // Dispatch следующей страницы если есть
-        if ($productList->pagination->hasNext) {
+        if ($productList->pagination->has_next) {
             ImportProductsJob::dispatch(
                 page: $this->page + 1,
                 limit: $this->limit,

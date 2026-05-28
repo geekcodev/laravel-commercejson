@@ -5,23 +5,20 @@ declare(strict_types=1);
 namespace GeekCo\CommerceJson\Data;
 
 use Carbon\Carbon;
-use Spatie\LaravelData\Attributes\MapName;
 use Spatie\LaravelData\Attributes\Validation\BooleanType;
 use Spatie\LaravelData\Attributes\Validation\Nullable;
 use Spatie\LaravelData\Attributes\Validation\Required;
 use Spatie\LaravelData\Attributes\Validation\StringType;
 use Spatie\LaravelData\Attributes\Validation\Uuid;
 use Spatie\LaravelData\Data;
-use Spatie\LaravelData\Mappers\SnakeCaseMapper;
 
-#[MapName(SnakeCaseMapper::class)]
 class WarehouseData extends Data
 {
     public function __construct(
         #[Required, StringType, Uuid]
         public string $id,
         #[Nullable, StringType]
-        public ?string $externalId,
+        public ?string $external_id,
         #[Required, StringType]
         public string $name,
         #[Nullable, StringType]
@@ -29,14 +26,14 @@ class WarehouseData extends Data
         #[Nullable]
         public ?AddressData $address = null,
         #[Nullable, BooleanType]
-        public ?bool $isActive = null,
+        public ?bool $is_active = null,
         #[Nullable, BooleanType]
-        public ?bool $isDefault = null,
+        public ?bool $is_default = null,
         #[Nullable, StringType]
-        public ?Carbon $createdAt = null,
+        public ?Carbon $created_at = null,
         #[Nullable, StringType]
-        public ?Carbon $updatedAt = null,
+        public ?Carbon $updated_at = null,
         #[Nullable, StringType]
-        public ?Carbon $deletedAt = null,
+        public ?Carbon $deleted_at = null,
     ) {}
 }

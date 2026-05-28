@@ -6,15 +6,12 @@ namespace GeekCo\CommerceJson\Data;
 
 use Carbon\Carbon;
 use GeekCo\CommerceJson\Enums\DeliveryMethodEnum;
-use Spatie\LaravelData\Attributes\MapName;
 use Spatie\LaravelData\Attributes\Validation\Enum;
 use Spatie\LaravelData\Attributes\Validation\Nullable;
 use Spatie\LaravelData\Attributes\Validation\Required;
 use Spatie\LaravelData\Attributes\Validation\StringType;
 use Spatie\LaravelData\Data;
-use Spatie\LaravelData\Mappers\SnakeCaseMapper;
 
-#[MapName(SnakeCaseMapper::class)]
 class OrderDeliveryData extends Data
 {
     public function __construct(
@@ -23,16 +20,16 @@ class OrderDeliveryData extends Data
         #[Nullable]
         public ?AddressData $address = null,
         #[Nullable, StringType]
-        public ?string $methodId = null,
+        public ?string $method_id = null,
         #[Nullable, StringType]
-        public ?string $methodName = null,
+        public ?string $method_name = null,
         #[Nullable]
         public ?MoneyData $cost = null,
         #[Nullable, StringType]
-        public ?string $trackingNumber = null,
+        public ?string $tracking_number = null,
         #[Nullable, StringType]
-        public ?Carbon $shippedAt = null,
+        public ?Carbon $shipped_at = null,
         #[Nullable, StringType]
-        public ?Carbon $estimatedDate = null,
+        public ?Carbon $estimated_date = null,
     ) {}
 }

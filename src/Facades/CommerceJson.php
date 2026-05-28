@@ -17,14 +17,6 @@ use Illuminate\Support\Facades\Facade;
 /**
  * Facade для CommerceJSON
  *
- * @method static HttpClientInterface http()
- * @method static ProductService products()
- * @method static OrderService orders()
- * @method static OfferService offers()
- * @method static ClassifierService classifier()
- * @method static WarehouseService warehouses()
- * @method static CounterpartyService counterparties()
- *
  * @see CommerceJsonServiceProvider
  */
 class CommerceJson extends Facade

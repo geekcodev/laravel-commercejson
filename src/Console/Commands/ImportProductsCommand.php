@@ -7,7 +7,6 @@ namespace GeekCo\CommerceJson\Console\Commands;
 use GeekCo\CommerceJson\Console\Concerns\InteractsWithExchange;
 use GeekCo\CommerceJson\Events\ProductsImported;
 use GeekCo\CommerceJson\Services\ProductService;
-use GeekCo\CommerceJson\Support\Mappers\ProductMapper;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
@@ -28,11 +27,11 @@ class ImportProductsCommand extends Command
 
     protected $description = 'Импортировать товары из CommerceJSON API';
 
-    public function handle(ProductService $productService, ProductMapper $mapper): int
+    public function handle(ProductService $productService): int
     {
         $this->info('Starting products import...');
 
-        return $this->withErrorHandling(function () use ($productService, $mapper) {
+        return $this->withErrorHandling(function () use ($productService) {
             // Проверка соединения
             if (! $this->checkConnection()) {
                 return 1;
@@ -79,10 +78,11 @@ class ImportProductsCommand extends Command
 
             $stats = ['created' => 0, 'updated' => 0, 'failed' => 0];
 
-            $this->withProgressBar($productList->products, function ($productData) use ($mapper, $stats) {
+            $this->withProgressBar($productList->products, function ($productData) use ($productService, &$stats) {
+                /** @var ProductData $productData */
                 try {
-                    DB::transaction(function () use ($productData, $mapper, $stats) {
-                        $product = $mapper->toModel($productData);
+                    DB::transaction(function () use ($productData, $productService, &$stats) {
+                        $product = $productService->syncProduct($productData);
 
                         if ($product->wasRecentlyCreated) {
                             $stats['created']++;
@@ -109,7 +109,7 @@ class ImportProductsCommand extends Command
             );
 
             // Проверка следующих страниц
-            if ($productList->pagination->hasNext && ! $this->option('page')) {
+            if ($productList->pagination->has_next && ! $this->option('page')) {
                 $this->newLine();
                 $this->info('More pages available. Use --page='.($page + 1).' to continue.');
             }

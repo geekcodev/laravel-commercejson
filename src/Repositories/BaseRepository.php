@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace GeekCo\CommerceJson\Repositories;
 
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 
 abstract class BaseRepository implements RepositoryInterface
@@ -14,6 +15,11 @@ abstract class BaseRepository implements RepositoryInterface
     public function __construct(Model $model)
     {
         $this->model = $model;
+    }
+
+    public function all(array $columns = ['*']): Collection
+    {
+        return $this->model->all($columns);
     }
 
     public function find(string $id): ?Model

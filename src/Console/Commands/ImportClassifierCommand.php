@@ -40,7 +40,7 @@ class ImportClassifierCommand extends Command
 
             $categoriesCount = count($classifier->categories ?? []);
             $propertiesCount = count($classifier->properties ?? []);
-            $priceTypesCount = count($classifier->priceTypes ?? []);
+            $priceTypesCount = count($classifier->price_types ?? []);
 
             $this->line("Received: {$categoriesCount} categories, {$propertiesCount} properties, {$priceTypesCount} price types");
 
@@ -75,9 +75,9 @@ class ImportClassifierCommand extends Command
             }
 
             // Типы цен
-            if (! empty($classifier->priceTypes)) {
+            if (! empty($classifier->price_types)) {
                 $this->info('Syncing price types...');
-                $stats['priceTypes'] = $classifierService->syncPriceTypes($classifier->priceTypes);
+                $stats['priceTypes'] = $classifierService->syncPriceTypes($classifier->price_types);
                 $this->line("  → {$stats['priceTypes']} price types synced");
             }
 

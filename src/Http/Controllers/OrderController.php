@@ -4,14 +4,16 @@ declare(strict_types=1);
 
 namespace GeekCo\CommerceJson\Http\Controllers;
 
-use GeekCo\CommerceJson\Bus\CommandBusInterface;
 use GeekCo\CommerceJson\Bus\QueryBusInterface;
 use GeekCo\CommerceJson\Commands\CreateOrderCommand;
-use GeekCo\CommerceJson\Commands\DeleteOrderCommand;
 use GeekCo\CommerceJson\Commands\UpdateOrderCommand;
+use GeekCo\CommerceJson\Commands\UpsertOrderCommand;
+use GeekCo\CommerceJson\Data\ImportResultData;
 use GeekCo\CommerceJson\Data\OrderData;
+use GeekCo\CommerceJson\Data\OrderImportData;
 use GeekCo\CommerceJson\Queries\GetOrderQuery;
 use GeekCo\CommerceJson\Queries\GetOrdersQuery;
+use Illuminate\Contracts\Bus\Dispatcher;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Spatie\LaravelData\DataCollection;
@@ -19,7 +21,7 @@ use Spatie\LaravelData\DataCollection;
 class OrderController extends Controller
 {
     public function __construct(
-        private readonly CommandBusInterface $commandBus,
+        private readonly Dispatcher $commandBus,
         private readonly QueryBusInterface $queryBus
     ) {}
 
@@ -66,12 +68,31 @@ class OrderController extends Controller
         return response()->json(OrderData::from($order));
     }
 
-    public function destroy(string $id): JsonResponse
+    public function bulkUpdate(Request $request): JsonResponse
     {
-        $order = $this->queryBus->ask(new GetOrderQuery($id));
-        $command = new DeleteOrderCommand($order);
-        $this->commandBus->dispatch($command);
+        $importData = OrderImportData::from($request->all());
+        $processed = 0;
+        $errors = [];
 
-        return response()->json(['message' => 'Order deleted']);
+        foreach ($importData->orders as $bulkItem) {
+            try {
+                $this->commandBus->dispatch(new UpsertOrderCommand(
+                    OrderData::from($bulkItem->toArray())
+                ));
+                $processed++;
+            } catch (\Exception $e) {
+                $errors[] = [
+                    'id' => $bulkItem->id ?? $bulkItem->external_id,
+                    'message' => $e->getMessage(),
+                ];
+            }
+        }
+
+        return response()->json(ImportResultData::from([
+            'success' => empty($errors),
+            'processed' => $processed,
+            'errors' => $errors,
+            'warnings' => [],
+        ]));
     }
 }

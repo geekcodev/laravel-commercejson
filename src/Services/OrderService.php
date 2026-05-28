@@ -6,17 +6,18 @@ namespace GeekCo\CommerceJson\Services;
 
 use DateTime;
 use DateTimeInterface;
-use GeekCo\CommerceJson\Bus\CommandBusInterface;
 use GeekCo\CommerceJson\Commands\UpsertOrderCommand;
 use GeekCo\CommerceJson\Data\ImportResultData;
 use GeekCo\CommerceJson\Data\OrderCreateData;
 use GeekCo\CommerceJson\Data\OrderData;
 use GeekCo\CommerceJson\Data\OrderImportData;
 use GeekCo\CommerceJson\Data\OrderListData;
+use GeekCo\CommerceJson\Enums\OrderStatusEnum;
 use GeekCo\CommerceJson\Events\OrderCreated;
 use GeekCo\CommerceJson\Events\OrderUpdated;
 use GeekCo\CommerceJson\Http\Client\HttpClientInterface;
 use GeekCo\CommerceJson\Models\Order;
+use Illuminate\Contracts\Bus\Dispatcher;
 
 /**
  * Сервис для работы с заказами
@@ -25,7 +26,7 @@ class OrderService implements ServiceInterface
 {
     public function __construct(
         protected HttpClientInterface $http,
-        protected CommandBusInterface $commandBus
+        protected Dispatcher $commandBus
     ) {}
 
     /**
@@ -49,7 +50,7 @@ class OrderService implements ServiceInterface
     /**
      * Получить CommandBus
      */
-    public function getCommandBus(): CommandBusInterface
+    public function getCommandBus(): Dispatcher
     {
         return $this->commandBus;
     }
@@ -162,7 +163,7 @@ class OrderService implements ServiceInterface
         return $this->getOrders(
             page: 1,
             limit: $limit,
-            status: 'new'
+            status: OrderStatusEnum::New->value
         );
     }
 

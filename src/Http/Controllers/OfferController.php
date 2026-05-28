@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace GeekCo\CommerceJson\Http\Controllers;
 
-use GeekCo\CommerceJson\Bus\CommandBusInterface;
 use GeekCo\CommerceJson\Bus\QueryBusInterface;
 use GeekCo\CommerceJson\Commands\CreateOfferCommand;
-use GeekCo\CommerceJson\Commands\DeleteOfferCommand;
-use GeekCo\CommerceJson\Commands\UpdateOfferCommand;
 use GeekCo\CommerceJson\Data\OfferData;
+use GeekCo\CommerceJson\Data\PriceTypeData;
 use GeekCo\CommerceJson\Queries\GetOfferQuery;
 use GeekCo\CommerceJson\Queries\GetOffersQuery;
+use GeekCo\CommerceJson\Queries\GetPriceTypesQuery;
+use Illuminate\Contracts\Bus\Dispatcher;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Spatie\LaravelData\DataCollection;
@@ -19,7 +19,7 @@ use Spatie\LaravelData\DataCollection;
 class OfferController extends Controller
 {
     public function __construct(
-        private readonly CommandBusInterface $commandBus,
+        private readonly Dispatcher $commandBus,
         private readonly QueryBusInterface $queryBus
     ) {}
 
@@ -57,21 +57,12 @@ class OfferController extends Controller
         return response()->json(OfferData::from($offer), 201);
     }
 
-    public function update(Request $request, string $id): JsonResponse
+    public function priceTypes(Request $request): JsonResponse
     {
-        $offer = $this->queryBus->ask(new GetOfferQuery($id));
-        $command = new UpdateOfferCommand($offer, OfferData::from($request->all()));
-        $offer = $this->commandBus->dispatch($command);
+        $priceTypes = $this->queryBus->ask(new GetPriceTypesQuery);
 
-        return response()->json(OfferData::from($offer));
-    }
-
-    public function destroy(string $id): JsonResponse
-    {
-        $offer = $this->queryBus->ask(new GetOfferQuery($id));
-        $command = new DeleteOfferCommand($offer);
-        $this->commandBus->dispatch($command);
-
-        return response()->json(['message' => 'Offer deleted']);
+        return response()->json([
+            'price_types' => PriceTypeData::collect($priceTypes, DataCollection::class),
+        ]);
     }
 }

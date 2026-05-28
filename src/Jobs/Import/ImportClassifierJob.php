@@ -69,8 +69,8 @@ class ImportClassifierJob implements ShouldQueue
         }
 
         // Синхронизация типов цен
-        if (! empty($classifier->priceTypes)) {
-            $stats['priceTypes'] = $classifierService->syncPriceTypes($classifier->priceTypes);
+        if (! empty($classifier->price_types)) {
+            $stats['priceTypes'] = $classifierService->syncPriceTypes($classifier->price_types);
         }
 
         $this->logJobAction(

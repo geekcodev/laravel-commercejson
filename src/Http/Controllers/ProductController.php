@@ -4,14 +4,13 @@ declare(strict_types=1);
 
 namespace GeekCo\CommerceJson\Http\Controllers;
 
-use GeekCo\CommerceJson\Bus\CommandBusInterface;
 use GeekCo\CommerceJson\Bus\QueryBusInterface;
 use GeekCo\CommerceJson\Commands\CreateProductCommand;
 use GeekCo\CommerceJson\Commands\DeleteProductCommand;
-use GeekCo\CommerceJson\Commands\UpdateProductCommand;
 use GeekCo\CommerceJson\Data\ProductData;
 use GeekCo\CommerceJson\Queries\GetProductQuery;
 use GeekCo\CommerceJson\Queries\GetProductsQuery;
+use Illuminate\Contracts\Bus\Dispatcher;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Spatie\LaravelData\DataCollection;
@@ -19,7 +18,7 @@ use Spatie\LaravelData\DataCollection;
 class ProductController extends Controller
 {
     public function __construct(
-        private readonly CommandBusInterface $commandBus,
+        private readonly Dispatcher $commandBus,
         private readonly QueryBusInterface $queryBus
     ) {}
 
@@ -55,15 +54,6 @@ class ProductController extends Controller
         $product = $this->commandBus->dispatch($command);
 
         return response()->json(ProductData::from($product), 201);
-    }
-
-    public function update(Request $request, string $id): JsonResponse
-    {
-        $product = $this->queryBus->ask(new GetProductQuery($id));
-        $command = new UpdateProductCommand($product, ProductData::from($request->all()));
-        $product = $this->commandBus->dispatch($command);
-
-        return response()->json(ProductData::from($product));
     }
 
     public function destroy(string $id): JsonResponse

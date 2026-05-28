@@ -1,6 +1,6 @@
 services:
 
-  php:
+  app:
     restart: always
     image: ghcr.io/geekcodev/php:8.4-bookworm
     user: 1000:1000
