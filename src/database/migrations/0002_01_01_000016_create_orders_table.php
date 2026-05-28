@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use GeekCo\CommerceJson\Enums\CurrencyEnum;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -17,7 +18,7 @@ return new class extends Migration
             $table->string('status')->index('orders_status_idx');
             $table->string('document_type')->default('order')->index('orders_document_type_idx');
             $table->string('role')->nullable()->index('orders_role_idx');
-            $table->char('base_currency', 3)->nullable()->default('RUB');
+            $table->char('base_currency', 3)->nullable()->default(CurrencyEnum::RUB->value);
             $table->decimal('exchange_rate', 10, 4)->nullable()->default(1);
             $table->string('payment_terms')->nullable();
             $table->uuid('counterparty_id')->nullable()->index('orders_counterparty_id_idx');

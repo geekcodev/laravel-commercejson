@@ -34,6 +34,8 @@ class OrderCreateData extends Data
         public ?OrderPaymentData $payment,
         #[Required, ArrayType, Min(1), DataCollectionOf(OrderItemCreateData::class)]
         public array $items,
+        #[Required]
+        public OrderTotalsData $totals,
         #[Nullable, StringType, Uuid]
         public ?string $warehouse_id = null,
         #[Nullable, Enum(CurrencyEnum::class)]

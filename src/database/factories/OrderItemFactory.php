@@ -113,7 +113,7 @@ class OrderItemFactory extends CommerceJsonFactory
     {
         return $this->state(fn (array $attributes) => [
             'discount_amount' => $discountAmount,
-            'discount_currency' => 'RUB',
+            'discount_currency' => CurrencyEnum::RUB->value,
             'total_amount' => $attributes['total_amount'] - $discountAmount,
         ]);
     }

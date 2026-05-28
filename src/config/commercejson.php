@@ -1,5 +1,6 @@
 <?php
 
+use GeekCo\CommerceJson\Enums\CurrencyEnum;
 use GeekCo\CommerceJson\Events\OrderImported;
 use GeekCo\CommerceJson\Events\ProductsImported;
 use GeekCo\CommerceJson\Models\Category;
@@ -23,6 +24,9 @@ return [
     */
 
     'base_url' => env('COMMERCEJSON_BASE_URL', 'https://api.example.com/v1'),
+
+    // Валюта по умолчанию (ISO 4217) — используется при создании заказов без указания base_currency
+    'default_currency' => env('COMMERCEJSON_DEFAULT_CURRENCY', CurrencyEnum::RUB->value),
 
     'auth' => [
         'type' => env('COMMERCEJSON_AUTH_TYPE', 'bearer'), // bearer, basic, session

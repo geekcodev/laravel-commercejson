@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use GeekCo\CommerceJson\Enums\CurrencyEnum;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -17,7 +18,7 @@ return new class extends Migration
 
             // Price - основная цена
             $table->decimal('price_amount', 15, 2);
-            $table->char('price_currency', 3)->default('RUB');
+            $table->char('price_currency', 3)->default(CurrencyEnum::RUB->value);
 
             // Discounted price - цена со скидкой
             $table->decimal('price_with_discount_amount', 15, 2)->nullable();

@@ -203,13 +203,13 @@ abstract class TestCase extends BaseTestCase
                     'id' => $this->createTestUuid(),
                     'product_id' => $this->createTestUuid(),
                     'quantity' => 1,
-                    'price' => ['amount' => '100.00', 'currency' => 'RUB'],
-                    'total' => ['amount' => '100.00', 'currency' => 'RUB'],
+                    'price' => ['amount' => '100.00', 'currency' => CurrencyEnum::RUB->value],
+                    'total' => ['amount' => '100.00', 'currency' => CurrencyEnum::RUB->value],
                 ],
             ],
             'totals' => $attributes['totals'] ?? [
-                'subtotal' => ['amount' => '100.00', 'currency' => 'RUB'],
-                'total' => ['amount' => '100.00', 'currency' => 'RUB'],
+                'subtotal' => ['amount' => '100.00', 'currency' => CurrencyEnum::RUB->value],
+                'total' => ['amount' => '100.00', 'currency' => CurrencyEnum::RUB->value],
             ],
         ]);
     }
@@ -231,7 +231,7 @@ abstract class TestCase extends BaseTestCase
             'prices' => $attributes['prices'] ?? [
                 [
                     'price_type_id' => $this->createTestUuid(),
-                    'price' => ['amount' => '100.00', 'currency' => 'RUB'],
+                    'price' => ['amount' => '100.00', 'currency' => CurrencyEnum::RUB->value],
                 ],
             ],
         ]);
