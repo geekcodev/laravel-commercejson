@@ -11,9 +11,11 @@ use GeekCo\CommerceJson\Commands\UpsertOrderCommand;
 use GeekCo\CommerceJson\Data\ImportResultData;
 use GeekCo\CommerceJson\Data\OrderData;
 use GeekCo\CommerceJson\Data\OrderImportData;
+use GeekCo\CommerceJson\Exceptions\ForeignKeyViolationException;
 use GeekCo\CommerceJson\Queries\GetOrderQuery;
 use GeekCo\CommerceJson\Queries\GetOrdersQuery;
 use Illuminate\Contracts\Bus\Dispatcher;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Spatie\LaravelData\DataCollection;
@@ -80,6 +82,11 @@ class OrderController extends Controller
                     OrderData::from($bulkItem->toArray())
                 ));
                 $processed++;
+            } catch (QueryException $e) {
+                $errors[] = [
+                    'id' => $bulkItem->id ?? $bulkItem->external_id,
+                    'message' => new ForeignKeyViolationException($e)->getMessage(),
+                ];
             } catch (\Exception $e) {
                 $errors[] = [
                     'id' => $bulkItem->id ?? $bulkItem->external_id,

@@ -8,8 +8,10 @@ use GeekCo\CommerceJson\Bus\QueryBusInterface;
 use GeekCo\CommerceJson\Commands\UpsertWarehouseCommand;
 use GeekCo\CommerceJson\Data\ImportResultData;
 use GeekCo\CommerceJson\Data\WarehouseData;
+use GeekCo\CommerceJson\Exceptions\ForeignKeyViolationException;
 use GeekCo\CommerceJson\Queries\GetWarehousesQuery;
 use Illuminate\Contracts\Bus\Dispatcher;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Spatie\LaravelData\DataCollection;
@@ -43,6 +45,8 @@ class WarehouseController extends Controller
                     new UpsertWarehouseCommand(WarehouseData::from($warehouseItem))
                 );
                 $processed++;
+            } catch (QueryException $e) {
+                $errors[] = ['message' => new ForeignKeyViolationException($e)->getMessage()];
             } catch (\Exception $e) {
                 $errors[] = ['message' => $e->getMessage()];
             }
