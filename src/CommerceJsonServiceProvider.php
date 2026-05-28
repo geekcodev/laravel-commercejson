@@ -133,6 +133,9 @@ class CommerceJsonServiceProvider extends ServiceProvider
             'commercejson'
         );
 
+        // Принимаем даты в различных форматах
+        config()->set('data.date_format', ['Y-m-d H:i:s', DATE_ATOM, 'Y-m-d\TH:i:s']);
+
         // Регистрация HTTP клиента
         $this->app->singleton(HttpClientInterface::class, function ($app) {
             $logger = config('commercejson.logging.enabled')
