@@ -13,7 +13,7 @@ use Spatie\LaravelData\Data;
 class OrderImportData extends Data
 {
     public function __construct(
-        #[Required, ArrayType, Min(1), DataCollectionOf(OrderData::class)]
+        #[Required, ArrayType, Min(1), DataCollectionOf(OrderBulkUpdateItemData::class)]
         public array $orders,
     ) {}
 }

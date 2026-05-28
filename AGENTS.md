@@ -288,7 +288,6 @@ ExchangeManager → ProductImporter / OrderImporter / ClassifierImporter / Order
 
 | Проблема                    | Детали                                                                                                                                                    |
 |-----------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `POST /orders/bulk`         | Использует `OrderData` вместо spec'ового `OrderBulkUpdateItemData`. Работает, т.к. контроллер конвертирует в `OrderData` и диспатчит `UpsertOrderCommand` |
 | `CategoryController`        | Мёртвый — нет роутов; категории доступны только через `/catalog/classifier`                                                                               |
 | `OfferController::show()`   | Мёртвый — нет роута `GET /offers/{id}`                                                                                                                    |
 | `UpdateProductCommand`      | Зарегистрирован в `Bus::map()` но никогда не диспатчится                                                                                                  |
@@ -298,15 +297,13 @@ ExchangeManager → ProductImporter / OrderImporter / ClassifierImporter / Order
 | `GetOfferQuery`             | Зарегистрирован в QueryBus но не используется                                                                                                             |
 | `GetCategoryQuery`          | То же                                                                                                                                                     |
 | `GetCategoriesQuery`        | То же                                                                                                                                                     |
-| `OrderBulkUpdateItemData`   | Мёртвый DTO — оставлен для будущей spec-compliant реализации bulk                                                                                         |
-| `OrderItemUpdateData`       | То же                                                                                                                                                     |
 
 ---
 
 ## Тестирование
 
 ```bash
-docker compose exec app vendor/bin/pest           # Запуск всех тестов (Pest v3.8, 37 тестов, 180 assertions)
+docker compose exec app vendor/bin/pest           # Запуск всех тестов (Pest v3.8, 39 тестов, 186 assertions)
 docker compose exec app vendor/bin/pest --parallel# Параллельный запуск
 docker compose exec app composer analyse          # PHPStan статический анализ
 docker compose exec app composer format           # Laravel Pint code style
@@ -353,6 +350,28 @@ docker compose exec app composer format           # Laravel Pint code style
 - Исправлен `CommerceJsonHttpClientTest` — добавлен префикс `test_` к 12 методам
 - Исправлен `test()->instance()` → `app()->instance()` для совместимости с IDE
 - Все 37 тестов проходят (180 assertions), 1 warning (code coverage), 1 deprecation
+
+### Сессия 3 — POST /orders/bulk delivery tracking, date format fix
+
+- Исправлена ошибка `CannotCreateData: constructor requires 8 parameters, 7 given (missing: type)`:
+  `OrderBulkUpdateItemData` теперь использует `OrderDeliveryTrackData` (3 nullable поля вместо `OrderDeliveryData` с
+  required `type`)
+- `OrderDeliveryTrackData` — новый DTO для частичного обновления доставки в bulk (spec: `tracking_number`,
+  `shipped_at`, `estimated_date`; 3 поля, все nullable, без `type`/`address`/`cost`)
+- `OrderDeliveryData` — возвращён required `type` (spec для create/patch, не для bulk)
+- Исправлена пропавшая `use Spatie\LaravelData\Data;` + `use Spatie\LaravelData\Attributes\Validation\StringType;`
+  в `OrderDeliveryData.php`
+- `UpsertOrderCommand` — добавлено поле `?OrderDeliveryTrackData $deliveryTrack` для передачи данных
+  доставки отдельно от `OrderData`
+- `UpsertOrderCommandHandler` — обновляет `delivery_tracking_number`, `delivery_shipped_at`,
+  `delivery_estimated_date` напрямую через `$order->update()` если `deliveryTrack` передан
+- `OrderController::bulkUpdate()` — передаёт `$bulkItem->delivery` в `UpsertOrderCommand`
+- Исправлен `date_format` в `tests/TestCase.php`: заменён `DATE_ATOM` на массив форматов,
+  поддерживающий `Z`-суффикс (`2026-05-28T19:30:12.949Z`), дробные секунды и дату без времени (`Y-m-d`)
+- `OrderDeliveryTrackData` — убран `#[StringType]` с Carbon-полей (конфликт с DateTimeInterfaceCast)
+- PHPStan: исправлены ошибки (nullsafe, missing imports)
+- Добавлен тест `it handles delivery tracking in bulk import` с точными данными из spec
+- Все 39 тестов проходят (186 assertions), PHPStan clean
 
 ---
 

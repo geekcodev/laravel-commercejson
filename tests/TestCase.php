@@ -52,7 +52,17 @@ abstract class TestCase extends BaseTestCase
     protected function defineEnvironment($app): void
     {
         $app['config']->set('data', [
-            'date_format' => DATE_ATOM,
+            'date_format' => [
+                'Y-m-d H:i:s',
+                DATE_ATOM,
+                'Y-m-d\\TH:i:s',
+                'Y-m-d\\TH:i:s\\Z',
+                'Y-m-d\\TH:i:s.u\\Z',
+                'Y-m-d\\TH:i:s.uP',
+                'Y-m-d\\TH:i:s.v\\Z',
+                'Y-m-d\\TH:i:s.vP',
+                'Y-m-d',
+            ],
             'date_timezone' => null,
             'features' => [
                 'cast_and_transform_iterables' => false,

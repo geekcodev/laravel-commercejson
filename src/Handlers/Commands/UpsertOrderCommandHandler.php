@@ -23,10 +23,25 @@ class UpsertOrderCommandHandler implements CommandHandlerInterface
         assert($command instanceof UpsertOrderCommand);
 
         return DB::transaction(function () use ($command) {
-            return $this->repository->updateOrCreate(
+            $order = $this->repository->updateOrCreate(
                 ['id' => $command->orderData->id],
                 $command->orderData->toArray()
             );
+
+            if ($command->deliveryTrack) {
+                $updates = array_filter([
+                    'delivery_tracking_number' => $command->deliveryTrack->tracking_number,
+                    'delivery_shipped_at' => $command->deliveryTrack->shipped_at,
+                    'delivery_estimated_date' => $command->deliveryTrack->estimated_date,
+                ], fn ($v) => $v !== null);
+
+                if (! empty($updates)) {
+                    $order->update($updates);
+                    $order = $order->fresh();
+                }
+            }
+
+            return $order;
         });
     }
 }
