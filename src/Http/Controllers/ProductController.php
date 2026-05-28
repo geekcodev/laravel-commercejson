@@ -64,9 +64,10 @@ class ProductController extends Controller
                 $this->commandBus->dispatch(new UpsertProductCommand($productData));
                 $processed++;
             } catch (QueryException $e) {
-                $errors[] = ['id' => $productData->id, 'message' => new ForeignKeyViolationException($e)->getMessage()];
+                $fe = new ForeignKeyViolationException($e);
+                $errors[] = ['id' => $productData->id, 'code' => $fe->errorCode, 'message' => $fe->getMessage()];
             } catch (\Exception $e) {
-                $errors[] = ['id' => $productData->id, 'message' => $e->getMessage()];
+                $errors[] = ['id' => $productData->id, 'code' => 'INTERNAL_ERROR', 'message' => $e->getMessage()];
             }
         }
 

@@ -83,7 +83,8 @@ class ClassifierController extends Controller
                         $this->commandBus->dispatch(new UpsertCategoryCommand($categoryData));
                         $processed++;
                     } catch (QueryException $e) {
-                        $errors[] = ['id' => $categoryData->id, 'message' => new ForeignKeyViolationException($e)->getMessage()];
+                        $fe = new ForeignKeyViolationException($e);
+                        $errors[] = ['id' => $categoryData->id, 'code' => $fe->errorCode, 'message' => $fe->getMessage()];
                     } catch (\Exception $e) {
                         $errors[] = ['id' => $categoryData->id, 'message' => $e->getMessage()];
                     }
@@ -96,7 +97,8 @@ class ClassifierController extends Controller
                         $this->commandBus->dispatch(new UpsertPropertyDefinitionCommand($propertyData));
                         $processed++;
                     } catch (QueryException $e) {
-                        $errors[] = ['id' => $propertyData->id, 'message' => new ForeignKeyViolationException($e)->getMessage()];
+                        $fe = new ForeignKeyViolationException($e);
+                        $errors[] = ['id' => $propertyData->id, 'code' => $fe->errorCode, 'message' => $fe->getMessage()];
                     } catch (\Exception $e) {
                         $errors[] = ['id' => $propertyData->id, 'message' => $e->getMessage()];
                     }
@@ -109,7 +111,8 @@ class ClassifierController extends Controller
                         $this->commandBus->dispatch(new UpsertPriceTypeCommand($priceTypeData));
                         $processed++;
                     } catch (QueryException $e) {
-                        $errors[] = ['id' => $priceTypeData->id, 'message' => new ForeignKeyViolationException($e)->getMessage()];
+                        $fe = new ForeignKeyViolationException($e);
+                        $errors[] = ['id' => $priceTypeData->id, 'code' => $fe->errorCode, 'message' => $fe->getMessage()];
                     } catch (\Exception $e) {
                         $errors[] = ['id' => $priceTypeData->id, 'message' => $e->getMessage()];
                     }

@@ -7,9 +7,12 @@ namespace GeekCo\CommerceJson\Http\Controllers;
 use GeekCo\CommerceJson\Bus\QueryBusInterface;
 use GeekCo\CommerceJson\Commands\CreateCounterpartyCommand;
 use GeekCo\CommerceJson\Data\CounterpartyData;
+use GeekCo\CommerceJson\Data\ErrorResponseData;
+use GeekCo\CommerceJson\Exceptions\ForeignKeyViolationException;
 use GeekCo\CommerceJson\Queries\GetCounterpartiesQuery;
 use GeekCo\CommerceJson\Queries\GetCounterpartyQuery;
 use Illuminate\Contracts\Bus\Dispatcher;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Spatie\LaravelData\DataCollection;
@@ -49,9 +52,18 @@ class CounterpartyController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $command = new CreateCounterpartyCommand(CounterpartyData::from($request->all()));
-        $counterparty = $this->commandBus->dispatch($command);
+        try {
+            $command = new CreateCounterpartyCommand(CounterpartyData::from($request->all()));
+            $counterparty = $this->commandBus->dispatch($command);
 
-        return response()->json(CounterpartyData::from($counterparty), 201);
+            return response()->json(CounterpartyData::from($counterparty), 201);
+        } catch (QueryException $e) {
+            $fe = new ForeignKeyViolationException($e);
+
+            return response()->json(
+                ErrorResponseData::from(['error' => ['code' => $fe->errorCode, 'message' => $fe->getMessage()]]),
+                422
+            );
+        }
     }
 }
