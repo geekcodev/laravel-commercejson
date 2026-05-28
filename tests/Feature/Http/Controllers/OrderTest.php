@@ -197,6 +197,56 @@ describe('OrderController', function () {
                 ]);
         });
 
+        it('handles delivery tracking in bulk import', function () {
+            $commandBus = mockCommandBus();
+
+            $commandBus->shouldReceive('dispatch')
+                ->once()
+                ->andReturn(true);
+
+            $response = $this->postJson('/api/commercejson/orders/bulk', [
+                'orders' => [
+                    [
+                        'id' => '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+                        'external_id' => 'string',
+                        'status' => 'new',
+                        'comment' => 'string',
+                        'delivery' => [
+                            'tracking_number' => 'string',
+                            'shipped_at' => '2026-05-28T19:30:12.949Z',
+                            'estimated_date' => '2026-05-28',
+                        ],
+                        'items' => [
+                            [
+                                'id' => '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+                                'product_id' => '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+                                'variant_id' => '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+                                'quantity' => 1,
+                                'price' => ['amount' => '1500.00', 'currency' => CurrencyEnum::RUB->value],
+                            ],
+                            [
+                                'id' => '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+                                'product_id' => '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+                                'variant_id' => '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+                                'quantity' => 1,
+                                'price' => ['amount' => '1500.00', 'currency' => CurrencyEnum::RUB->value],
+                            ],
+                        ],
+                        'custom_attributes' => [
+                            ['key' => 'string', 'value' => 'string'],
+                        ],
+                    ],
+                ],
+            ]);
+
+            $response->assertStatus(200)
+                ->assertJson([
+                    'success' => true,
+                    'processed' => 1,
+                    'errors' => [],
+                ]);
+        });
+
         it('reports errors in bulk import', function () {
             $commandBus = mockCommandBus();
 

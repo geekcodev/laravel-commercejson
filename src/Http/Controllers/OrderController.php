@@ -154,8 +154,44 @@ class OrderController extends Controller
 
         foreach ($importData->orders as $bulkItem) {
             try {
+                $orderArray = array_filter([
+                    'id' => $bulkItem->id,
+                    'external_id' => $bulkItem->external_id,
+                    'status' => $bulkItem->status,
+                    'comment' => $bulkItem->comment,
+                    'custom_attributes' => $bulkItem->custom_attributes,
+                ], fn ($v) => $v !== null);
+
+                $orderArray['id'] ??= (string) Str::uuid();
+                $orderArray['status'] ??= OrderStatusEnum::New;
+
+                if ($bulkItem->items) {
+                    $items = [];
+                    foreach ($bulkItem->items as $item) {
+                        $currency = $item->price ? $item->price->currency->value : CurrencyEnum::RUB->value;
+                        $amount = $item->price ? $item->price->amount : '0';
+                        $items[] = [
+                            'id' => $item->id ?? (string) Str::uuid(),
+                            'product_id' => $item->product_id ?? '',
+                            'variant_id' => $item->variant_id,
+                            'quantity' => $item->quantity ?? 1,
+                            'price' => ['amount' => $amount, 'currency' => $currency],
+                            'total' => ['amount' => $amount, 'currency' => $currency],
+                        ];
+                    }
+                    $orderArray['items'] = $items;
+
+                    $sum = array_reduce($items, fn ($c, $i) => $c + ((float) $i['price']['amount'] * $i['quantity']), 0);
+                    $currency = $items[0]['price']['currency'] ?? CurrencyEnum::RUB->value;
+                    $orderArray['totals'] = [
+                        'subtotal' => ['amount' => number_format($sum, 2, '.', ''), 'currency' => $currency],
+                        'total' => ['amount' => number_format($sum, 2, '.', ''), 'currency' => $currency],
+                    ];
+                }
+
                 $this->commandBus->dispatch(new UpsertOrderCommand(
-                    OrderData::from($bulkItem->toArray())
+                    OrderData::from($orderArray),
+                    $bulkItem->delivery
                 ));
                 $processed++;
             } catch (QueryException $e) {

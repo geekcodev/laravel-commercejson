@@ -26,7 +26,7 @@ class OrderBulkUpdateItemData extends Data
         #[Nullable, StringType]
         public ?string $comment = null,
         #[Nullable]
-        public mixed $delivery = null,
+        public ?OrderDeliveryTrackData $delivery = null,
         #[Nullable, ArrayType, Min(1), DataCollectionOf(OrderItemUpdateData::class)]
         public ?array $items = null,
         #[Nullable, ArrayType, DataCollectionOf(CustomAttributeData::class)]
