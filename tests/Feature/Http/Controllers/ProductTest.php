@@ -98,25 +98,27 @@ describe('ProductController', function () {
 
     describe('DELETE /catalog/products/{id}', function () {
         it('soft-deletes a product', function () {
-            $commandBus = mockCommandBus();
             $queryBus = mockQueryBus();
             $productId = test()->createTestUuid();
-            $product = Product::factory()->make([
+            $product = Product::factory()->create([
                 'id' => $productId,
+                'name' => 'Test Product',
+                'code' => 'TST',
                 'category_id' => test()->createTestUuid(),
             ]);
 
             $queryBus->shouldReceive('ask')
                 ->once()
                 ->andReturn($product);
-            $commandBus->shouldReceive('dispatch')
-                ->once()
-                ->andReturn(true);
 
             $response = $this->deleteJson("/api/commercejson/catalog/products/{$productId}");
 
             $response->assertStatus(200)
-                ->assertJson(['message' => 'Product deleted']);
+                ->assertJson([
+                    'id' => $productId,
+                    'is_active' => false,
+                ]);
+            expect($response->json('deleted_at'))->not->toBeNull();
         });
     });
 });

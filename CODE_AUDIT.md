@@ -495,7 +495,7 @@ tests/
 
 ### A. Ссылки
 
-- [OpenAPI spec](openapi-v1.0.8.yaml) — единственный источник истины
+- [OpenAPI spec](spec.yaml) — единственный источник истины
 - [Тестовая спецификация](TEST_SUITE_PHP_LARAVEL.md) — тест-план по OpenAPI (требует актуализации под код)
 - [AGENTS.md](AGENTS.md) — документация архитектуры
 - [OWASP Top 10](https://owasp.org/www-project-top-ten/)

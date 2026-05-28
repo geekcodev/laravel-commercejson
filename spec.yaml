@@ -1,0 +1,2682 @@
+openapi: 3.1.0
+
+info:
+  title: CommerceJSON API
+  version: 1.0.8
+  description: |
+    **CommerceJSON 1.0** — открытый стандарт обмена коммерческими данными на базе JSON/REST.
+    Является функциональным аналогом стандарта CommerceML 2 (1С) с поддержкой двустороннего обмена,
+    инкрементальной синхронизации и расширенной бухгалтерской логикой.
+
+    ## Сущности стандарта
+    - **Классификатор** — дерево категорий, справочник свойств, типы цен, владелец (CML2: Классификатор)
+    - **Каталог** — товары с вариантами, производителем, аналогами, комплектующими (CML2: Каталог)
+    - **Предложения (Offers)** — цены по типам, остатки по складам, даты действия пакета (CML2: ПакетПредложений)
+    - **Документы/Заказы** — все типы хозяйственных операций, роли, связанные документы (CML2: Документ)
+    - **Контрагенты** — юрлица, физлица, ИП с полными российскими реквизитами (CML2: Контрагент)
+    - **Склады** — справочник складов (CML2: Склад)
+
+    ## Протокол обмена
+    - Обмен инициируется любой из сторон (ERP → сайт или сайт → ERP).
+    - Авторизация: Bearer-токен, Basic Auth или Session-токен из `/handshake`.
+    - Пакетные операции используют `POST`; `GET`-эндпоинты поддерживают пагинацию,
+      инкрементальный обмен (`updated_after`) и выгрузку удалённых записей (`include_deleted`).
+
+    ## Денежные суммы
+    Поле `amount` в объекте `Money` передаётся как **строка** вида `"1500.00"`.
+    Это исключает потери точности, присущие типу `number` (IEEE 754 double), и гарантирует точность до копейки.
+
+    ## Идемпотентность
+    Все операции записи (POST/PATCH) принимают опциональный заголовок `X-Idempotency-Key`.
+    Это критически важно для надежной работы в условиях нестабильной сети (повторные попытки не создают дублей).
+
+    ## Changelog v1.0.8
+    - `OrderItemUpdate`: исправлена критическая ошибка — отсутствие идентификации позиции.
+      Добавлен `anyOf:[{required:[product_id,quantity]},{required:[id,quantity]}]`: новая позиция
+      требует `product_id`; обновление существующей требует `id`; пустой объект или объект
+      только с `quantity` теперь отклоняется схемой.
+    - `PaymentStatus`: выделен в отдельную именованную схему (переиспользуется в `OrderPayment`
+      и новом поле `OrderPatch.payment`).
+    - `OrderPatch`: добавлено поле `payment` — частичное обновление статуса оплаты, суммы и
+      даты транзакции без изменения других реквизитов заказа.
+    - `OrderCreate.document_type`: добавлен в `required` — `default` является аннотацией JSON Schema
+      и не участвует в валидации; обязательное поле делает `if/then` детерминированным и исключает
+      создание заказа типа `order` без доставки путём пропуска `document_type`.
+
+    ## Changelog v1.0.7
+    - `OrderBulkUpdateItem`: добавлено поле `items` (тип `OrderItemUpdate`) — ERP теперь может
+      передавать обновлённый состав заказа при синхронизации 1С → сайт. Семантика: полная
+      замена позиций заказа при наличии поля; если поле отсутствует — позиции не меняются.
+    - `OrderPatch`: добавлено поле `items` — аналогично, для ручного обновления состава
+      через `PATCH /orders/{id}`.
+    - Новая схема `OrderItemUpdate` — позиция для обновления заказа: содержит опциональные
+      `id` (идентификация существующей позиции) и `price` (переопределение цены из ERP),
+      в отличие от `OrderItemCreate` которая используется при первичном создании.
+    - `OfferPrice`: добавлено опциональное поле `unit` (`$ref: Unit`) — поддержка ценообразования
+      в единице, отличной от базовой единицы товара (аналог ЕдиницаИзмерения в Цена CML2).
+      Пример: товар продаётся в штуках, но оптовая цена указана за паллету (360 шт).
+
+    ## Changelog v1.0.6
+    - `PUT /catalog/classifier` → `POST /catalog/classifier` — устранена регрессия v1.0.5;
+      приведён в соответствие с остальными bulk-операциями (postProducts, postOffers…)
+    - `OrderCreate`: добавлен `required: [items]` на верхнем уровне — позиции обязательны
+      для любого типа документа, не только для `order`
+    - `OrderBulkUpdateItem`: добавлен `anyOf: [{required:[id]},{required:[external_id]}]` —
+      схема теперь отклоняет запросы без идентификатора заказа
+    - Nullable UUID поля (`variant_id`, `counterparty_id`, `warehouse_id`, `parent_id`):
+      заменены на `oneOf:[{type:string,format:uuid},{type:"null"}]` — строгое соответствие
+      OAS 3.1 и корректная работа строгих code-генераторов
+    - `OrderCreate.document_type`: добавлен `default: order`
+    - `OrderPatch.delivery`: убрано поле `type` — смена типа доставки не является
+      операцией частичного обновления и обходила бы if/then валидацию OrderDelivery
+    - `Classifier.version`: расширено описание — упомянуто использование для optimistic locking
+    - Исправлен changelog v1.0.5: убрано ложное упоминание "OpenAPI 3.2.0"
+      (такая версия стандарта не опубликована; актуальный стандарт — OpenAPI 3.1.0)
+
+    ## Changelog v1.0.5 (исправленный)
+    - `OrderCreate`: условная валидация — `delivery` и `payment` обязательны только для `document_type=order`
+    - `OrderImport`: отдельная схема `OrderBulkUpdateItem` для bulk-импорта без `readOnly`-полей
+    - `Unit`: унифицирована схема единиц измерения (аналог БазоваяЕдиница CML2)
+    - `Manufacturer`: уточнена связь между владельцем бренда и изготовителем
+  contact:
+    name: CommerceJSON Standard
+  license:
+    name: MIT
+    identifier: Evgeny Semenov
+servers:
+  - url: https://example.com/api/commercejson/v1
+    description: Продуктивный сервер
+
+security:
+  - bearerAuth: [ ]
+  - basicAuth: [ ]
+  - sessionAuth: [ ]
+
+tags:
+  - name: handshake
+    description: Инициализация сессии обмена
+  - name: catalog
+    description: Классификатор, категории и товары
+  - name: offers
+    description: Цены, остатки и предложения
+  - name: orders
+    description: Документы, заказы и статусы
+  - name: counterparties
+    description: Контрагенты (юрлица, физлица, ИП)
+  - name: warehouses
+    description: Справочник складов
+
+paths:
+  /handshake:
+    get:
+      tags: [ handshake ]
+      summary: Проверка соединения и параметры обмена
+      operationId: handshake
+      parameters:
+        - $ref: "#/components/parameters/XRequestId"
+      responses:
+        "200":
+          description: Успешная инициализация
+          headers:
+            X-Request-ID:
+              $ref: "#/components/headers/XRequestIdHeader"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HandshakeResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /catalog/classifier:
+    get:
+      tags: [ catalog ]
+      summary: Получить классификатор (категории + свойства + типы цен)
+      operationId: getClassifier
+      parameters:
+        - $ref: "#/components/parameters/UpdatedAfter"
+        - $ref: "#/components/parameters/XRequestId"
+      responses:
+        "200":
+          description: Классификатор
+          headers:
+            X-Request-ID:
+              $ref: "#/components/headers/XRequestIdHeader"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Classifier"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [ catalog ]
+      summary: Полная замена / обновление классификатора
+      description: |
+        Заменяет текущий классификатор. Идемпотентен при передаче `X-Idempotency-Key`.
+      operationId: postClassifier
+      parameters:
+        - $ref: "#/components/parameters/XRequestId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Classifier"
+      responses:
+        "200":
+          $ref: "#/components/responses/ImportResult"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/BusinessError"
+
+  /catalog/products:
+    get:
+      tags: [ catalog ]
+      summary: Список товаров (с пагинацией)
+      operationId: getProducts
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/UpdatedAfter"
+        - $ref: "#/components/parameters/IncludeDeleted"
+        - $ref: "#/components/parameters/XRequestId"
+        - name: category_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Фильтр по категории
+        - name: is_active
+          in: query
+          schema:
+            type: boolean
+          description: Фильтр по активности
+      responses:
+        "200":
+          description: Список товаров
+          headers:
+            X-Request-ID:
+              $ref: "#/components/headers/XRequestIdHeader"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [ catalog ]
+      summary: Пакетная загрузка / обновление товаров (upsert)
+      description: |
+        Принимает массив товаров. Если товар с `id` или `external_id` уже существует — обновляет,
+        иначе создаёт. Операция частично идемпотентна при передаче `X-Idempotency-Key`.
+      operationId: postProducts
+      parameters:
+        - $ref: "#/components/parameters/XRequestId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductImport"
+      responses:
+        "200":
+          $ref: "#/components/responses/ImportResult"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/BusinessError"
+
+  /catalog/products/{id}:
+    get:
+      tags: [ catalog ]
+      summary: Получить один товар по ID
+      operationId: getProduct
+      parameters:
+        - $ref: "#/components/parameters/EntityId"
+        - $ref: "#/components/parameters/XRequestId"
+      responses:
+        "200":
+          description: Товар
+          headers:
+            X-Request-ID:
+              $ref: "#/components/headers/XRequestIdHeader"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [ catalog ]
+      summary: Деактивировать товар (soft delete)
+      description: |
+        Устанавливает `is_active: false` и фиксирует `deleted_at`.
+        При инкрементальной выгрузке с `include_deleted=true` запись вернётся
+        с заполненным `deleted_at` для синхронизации удалений на клиенте.
+      operationId: deleteProduct
+      parameters:
+        - $ref: "#/components/parameters/EntityId"
+        - $ref: "#/components/parameters/XRequestId"
+      responses:
+        "200":
+          description: Товар деактивирован; возвращается объект с is_active=false и deleted_at
+          headers:
+            X-Request-ID:
+              $ref: "#/components/headers/XRequestIdHeader"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /offers:
+    get:
+      tags: [ offers ]
+      summary: Получить предложения (цены + остатки)
+      operationId: getOffers
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/UpdatedAfter"
+        - $ref: "#/components/parameters/IncludeDeleted"
+        - $ref: "#/components/parameters/XRequestId"
+        - name: price_type_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Фильтр по типу цены
+        - name: warehouse_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Фильтр по складу
+      responses:
+        "200":
+          description: Список предложений
+          headers:
+            X-Request-ID:
+              $ref: "#/components/headers/XRequestIdHeader"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OfferList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [ offers ]
+      summary: Пакетная загрузка / обновление предложений
+      description: |
+        Принимает предложения без поля `pagination`. Может содержать inline-справочники
+        `price_types` и `warehouses` для атомарного обновления.
+      operationId: postOffers
+      parameters:
+        - $ref: "#/components/parameters/XRequestId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OfferImport"
+      responses:
+        "200":
+          $ref: "#/components/responses/ImportResult"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/BusinessError"
+
+  /offers/price-types:
+    get:
+      tags: [ offers ]
+      summary: Справочник типов цен
+      operationId: getPriceTypes
+      parameters:
+        - $ref: "#/components/parameters/XRequestId"
+      responses:
+        "200":
+          description: Типы цен
+          headers:
+            X-Request-ID:
+              $ref: "#/components/headers/XRequestIdHeader"
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ price_types ]
+                properties:
+                  price_types:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/PriceType"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /orders:
+    get:
+      tags: [ orders ]
+      summary: Список заказов / документов
+      operationId: getOrders
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/UpdatedAfter"
+        - $ref: "#/components/parameters/IncludeDeleted"
+        - $ref: "#/components/parameters/XRequestId"
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/OrderStatus"
+          description: Фильтр по статусу
+        - name: document_type
+          in: query
+          schema:
+            $ref: "#/components/schemas/DocumentType"
+          description: Фильтр по типу документа (ХозОперация)
+      responses:
+        "200":
+          description: Список заказов
+          headers:
+            X-Request-ID:
+              $ref: "#/components/headers/XRequestIdHeader"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [ orders ]
+      summary: Создать новый заказ / документ
+      operationId: createOrder
+      parameters:
+        - $ref: "#/components/parameters/XRequestId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrderCreate"
+      responses:
+        "201":
+          description: Заказ создан
+          headers:
+            X-Request-ID:
+              $ref: "#/components/headers/XRequestIdHeader"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/BusinessError"
+
+  /orders/bulk:
+    post:
+      tags: [ orders ]
+      summary: Пакетный импорт статусов и реквизитов заказов (ERP → сайт)
+      description: |
+        Массовое обновление заказов. Идентификация по `id` или `external_id`
+        (если оба переданы — приоритет у `id`).
+      operationId: postOrdersBulk
+      parameters:
+        - $ref: "#/components/parameters/XRequestId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrderImport"
+      responses:
+        "200":
+          $ref: "#/components/responses/ImportResult"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/BusinessError"
+
+  /orders/{id}:
+    get:
+      tags: [ orders ]
+      summary: Получить заказ по ID
+      operationId: getOrder
+      parameters:
+        - $ref: "#/components/parameters/EntityId"
+        - $ref: "#/components/parameters/XRequestId"
+      responses:
+        "200":
+          description: Заказ
+          headers:
+            X-Request-ID:
+              $ref: "#/components/headers/XRequestIdHeader"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      tags: [ orders ]
+      summary: Обновить статус / реквизиты заказа
+      description: |
+        Позволяет частично обновлять заказ.
+        Для обновления полей доставки используйте только те поля, которые нужно изменить.
+      operationId: patchOrder
+      parameters:
+        - $ref: "#/components/parameters/EntityId"
+        - $ref: "#/components/parameters/XRequestId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrderPatch"
+      responses:
+        "200":
+          description: Обновлённый заказ
+          headers:
+            X-Request-ID:
+              $ref: "#/components/headers/XRequestIdHeader"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/BusinessError"
+
+  /counterparties:
+    get:
+      tags: [ counterparties ]
+      summary: Список контрагентов
+      operationId: getCounterparties
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/UpdatedAfter"
+        - $ref: "#/components/parameters/IncludeDeleted"
+        - $ref: "#/components/parameters/XRequestId"
+        - name: type
+          in: query
+          schema:
+            $ref: "#/components/schemas/CounterpartyType"
+          description: Фильтр по типу контрагента
+      responses:
+        "200":
+          description: Список контрагентов
+          headers:
+            X-Request-ID:
+              $ref: "#/components/headers/XRequestIdHeader"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CounterpartyList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [ counterparties ]
+      summary: Пакетный импорт контрагентов
+      operationId: postCounterparties
+      parameters:
+        - $ref: "#/components/parameters/XRequestId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CounterpartyList"
+      responses:
+        "200":
+          $ref: "#/components/responses/ImportResult"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/BusinessError"
+
+  /counterparties/{id}:
+    get:
+      tags: [ counterparties ]
+      summary: Получить контрагента по ID
+      operationId: getCounterparty
+      parameters:
+        - $ref: "#/components/parameters/EntityId"
+        - $ref: "#/components/parameters/XRequestId"
+      responses:
+        "200":
+          description: Контрагент
+          headers:
+            X-Request-ID:
+              $ref: "#/components/headers/XRequestIdHeader"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Counterparty"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /warehouses:
+    get:
+      tags: [ warehouses ]
+      summary: Список складов
+      operationId: getWarehouses
+      parameters:
+        - $ref: "#/components/parameters/IncludeDeleted"
+        - $ref: "#/components/parameters/XRequestId"
+      responses:
+        "200":
+          description: Список складов
+          headers:
+            X-Request-ID:
+              $ref: "#/components/headers/XRequestIdHeader"
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ warehouses ]
+                properties:
+                  warehouses:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Warehouse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [ warehouses ]
+      summary: Пакетный импорт складов
+      operationId: postWarehouses
+      parameters:
+        - $ref: "#/components/parameters/XRequestId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ warehouses ]
+              properties:
+                warehouses:
+                  type: array
+                  minItems: 1
+                  items:
+                    $ref: "#/components/schemas/Warehouse"
+      responses:
+        "200":
+          $ref: "#/components/responses/ImportResult"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/BusinessError"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: JWT или opaque Bearer-токен
+    basicAuth:
+      type: http
+      scheme: basic
+      description: HTTP Basic Auth (login:password в base64)
+    sessionAuth:
+      type: apiKey
+      in: header
+      name: X-Session-Token
+      description: |
+        Токен сессии, возвращённый эндпоинтом `GET /handshake` в поле `session_token`.
+        Используется как альтернатива Bearer-токену.
+
+  parameters:
+    EntityId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: UUID сущности
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+      description: Номер страницы (начиная с 1)
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 1000
+        default: 100
+      description: |
+        Количество записей на страницу. Максимальное значение ограничено полем
+        `capabilities.max_page_size` из ответа `/handshake`.
+    UpdatedAfter:
+      name: updated_after
+      in: query
+      schema:
+        type: string
+        format: date-time
+      description: |
+        Вернуть только записи, у которых `updated_at` строго позже указанной даты (ISO 8601).
+        Используется для инкрементального обмена. Пример: `2025-01-01T00:00:00Z`.
+    IncludeDeleted:
+      name: include_deleted
+      in: query
+      schema:
+        type: boolean
+        default: false
+      description: |
+        Если `true` — включает в ответ записи с заполненным `deleted_at` (мягко удалённые).
+        Используется совместно с `updated_after` для синхронизации удалений на клиенте.
+    XRequestId:
+      name: X-Request-ID
+      in: header
+      required: false
+      schema:
+        type: string
+        format: uuid
+      description: Уникальный идентификатор запроса для трассировки в логах.
+    IdempotencyKey:
+      name: X-Idempotency-Key
+      in: header
+      required: false
+      schema:
+        type: string
+        format: uuid
+      description: |
+        Опциональный ключ идемпотентности. Если передан, повторный запрос с тем же ключом
+        вернёт кешированный ответ без повторной обработки (защита от дублирования при retry).
+
+  headers:
+    XRequestIdHeader:
+      description: Эхо входящего X-Request-ID или сгенерированный сервером UUID
+      schema:
+        type: string
+        format: uuid
+    RetryAfterHeader:
+      description: Количество секунд, через которое можно повторить запрос
+      schema:
+        type: integer
+        minimum: 0
+
+  responses:
+    ImportResult:
+      description: Результат пакетной операции
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/XRequestIdHeader"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ImportResult"
+    ValidationError:
+      description: Ошибка синтаксической валидации запроса (400)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    BusinessError:
+      description: |
+        Бизнес-логическая ошибка (422). Запрос синтаксически корректен, но нарушает
+        бизнес-правила (например, недопустимый переход статуса, недостаточно остатков).
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Unauthorized:
+      description: Не авторизован — отсутствует или недействителен токен (401)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: Сущность не найдена (404)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    RateLimited:
+      description: Превышен лимит запросов (429)
+      headers:
+        Retry-After:
+          $ref: "#/components/headers/RetryAfterHeader"
+        X-Request-ID:
+          $ref: "#/components/headers/XRequestIdHeader"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+  schemas:
+    # ── Общие ────────────────────────────────────────────────
+
+    ImportResult:
+      type: object
+      required: [ success, processed, errors ]
+      properties:
+        success:
+          type: boolean
+          description: true — все записи обработаны без ошибок; false — есть ошибки
+        processed:
+          type: integer
+          minimum: 0
+          readOnly: true
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/ImportError"
+        warnings:
+          type: array
+          description: Некритичные замечания
+          items:
+            type: string
+
+    ImportError:
+      type: object
+      required: [ message ]
+      properties:
+        id:
+          type: string
+          description: ID записи с ошибкой (если применимо)
+        code:
+          type: string
+          description: Машиночитаемый код ошибки (например, MISSING_CATEGORY)
+        message:
+          type: string
+          description: Описание ошибки для разработчика
+
+    ErrorResponse:
+      type: object
+      required: [ error ]
+      properties:
+        error:
+          type: object
+          required: [ code, message ]
+          properties:
+            code:
+              type: string
+              example: VALIDATION_ERROR
+            message:
+              type: string
+            details:
+              type: array
+              description: Список конкретных нарушений (для 400/422)
+              items:
+                type: string
+
+    Pagination:
+      type: object
+      required: [ page, limit, total, has_next ]
+      properties:
+        page:
+          type: integer
+          minimum: 1
+        limit:
+          type: integer
+          minimum: 1
+        total:
+          type: integer
+          minimum: 0
+          description: Общее количество записей, соответствующих фильтру
+        has_next:
+          type: boolean
+          description: Есть ли следующая страница
+
+    Money:
+      type: object
+      required: [ amount, currency ]
+      description: |
+        Денежная сумма. `amount` передаётся строкой для исключения потерь точности
+        при работе с числами с плавающей точкой (IEEE 754 double).
+      properties:
+        amount:
+          type: string
+          pattern: '^-?\d+(\.\d{1,2})?$'
+          description: |
+            Сумма в строковом представлении, до двух знаков после запятой.
+            Примеры: "1500.00", "99.9", "0.01", "-350.00"
+          example: "1500.00"
+        currency:
+          type: string
+          pattern: '^[A-Z]{3}$'
+          description: Код валюты ISO 4217 (RUB, USD, EUR, CNY…)
+          example: "RUB"
+
+    LocalizedString:
+      type: object
+      description: Строка с поддержкой локализации
+      minProperties: 1
+      properties:
+        ru:
+          type: string
+        en:
+          type: string
+      example:
+        ru: "Цвет"
+        en: "Color"
+
+    Address:
+      type: object
+      description: Адрес (аналог компонента Адрес в CML2)
+      properties:
+        country:
+          type: string
+          pattern: '^[A-Z]{2}$'
+          description: Код страны ISO 3166-1 alpha-2 (RU, US, DE…)
+        region:
+          type: string
+          description: Регион / область / штат
+        district:
+          type: string
+          description: Район
+        city:
+          type: string
+        street:
+          type: string
+        house:
+          type: string
+        building:
+          type: string
+          description: Корпус / строение
+        apartment:
+          type: string
+          description: Квартира / офис
+        postal_code:
+          type: string
+        full:
+          type: string
+          description: Полный адрес одной строкой
+
+    SeoMeta:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+          maxLength: 1000
+        keywords:
+          type: string
+
+    Dimensions:
+      type: object
+      description: Габариты в сантиметрах
+      properties:
+        length:
+          type: number
+          minimum: 0
+        width:
+          type: number
+          minimum: 0
+        height:
+          type: number
+          minimum: 0
+
+    Signatory:
+      type: object
+      description: |
+        Подписант документа или классификатора (аналог компонента Подписант в CML2).
+        Используется для юридически значимых реквизитов — руководитель, главный бухгалтер.
+      required: [ last_name, first_name ]
+      properties:
+        last_name:
+          type: string
+          description: Фамилия
+        first_name:
+          type: string
+          description: Имя
+        middle_name:
+          type: string
+          description: Отчество
+        position:
+          type: string
+          description: Должность (например, Генеральный директор)
+        basis:
+          type: string
+          description: Основание полномочий (например, Устав, Доверенность № 12)
+
+    # ── Handshake ────────────────────────────────────────────
+
+    HandshakeResponse:
+      type: object
+      required: [ version, server_time, capabilities, supported_versions ]
+      properties:
+        version:
+          type: string
+          description: Текущая версия стандарта CommerceJSON на сервере
+          example: "1.0.8"
+        supported_versions:
+          type: array
+          description: Все версии стандарта, поддерживаемые сервером
+          minItems: 1
+          items:
+            type: string
+          example: [ "1.0", "1.0.1", "1.0.2", "1.0.3", "1.0.4", "1.0.5", "1.0.6", "1.0.7", "1.0.8" ]
+        server_time:
+          type: string
+          format: date-time
+          readOnly: true
+          description: Серверное время (используйте для синхронизации часов при delta-sync)
+        capabilities:
+          $ref: "#/components/schemas/Capabilities"
+        session_token:
+          type: string
+          description: |
+            Опциональный токен сессии. Если возвращён — передавайте в заголовке
+            `X-Session-Token` (схема безопасности sessionAuth).
+
+    Capabilities:
+      type: object
+      description: Поддерживаемые возможности сервера
+      properties:
+        catalog:
+          type: boolean
+          default: false
+        offers:
+          type: boolean
+          default: false
+        orders:
+          type: boolean
+          default: false
+        counterparties:
+          type: boolean
+          default: false
+        warehouses:
+          type: boolean
+          default: false
+        delta_sync:
+          type: boolean
+          default: false
+          description: Поддержка параметра `updated_after`
+        idempotency:
+          type: boolean
+          default: false
+          description: Поддержка заголовка `X-Idempotency-Key`
+        max_page_size:
+          type: integer
+          minimum: 1
+          maximum: 1000
+          default: 100
+          description: Максимальное допустимое значение параметра `limit`
+
+    # ── Classifier ───────────────────────────────────────────
+
+    Classifier:
+      type: object
+      required: [ id, name ]
+      description: |
+        Классификатор устанавливает правила описания товаров: иерархию категорий,
+        справочник свойств и типы цен. Аналог ЭД Классификатор в CML2.
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          description: Наименование классификатора
+        version:
+          type: string
+          description: |
+            Произвольная метка версии классификатора (например, \"42\" или \"2025-04-01\").
+            Может использоваться для optimistic locking: клиент сохраняет версию при
+            получении и передаёт при обновлении — сервер отклоняет запрос (409 Conflict),
+            если версия не совпадает с текущей. Также полезна для кеширования
+            (клиент пропускает обработку если версия не изменилась).
+        owner_id:
+          type: string
+          format: uuid
+          description: |
+            UUID контрагента-владельца классификатора (аналог Владелец: Контрагент [1] в CML2).
+            В multi-tenant системах позволяет разграничивать классификаторы разных организаций.
+        categories:
+          type: array
+          items:
+            $ref: "#/components/schemas/Category"
+        properties:
+          type: array
+          description: Справочник свойств (характеристик) товаров
+          items:
+            $ref: "#/components/schemas/PropertyDefinition"
+        price_types:
+          type: array
+          description: |
+            Типы цен, используемые при формировании пакета предложений
+            (аналог ТипыЦен [0..n] в структуре Классификатора CML2).
+          items:
+            $ref: "#/components/schemas/PriceType"
+        signatories:
+          type: array
+          description: Подписанты классификатора (аналог Подписанты в CML2)
+          items:
+            $ref: "#/components/schemas/Signatory"
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        deleted_at:
+          type: string
+          format: date-time
+          readOnly: true
+          description: Дата мягкого удаления (tombstone)
+
+    Category:
+      type: object
+      required: [ id, name ]
+      description: Группа (категория) товаров. Аналог компонента Группа в CML2.
+      properties:
+        id:
+          type: string
+          format: uuid
+        parent_id:
+          oneOf:
+            - type: string
+              format: uuid
+            - type: 'null'
+          description: UUID родительской категории. null — для корневых категорий
+        name:
+          type: string
+          maxLength: 255
+        code:
+          type: string
+          description: Символьный код (используется в URL-slug)
+        sort:
+          type: integer
+          default: 0
+          description: Порядок сортировки (меньше = выше)
+        is_active:
+          type: boolean
+          default: true
+        image_url:
+          type: string
+          format: uri
+        seo:
+          $ref: "#/components/schemas/SeoMeta"
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+
+    PropertyDefinition:
+      type: object
+      required: [ id, name, type ]
+      description: |
+        Определение свойства (характеристики) товара. Аналог компонента Свойство в CML2.
+        Флаги `use_for_*` определяют контекст применения свойства.
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          oneOf:
+            - type: string
+            - $ref: "#/components/schemas/LocalizedString"
+          description: Название свойства (строка или локализованный объект)
+        code:
+          type: string
+          description: Символьный код для использования в фильтрах и API
+        type:
+          type: string
+          enum: [ string, number, boolean, enum, multiselect, color, datetime ]
+          description: |
+            Тип значения свойства:
+            - `string` — произвольная строка
+            - `number` — числовое значение (укажите `unit` для единицы измерения)
+            - `boolean` — да/нет
+            - `enum` — одно значение из `enum_values`
+            - `multiselect` — несколько значений из `enum_values`
+            - `color` — HEX-цвет (например, "#FF0000")
+            - `datetime` — дата/время ISO 8601
+        unit:
+          type: string
+          description: Единица измерения для type=number (кг, мм, л, ГБ)
+        is_filterable:
+          type: boolean
+          default: false
+          description: Участвует ли свойство в фильтрации на сайте
+        is_required:
+          type: boolean
+          default: false
+          description: Обязательно ли свойство при создании товара
+        use_for_catalog:
+          type: boolean
+          default: true
+          description: |
+            Свойство применимо для товаров в каталоге.
+            Аналог флага ДляТоваров в CML2.
+        use_for_offers:
+          type: boolean
+          default: false
+          description: |
+            Свойство применимо для товаров в пакете предложений
+            (например, гарантийный срок, способ доставки).
+            Аналог флага ДляПредложений в CML2.
+        use_for_documents:
+          type: boolean
+          default: false
+          description: |
+            Свойство применимо для товарных позиций в документах
+            (например, серийный номер).
+            Аналог флага ДляДокументов в CML2.
+        enum_values:
+          type: array
+          description: Допустимые значения (обязательно для type=enum и type=multiselect)
+          uniqueItems: true
+          items:
+            type: object
+            required: [ id, value ]
+            properties:
+              id:
+                type: string
+                description: Уникальный идентификатор значения
+              value:
+                type: string
+                description: Отображаемое название значения
+        applies_to_all:
+          type: boolean
+          default: false
+          description: |
+            Если `true` — свойство применимо ко всем категориям,
+            поле `category_ids` игнорируется.
+        category_ids:
+          type: array
+          uniqueItems: true
+          description: UUID категорий, к которым привязано свойство (игнорируется если applies_to_all=true)
+          items:
+            type: string
+            format: uuid
+
+    # ── Product ───────────────────────────────────────────────
+
+    ProductList:
+      type: object
+      required: [ products, pagination ]
+      properties:
+        products:
+          type: array
+          items:
+            $ref: "#/components/schemas/Product"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+
+    ProductImport:
+      type: object
+      description: Тело запроса для POST /catalog/products (без поля pagination)
+      required: [ products ]
+      properties:
+        products:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/Product"
+
+    Product:
+      type: object
+      required: [ id, name, category_id ]
+      description: Товар в каталоге. Аналог компонента Товар в CML2.
+      properties:
+        id:
+          type: string
+          format: uuid
+        external_id:
+          type: string
+          description: ID товара в ERP (1С и др.)
+        name:
+          type: string
+          maxLength: 255
+        code:
+          type: string
+          description: Артикул
+        barcode:
+          type: string
+          maxLength: 14
+          description: Штрихкод (EAN-13, Code128 и др.)
+        category_id:
+          type: string
+          format: uuid
+          description: UUID категории из классификатора
+        description:
+          type: string
+          description: Полное описание (допускается HTML)
+        short_description:
+          type: string
+          maxLength: 500
+        images:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProductImage"
+        properties:
+          type: array
+          description: Значения свойств товара (ссылаются на PropertyDefinition)
+          items:
+            $ref: "#/components/schemas/PropertyValue"
+        variants:
+          type: array
+          description: Варианты / модификации товара (например, по цвету и размеру)
+          items:
+            $ref: "#/components/schemas/ProductVariant"
+        tax_rate:
+          type: number
+          minimum: 0
+          multipleOf: 0.01
+          description: |
+            Базовая ставка НДС в процентах. Допускаются нестандартные и льготные ставки.
+            Примеры: 0, 10, 20, 10/110, 20/120.
+        unit:
+          $ref: "#/components/schemas/Unit"
+        weight:
+          type: number
+          minimum: 0
+          description: Вес в килограммах
+        dimensions:
+          $ref: "#/components/schemas/Dimensions"
+        manufacturer:
+          $ref: "#/components/schemas/Manufacturer"
+        analogues:
+          type: array
+          uniqueItems: true
+          description: UUID товаров-аналогов (аналог компонента Аналог в CML2)
+          items:
+            type: string
+            format: uuid
+        components:
+          type: array
+          description: |
+            Комплектующие / составные части товара
+            (аналог компонента Комплектующее в CML2).
+          items:
+            type: object
+            required: [ product_id, quantity ]
+            properties:
+              product_id:
+                type: string
+                format: uuid
+                description: UUID комплектующего товара
+              quantity:
+                type: number
+                exclusiveMinimum: 0
+                description: Количество (строго больше нуля)
+        custom_attributes:
+          type: array
+          description: |
+            Произвольные реквизиты товара
+            (аналог ЗначенияРеквизитов в CML2).
+          items:
+            $ref: "#/components/schemas/CustomAttribute"
+        is_active:
+          type: boolean
+          default: false
+        seo:
+          $ref: "#/components/schemas/SeoMeta"
+        deleted_at:
+          type: string
+          format: date-time
+          readOnly: true
+          description: Дата мягкого удаления (tombstone). Заполняется при вызове DELETE.
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+
+    ProductVariant:
+      type: object
+      required: [ id, name ]
+      description: Вариант / модификация товара. Аналог характеристики товара в CML2.
+      properties:
+        id:
+          type: string
+          format: uuid
+        external_id:
+          type: string
+        name:
+          type: string
+        code:
+          type: string
+          description: Артикул варианта
+        barcode:
+          type: string
+        properties:
+          type: array
+          description: Значения свойств, отличающих данный вариант
+          items:
+            $ref: "#/components/schemas/PropertyValue"
+        is_active:
+          type: boolean
+          default: true
+
+    ProductImage:
+      type: object
+      required: [ url ]
+      properties:
+        url:
+          type: string
+          format: uri
+          description: Абсолютный URL изображения (аналог Картинка в CML2)
+        sort:
+          type: integer
+          default: 0
+          description: Порядок отображения (меньше = первее)
+        alt:
+          type: string
+          description: Альтернативный текст для SEO и доступности
+        is_main:
+          type: boolean
+          default: false
+          description: Является ли изображение главным
+
+    PropertyValue:
+      type: object
+      required: [ property_id, value ]
+      description: Значение свойства товара. Аналог ЗначенияСвойства в CML2.
+      properties:
+        property_id:
+          type: string
+          format: uuid
+          description: Ссылка на PropertyDefinition.id
+        value:
+          description: |
+            Тип зависит от PropertyDefinition.type:
+            - string / color / datetime → string
+            - number → number
+            - boolean → boolean
+            - enum → string (id из enum_values)
+            - multiselect → array of string (id из enum_values)
+          oneOf:
+            - type: string
+            - type: number
+            - type: boolean
+            - type: array
+              uniqueItems: true
+              items:
+                type: string
+
+    Unit:
+      type: object
+      description: |
+        Единица измерения товара по ОКЕИ.
+        Аналог компонента БазоваяЕдиница в CML2.
+      properties:
+        code:
+          type: string
+          description: Код ОКЕИ (796 = штука, 166 = кг, 006 = литр)
+          example: "796"
+        short_name:
+          type: string
+          description: Краткое наименование
+          example: "шт"
+        full_name:
+          type: string
+          description: Полное наименование по ОКЕИ
+          example: "Штука"
+        international:
+          type: string
+          description: Международное сокращение (piece, kg, l)
+          example: "pce"
+
+    Manufacturer:
+      type: object
+      description: |
+        Информация о производителе и бренде товара.
+        Аналог компонента Производитель в CML2.
+      properties:
+        country:
+          type: string
+          pattern: '^[A-Z]{2}$'
+          description: Страна производства (ISO 3166-1 alpha-2 / ОКСМ)
+        brand:
+          type: string
+          description: Торговая марка / бренд (аналог ТорговаяМарка в CML2)
+        brand_owner_id:
+          type: string
+          format: uuid
+          description: UUID контрагента — владельца торговой марки
+        manufacturer_id:
+          type: string
+          format: uuid
+          description: |
+            UUID контрагента — непосредственного изготовителя товара.
+            Если не указан, подразумевается, что производитель и владелец торговой
+            марки (`brand_owner_id`) — одно юридическое лицо.
+
+    CustomAttribute:
+      type: object
+      description: |
+        Произвольный реквизит сущности.
+        Аналог ЗначениеРеквизита в CML2.
+      required: [ key, value ]
+      properties:
+        key:
+          type: string
+          maxLength: 100
+          description: Наименование реквизита
+        value:
+          oneOf:
+            - type: string
+            - type: number
+            - type: boolean
+            - type: array
+              items:
+                type: string
+          description: Значение реквизита
+
+    # ── Offers ────────────────────────────────────────────────
+
+    OfferList:
+      type: object
+      required: [ offers, pagination ]
+      description: Ответ GET /offers — пакет предложений с пагинацией
+      properties:
+        valid_from:
+          type: string
+          format: date
+          description: |
+            Дата начала действия пакета предложений (включительно).
+            Аналог ДействительноС в CML2 ПакетПредложений.
+        valid_to:
+          type: string
+          format: date
+          description: |
+            Дата окончания действия пакета предложений (включительно).
+            Аналог ДействительноДо в CML2 ПакетПредложений.
+        price_types:
+          type: array
+          description: Справочник типов цен (включается на первой странице)
+          items:
+            $ref: "#/components/schemas/PriceType"
+        warehouses:
+          type: array
+          description: Справочник складов (включается на первой странице)
+          items:
+            $ref: "#/components/schemas/Warehouse"
+        offers:
+          type: array
+          items:
+            $ref: "#/components/schemas/Offer"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+
+    OfferImport:
+      type: object
+      description: Тело запроса POST /offers (пакет предложений без pagination)
+      required: [ offers ]
+      properties:
+        valid_from:
+          type: string
+          format: date
+          description: Дата начала действия пакета (ДействительноС CML2)
+        valid_to:
+          type: string
+          format: date
+          description: Дата окончания действия пакета (ДействительноДо CML2)
+        price_types:
+          type: array
+          description: Обновление справочника типов цен (опционально)
+          items:
+            $ref: "#/components/schemas/PriceType"
+        warehouses:
+          type: array
+          description: Обновление справочника складов (опционально)
+          items:
+            $ref: "#/components/schemas/Warehouse"
+        offers:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/Offer"
+
+    PriceType:
+      type: object
+      required: [ id, name ]
+      description: Тип цены. Аналог компонента ТипЦены в CML2.
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          description: Название типа цены (Розничная, Оптовая, Дилерская…)
+        currency:
+          type: string
+          pattern: '^[A-Z]{3}$'
+          default: "RUB"
+          description: Валюта типа цены по умолчанию (ISO 4217)
+        description:
+          type: string
+          description: Дополнительные условия применения цены
+        is_default:
+          type: boolean
+          default: false
+          description: Является ли тип цены основным для отображения на сайте
+
+    Offer:
+      type: object
+      required: [ product_id, prices ]
+      description: |
+        Предложение — цены и остатки по конкретному товару/варианту.
+        Аналог строки ПакетаПредложений в CML2.
+      properties:
+        product_id:
+          type: string
+          format: uuid
+          description: UUID товара
+        variant_id:
+          oneOf:
+            - type: string
+              format: uuid
+            - type: 'null'
+          description: UUID варианта товара. null — если предложение для базового товара
+        prices:
+          type: array
+          minItems: 1
+          description: Цены по типам цен
+          items:
+            $ref: "#/components/schemas/OfferPrice"
+        stocks:
+          type: array
+          description: Остатки по складам
+          uniqueItems: true
+          items:
+            $ref: "#/components/schemas/Stock"
+        deleted_at:
+          type: string
+          format: date-time
+          readOnly: true
+          description: Дата мягкого удаления (tombstone)
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+
+    OfferPrice:
+      type: object
+      required: [ price_type_id, price ]
+      description: Цена по конкретному типу. Аналог компонента Цена в CML2.
+      properties:
+        price_type_id:
+          type: string
+          format: uuid
+          description: Ссылка на PriceType.id
+        price:
+          $ref: "#/components/schemas/Money"
+          description: Цена за базовую единицу
+        price_with_discount:
+          $ref: "#/components/schemas/Money"
+          description: Цена со скидкой (указывается вместе с или вместо discount_percent)
+        discount_percent:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: Процент скидки (информационное поле — сервер не пересчитывает)
+        min_quantity:
+          type: number
+          exclusiveMinimum: 0
+          description: |
+            Минимальное количество товара (в базовых единицах), при котором действует данная цена.
+            Аналог МинКоличество в компоненте Цена CML2. Используется для объёмных скидок
+            (tiered pricing): розничная — от 1 шт, оптовая — от 50 шт.
+        unit:
+          $ref: "#/components/schemas/Unit"
+          description: |
+            Единица измерения, за которую указана цена (аналог ЕдиницаИзмерения в Цена CML2).
+            Если не указана — цена за базовую единицу товара из `Product.unit`.
+            Используется для объёмного ценообразования: например, товар продаётся в штуках
+            (Product.unit.code = "796"), а цена за паллету (360 шт) указывается отдельным
+            предложением с unit.code = "778" (паллета). Клиент обязан учитывать это поле
+            при расчёте стоимости заказа.
+        valid_from:
+          type: string
+          format: date-time
+          description: Начало действия цены (включительно)
+        valid_to:
+          type: string
+          format: date-time
+          description: Конец действия цены (включительно)
+
+    Stock:
+      type: object
+      required: [ warehouse_id, quantity ]
+      description: Остаток на конкретном складе. Аналог ОстаткиПоСкладу в CML2.
+      properties:
+        warehouse_id:
+          type: string
+          format: uuid
+        quantity:
+          type: number
+          minimum: 0
+          description: Доступное для заказа количество
+        quantity_reserved:
+          type: number
+          minimum: 0
+          description: Зарезервированное (ожидающее отгрузки) количество
+
+    # ── Orders / Documents ────────────────────────────────────
+
+    DocumentType:
+      type: string
+      enum:
+        - order
+        - invoice
+        - shipment
+        - invoice_for_payment
+        - return
+        - commission_transfer
+        - commission_return
+        - commission_report
+        - cash_payment
+        - cash_return
+        - non_cash_payment
+        - non_cash_return
+        - correction
+        - rights_transfer
+        - other
+      description: |
+        Тип хозяйственной операции. Аналог ХозОперацияТип в CML2.
+        - `order` — Заказ товара
+        - `invoice` — Счёт-фактура
+        - `shipment` — Отпуск товара
+        - `invoice_for_payment` — Счёт на оплату
+        - `return` — Возврат товара
+        - `commission_transfer` — Передача товара на комиссию
+        - `commission_return` — Возврат комиссионного товара
+        - `commission_report` — Отчёт о продажах комиссионного товара
+        - `cash_payment` — Выплата наличных денег
+        - `cash_return` — Возврат наличных денег
+        - `non_cash_payment` — Выплата безналичных денег
+        - `non_cash_return` — Возврат безналичных денег
+        - `correction` — Корректировка
+        - `rights_transfer` — Передача прав
+        - `other` — Прочее
+
+    PartyRole:
+      type: string
+      enum:
+        - seller
+        - buyer
+        - payer
+        - receiver
+        - consignor
+        - consignee
+        - licensor
+        - licensee
+      description: |
+        Роль предприятия в документе. Аналог РольТип в CML2.
+        - `seller` — Продавец
+        - `buyer` — Покупатель
+        - `payer` — Плательщик
+        - `receiver` — Получатель
+        - `consignor` — Комитент
+        - `consignee` — Комиссионер
+        - `licensor` — Лицензиар
+        - `licensee` — Лицензиат
+
+    OrderStatus:
+      type: string
+      enum:
+        - new
+        - confirmed
+        - processing
+        - shipped
+        - delivered
+        - cancelled
+        - refunded
+      description: |
+        Статус заказа:
+        - `new` — новый, ожидает подтверждения
+        - `confirmed` — подтверждён
+        - `processing` — в сборке / обработке
+        - `shipped` — передан в службу доставки
+        - `delivered` — доставлен покупателю
+        - `cancelled` — отменён
+        - `refunded` — возврат средств произведён
+      x-status-transitions:
+        new: [ confirmed, cancelled ]
+        confirmed: [ processing, cancelled ]
+        processing: [ shipped, cancelled ]
+        shipped: [ delivered ]
+        delivered: [ refunded ]
+        cancelled: [ refunded ]
+        refunded: [ ]
+
+    OrderList:
+      type: object
+      required: [ orders, pagination ]
+      properties:
+        orders:
+          type: array
+          items:
+            $ref: "#/components/schemas/Order"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+
+    OrderImport:
+      type: object
+      description: Тело запроса POST /orders/bulk
+      required: [ orders ]
+      properties:
+        orders:
+          type: array
+          minItems: 1
+          description: |
+            Список записей для обновления. Идентификация заказа по `id` или `external_id`
+            (если оба переданы — приоритет у `id`). Передавайте только изменяемые поля.
+          items:
+            $ref: "#/components/schemas/OrderBulkUpdateItem"
+
+    OrderBulkUpdateItem:
+      type: object
+      description: |
+        Элемент пакетного обновления заказов (POST /orders/bulk).
+        Отдельная схема от `Order` — не содержит `readOnly`-полей.
+        Схема требует наличия хотя бы одного идентификатора: `id` или `external_id`.
+        Если оба присутствуют — приоритет у `id`.
+      anyOf:
+        - required: [ id ]
+        - required: [ external_id ]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: UUID заказа в системе сайта. Приоритетный идентификатор.
+        external_id:
+          type: string
+          description: |
+            Номер документа в ERP. Используется как идентификатор если `id` не передан,
+            а также для установки ERP-номера при первичной синхронизации.
+        status:
+          $ref: "#/components/schemas/OrderStatus"
+        comment:
+          type: string
+        delivery:
+          type: object
+          minProperties: 1
+          description: Частичное обновление данных доставки
+          properties:
+            tracking_number:
+              type: string
+              description: Трек-номер отправления
+            shipped_at:
+              type: string
+              format: date-time
+              description: Фактическая дата и время отгрузки
+            estimated_date:
+              type: string
+              format: date
+              description: Ожидаемая дата доставки покупателю
+        items:
+          type: array
+          minItems: 1
+          description: |
+            Обновлённый состав заказа. Если поле присутствует — **полностью заменяет**
+            текущие позиции заказа (full replacement). Если поле отсутствует — позиции
+            не изменяются. Используется при синхронизации изменённого заказа из ERP (1С).
+          items:
+            $ref: "#/components/schemas/OrderItemUpdate"
+        custom_attributes:
+          type: array
+          description: Произвольные реквизиты для обновления
+          items:
+            $ref: "#/components/schemas/CustomAttribute"
+
+    Order:
+      type: object
+      required: [ id, status, items, totals ]
+      description: |
+        Заказ / документ хозяйственной операции. Аналог ЭД Документ в CML2.
+        Поддерживает все типы операций через поле `document_type`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        number:
+          type: string
+          readOnly: true
+          description: Человекочитаемый номер заказа, генерируется сервером
+          example: "ИМ-000500"
+        external_id:
+          type: string
+          description: Номер документа в ERP (заполняется после синхронизации)
+        status:
+          $ref: "#/components/schemas/OrderStatus"
+        document_type:
+          $ref: "#/components/schemas/DocumentType"
+        role:
+          $ref: "#/components/schemas/PartyRole"
+        base_currency:
+          type: string
+          pattern: '^[A-Z]{3}$'
+          description: Базовая валюта документа (ISO 4217)
+        exchange_rate:
+          type: number
+          minimum: 0
+          description: |
+            Курс валюты документа по отношению к национальной.
+            Для национальной валюты = 1. Аналог поля Курс в CML2 Документ.
+        payment_terms:
+          type: string
+          description: Срок оплаты или условия (аналог СрокПлатежа в CML2)
+        counterparty_id:
+          oneOf:
+            - type: string
+              format: uuid
+            - type: 'null'
+          description: UUID контрагента (для B2B-заказов)
+        customer:
+          $ref: "#/components/schemas/OrderCustomer"
+        delivery:
+          $ref: "#/components/schemas/OrderDelivery"
+        payment:
+          $ref: "#/components/schemas/OrderPayment"
+        items:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/OrderItem"
+        totals:
+          $ref: "#/components/schemas/OrderTotals"
+          readOnly: true
+        warehouse_id:
+          oneOf:
+            - type: string
+              format: uuid
+            - type: 'null'
+          description: UUID склада отгрузки
+        linked_documents:
+          type: array
+          description: |
+            Связанные документы (счета, отгрузки, платежи).
+            Аналог ПодчиненныеДокументы в CML2.
+          items:
+            type: object
+            required: [ id, type ]
+            properties:
+              id:
+                type: string
+                format: uuid
+              external_id:
+                type: string
+                description: Номер документа в ERP
+              type:
+                $ref: "#/components/schemas/DocumentType"
+        custom_attributes:
+          type: array
+          description: Произвольные реквизиты документа (ЗначенияРеквизитов в CML2)
+          items:
+            $ref: "#/components/schemas/CustomAttribute"
+        signatories:
+          type: array
+          description: Подписанты документа (аналог Подписанты в CML2)
+          items:
+            $ref: "#/components/schemas/Signatory"
+        comment:
+          type: string
+        status_history:
+          type: array
+          readOnly: true
+          description: История смены статусов (формируется сервером)
+          items:
+            $ref: "#/components/schemas/StatusHistoryEntry"
+        deleted_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+
+    OrderCreate:
+      type: object
+      required: [ items, document_type ]
+      description: |
+        Тело запроса при создании нового заказа / документа.
+        Поле `items` обязательно всегда — любой коммерческий документ содержит
+        хотя бы одну товарную позицию.
+        Поля `delivery` и `payment` обязательны только для `document_type = order`
+        (заказ интернет-магазина); для остальных типов (`invoice`, `shipment`,
+        `correction` и т.д.) они опциональны.
+      properties:
+        document_type:
+          allOf:
+            - $ref: "#/components/schemas/DocumentType"
+          default: order
+          description: |
+            Тип хозяйственной операции. По умолчанию `order` (заказ интернет-магазина).
+        role:
+          $ref: "#/components/schemas/PartyRole"
+        customer:
+          $ref: "#/components/schemas/OrderCustomer"
+        counterparty_id:
+          type: string
+          format: uuid
+          description: UUID контрагента (для B2B)
+        delivery:
+          $ref: "#/components/schemas/OrderDelivery"
+        payment:
+          $ref: "#/components/schemas/OrderPayment"
+        items:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/OrderItemCreate"
+        warehouse_id:
+          type: string
+          format: uuid
+          description: UUID склада отгрузки / самовывоза
+        base_currency:
+          type: string
+          pattern: '^[A-Z]{3}$'
+          description: Валюта документа (ISO 4217)
+        exchange_rate:
+          type: number
+          minimum: 0
+          description: Курс валюты к национальной
+        payment_terms:
+          type: string
+          description: Срок оплаты / условия
+        comment:
+          type: string
+        custom_attributes:
+          type: array
+          items:
+            $ref: "#/components/schemas/CustomAttribute"
+        signatories:
+          type: array
+          items:
+            $ref: "#/components/schemas/Signatory"
+      # Условная валидация: если document_type == order, то delivery и payment обязательны
+      if:
+        properties:
+          document_type:
+            const: order
+        required: [ document_type ]
+      then:
+        required: [ delivery, payment, items ]
+
+    OrderPatch:
+      type: object
+      description: Частичное обновление заказа. Передавайте только изменяемые поля.
+      minProperties: 1
+      properties:
+        status:
+          $ref: "#/components/schemas/OrderStatus"
+        external_id:
+          type: string
+        comment:
+          type: string
+        items:
+          type: array
+          minItems: 1
+          description: |
+            Обновлённый состав заказа. Если поле присутствует — **полностью заменяет**
+            текущие позиции заказа (full replacement). Если поле отсутствует — позиции
+            не изменяются.
+          items:
+            $ref: "#/components/schemas/OrderItemUpdate"
+        payment:
+          type: object
+          minProperties: 1
+          description: |
+            Частичное обновление данных оплаты. Передавайте только изменяемые поля.
+            Используется например для фиксации оплаты: `status: paid, paid_at: ...`
+            или для корректировки суммы при частичном возврате.
+          properties:
+            status:
+              $ref: "#/components/schemas/PaymentStatus"
+            amount:
+              $ref: "#/components/schemas/Money"
+              description: Фактически оплаченная сумма
+            paid_at:
+              type: string
+              format: date-time
+              description: Дата и время оплаты / возврата
+            transaction_id:
+              type: string
+              description: Идентификатор транзакции в платёжной системе
+        delivery:
+          type: object
+          minProperties: 1
+          description: |
+            Частичное обновление логистических данных доставки.
+            Намеренно не включает поле `type` — смена способа доставки требует
+            полного пересоздания объекта доставки и не является операцией патча.
+            Это также предотвращает обход if/then валидации OrderDelivery.
+          properties:
+            tracking_number:
+              type: string
+              description: Трек-номер отправления
+            shipped_at:
+              type: string
+              format: date-time
+              description: Фактическая дата и время отгрузки
+            estimated_date:
+              type: string
+              format: date
+              description: Ожидаемая дата доставки покупателю
+
+    OrderCustomer:
+      type: object
+      description: Данные покупателя. Хотя бы одно поле должно быть заполнено.
+      minProperties: 1
+      properties:
+        name:
+          type: string
+          description: ФИО или название организации
+        phone:
+          type: string
+          description: Телефон в международном формате (+7XXXXXXXXXX)
+        email:
+          type: string
+          format: email
+        counterparty_id:
+          type: string
+          format: uuid
+          description: UUID контрагента (если покупатель уже есть в системе)
+
+    OrderDelivery:
+      type: object
+      required: [ type ]
+      description: |
+        Параметры доставки. Для типов `courier`, `post`, `transport_company`
+        поле `address` обязательно.
+      properties:
+        type:
+          type: string
+          enum: [ pickup, courier, post, transport_company ]
+          description: |
+            - `pickup` — самовывоз
+            - `courier` — курьерская доставка
+            - `post` — почтовое отправление
+            - `transport_company` — транспортная компания (СДЭК, Деловые Линии и др.)
+        address:
+          $ref: "#/components/schemas/Address"
+        method_id:
+          type: string
+          description: ID метода доставки в системе сайта
+        method_name:
+          type: string
+          description: Отображаемое название метода доставки
+        cost:
+          $ref: "#/components/schemas/Money"
+          description: Стоимость доставки
+        tracking_number:
+          type: string
+          description: Трек-номер отправления (заполняется после отгрузки)
+        shipped_at:
+          type: string
+          format: date-time
+          description: Фактическая дата и время отгрузки
+        estimated_date:
+          type: string
+          format: date
+          description: Ожидаемая дата доставки покупателю
+      if:
+        properties:
+          type:
+            enum: [ courier, post, transport_company ]
+        required: [ type ]
+      then:
+        required: [ address ]
+
+    PaymentStatus:
+      type: string
+      enum: [ pending, paid, partially_paid, refunded ]
+      description: |
+        Статус оплаты заказа:
+        - `pending` — ожидает оплаты
+        - `paid` — оплачен полностью
+        - `partially_paid` — частичная оплата
+        - `refunded` — возврат средств произведён
+
+    OrderPayment:
+      type: object
+      required: [ type ]
+      properties:
+        type:
+          type: string
+          enum: [ cash, card, online, invoice, credit ]
+          description: |
+            - `cash` — наличные при получении
+            - `card` — банковская карта при получении
+            - `online` — онлайн-оплата (эквайринг, СБП)
+            - `invoice` — счёт на оплату (для юрлиц)
+            - `credit` — рассрочка / кредит
+        status:
+          $ref: "#/components/schemas/PaymentStatus"
+        amount:
+          $ref: "#/components/schemas/Money"
+          description: Оплаченная сумма
+        paid_at:
+          type: string
+          format: date-time
+          description: Дата и время оплаты
+
+    OrderItem:
+      type: object
+      required: [ id, product_id, quantity, price, total ]
+      description: Позиция заказа. Аналог ТоварДляДокумента в CML2.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        product_id:
+          type: string
+          format: uuid
+        variant_id:
+          oneOf:
+            - type: string
+              format: uuid
+            - type: 'null'
+        product_name:
+          type: string
+          readOnly: true
+          description: Наименование товара на момент заказа (фиксируется)
+        product_code:
+          type: string
+          readOnly: true
+          description: Артикул товара на момент заказа
+        quantity:
+          type: number
+          exclusiveMinimum: 0
+          description: Количество (строго больше нуля; допускаются дробные значения)
+        unit:
+          $ref: "#/components/schemas/Unit"
+        price:
+          $ref: "#/components/schemas/Money"
+          description: Цена за единицу товара
+        discount:
+          $ref: "#/components/schemas/Money"
+          description: Скидка на позицию (суммарно на всё количество)
+        total:
+          $ref: "#/components/schemas/Money"
+          readOnly: true
+          description: Итого по позиции = price × quantity − discount
+        country_of_origin:
+          type: string
+          pattern: '^[A-Z]{2}$'
+          description: Страна происхождения товара (ОКСМ / ISO 3166-1 alpha-2)
+        customs_declaration_number:
+          type: string
+          maxLength: 50
+          description: Номер ГТД (грузовой таможенной декларации)
+        tax_rate:
+          type: number
+          minimum: 0
+          multipleOf: 0.01
+          description: Базовая ставка НДС позиции (для быстрого чтения)
+        taxes:
+          type: array
+          description: |
+            Гибкий список налогов и сборов по позиции (НДС, акциз, УСН и др.).
+            Аналог компонента Налог в CML2.
+          items:
+            type: object
+            required: [ type, rate, amount ]
+            properties:
+              type:
+                type: string
+                description: Вид налога (НДС, Акциз, и др.)
+                example: "НДС"
+              rate:
+                type: number
+                minimum: 0
+                description: Ставка налога в процентах
+                example: 20
+              amount:
+                $ref: "#/components/schemas/Money"
+                description: Сумма налога по позиции
+              is_included:
+                type: boolean
+                default: true
+                description: Включён ли налог в сумму позиции (аналог УчтеноВСумме в CML2)
+        excise_per_unit:
+          $ref: "#/components/schemas/Money"
+          description: Сумма акциза за 1 единицу товара (аналог Акциз в CML2)
+        tax_amount:
+          $ref: "#/components/schemas/Money"
+          readOnly: true
+          description: Общая сумма НДС по позиции
+
+    OrderItemUpdate:
+      type: object
+      description: |
+        Позиция заказа для обновления через `OrderPatch` или `OrderBulkUpdateItem`.
+        Отличается от `OrderItemCreate` наличием опциональных полей `id` (идентификация
+        существующей позиции) и `price` (переопределение цены — актуально при синхронизации
+        из ERP, где цена может отличаться от прайса сайта).
+
+        Семантика массива `items` в запросе на обновление — **полная замена**: переданный
+        список целиком заменяет текущие позиции заказа. Позиции, отсутствующие в запросе,
+        будут удалены. Если поле `items` отсутствует в запросе — состав заказа не меняется.
+
+        **Правила идентификации позиции:**
+        - Если `id` присутствует → обновление существующей позиции (обязательны: `id`, `quantity`)
+        - Если `id` отсутствует → создание новой позиции (обязательны: `product_id`, `quantity`)
+        - Пустой объект или объект только с `quantity` — отклоняется схемой.
+      anyOf:
+        - required: [ id, quantity ]
+          description: Обновление существующей позиции по её UUID
+        - required: [ product_id, quantity ]
+          description: Добавление новой позиции в заказ
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: |
+            UUID существующей позиции заказа (`OrderItem.id`). Используется для
+            идентификации при обновлении конкретной строки. Если не указан — создаётся
+            новая позиция.
+        product_id:
+          type: string
+          format: uuid
+          description: UUID товара (обязателен для новых позиций)
+        variant_id:
+          type: string
+          format: uuid
+          description: UUID варианта товара
+        quantity:
+          type: number
+          exclusiveMinimum: 0
+          description: Количество (строго больше нуля)
+        price:
+          $ref: "#/components/schemas/Money"
+          description: |
+            Переопределение цены позиции из ERP. Если не указана — используется
+            актуальная цена из каталога сайта на момент создания заказа.
+            Актуально при синхронизации договорных цен из 1С.
+
+    OrderItemCreate:
+      type: object
+      required: [ product_id, quantity ]
+      description: Позиция при создании заказа
+      properties:
+        product_id:
+          type: string
+          format: uuid
+        variant_id:
+          type: string
+          format: uuid
+          description: UUID варианта (рекомендуется если товар имеет варианты)
+        quantity:
+          type: number
+          exclusiveMinimum: 0
+
+    OrderTotals:
+      type: object
+      required: [ subtotal, total ]
+      description: |
+        Итоговые суммы заказа. Вычисляются сервером автоматически (readOnly).
+      readOnly: true
+      properties:
+        subtotal:
+          $ref: "#/components/schemas/Money"
+          description: Сумма товаров до скидок
+        discount:
+          $ref: "#/components/schemas/Money"
+          description: Общая скидка
+        delivery:
+          $ref: "#/components/schemas/Money"
+          description: Стоимость доставки
+        tax:
+          $ref: "#/components/schemas/Money"
+          description: Общая сумма НДС
+        total:
+          $ref: "#/components/schemas/Money"
+          description: Итого к оплате = subtotal − discount + delivery
+
+    StatusHistoryEntry:
+      type: object
+      required: [ status, changed_at ]
+      properties:
+        status:
+          $ref: "#/components/schemas/OrderStatus"
+        changed_at:
+          type: string
+          format: date-time
+          readOnly: true
+        changed_by:
+          type: string
+          description: Идентификатор пользователя или системы, изменившей статус
+        comment:
+          type: string
+
+    # ── Counterparties ────────────────────────────────────────
+
+    CounterpartyType:
+      type: string
+      enum:
+        - legal_entity
+        - individual
+        - individual_entrepreneur
+      description: |
+        Тип контрагента:
+        - `legal_entity` — юридическое лицо (ООО, АО, ПАО…); ИНН 10 цифр, есть КПП
+        - `individual` — физическое лицо; ИНН 12 цифр, нет КПП
+        - `individual_entrepreneur` — ИП; ИНН 12 цифр, нет КПП, ОГРН → ОГРНИП (15 цифр)
+
+    CounterpartyList:
+      type: object
+      required: [ counterparties, pagination ]
+      properties:
+        counterparties:
+          type: array
+          items:
+            $ref: "#/components/schemas/Counterparty"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+
+    Counterparty:
+      type: object
+      required: [ id, name, type ]
+      description: |
+        Контрагент. Аналог компонента Контрагент в CML2 с расширенными российскими реквизитами.
+        Условная валидация ИНН/ОГРН зависит от типа контрагента.
+      properties:
+        id:
+          type: string
+          format: uuid
+        external_id:
+          type: string
+          description: ID контрагента в ERP (1С)
+        type:
+          $ref: "#/components/schemas/CounterpartyType"
+        name:
+          type: string
+          description: Полное официальное наименование
+        short_name:
+          type: string
+          description: Краткое наименование для отображения
+        inn:
+          type: string
+          description: |
+            ИНН: 10 цифр для юрлиц, 12 цифр для физлиц и ИП.
+            Паттерн применяется условно через if/then/else ниже.
+        kpp:
+          type: string
+          pattern: '^\d{9}$'
+          description: КПП (9 цифр; только для юридических лиц)
+        ogrn:
+          type: string
+          description: |
+            ОГРН (13 цифр для юрлиц) или ОГРНИП (15 цифр для ИП).
+            Паттерн применяется условно через if/then/else ниже.
+        okved:
+          type: string
+          description: |
+            Основной вид деятельности по ОКВЭД (ОК 029-2001).
+            Аналог ОКВЭД в РеквизитыЮрЛица CML2.
+        okpo:
+          type: string
+          description: |
+            Код по ОКПО (общероссийский классификатор предприятий и организаций).
+            Аналог ОКПО в РеквизитыЮрЛица CML2.
+        okopf:
+          type: string
+          description: |
+            Код организационно-правовой формы по ОКОПФ.
+            Аналог ОКОПФ в РеквизитыЮрЛица CML2.
+        okfs:
+          type: string
+          description: |
+            Код формы собственности по ОКФС.
+            Аналог ОКФС в РеквизитыЮрЛица CML2.
+        registration_date:
+          type: string
+          format: date
+          description: |
+            Дата государственной регистрации организации.
+            Аналог ДатаРегистрации в РеквизитыЮрЛица CML2.
+        legal_address:
+          $ref: "#/components/schemas/Address"
+          description: Юридический адрес
+        actual_address:
+          $ref: "#/components/schemas/Address"
+          description: Фактический адрес (если отличается от юридического)
+        contacts:
+          type: array
+          items:
+            $ref: "#/components/schemas/Contact"
+        representatives:
+          type: array
+          description: |
+            Представители, контактные лица, филиалы.
+            Аналог компонента Представитель в CML2.
+          items:
+            type: object
+            required: [ name, relation ]
+            properties:
+              id:
+                type: string
+                format: uuid
+              name:
+                type: string
+                description: Наименование представителя / контактного лица
+              relation:
+                type: string
+                description: |
+                  Отношение к контрагенту.
+                  Примеры: "Контактное лицо", "Филиал", "Главный офис"
+              phone:
+                type: string
+              email:
+                type: string
+                format: email
+              position:
+                type: string
+                description: Должность
+        bank_accounts:
+          type: array
+          items:
+            $ref: "#/components/schemas/BankAccount"
+        price_type_id:
+          type: string
+          format: uuid
+          description: UUID типа цены по умолчанию для данного контрагента
+        credit_limit:
+          $ref: "#/components/schemas/Money"
+          description: Кредитный лимит
+        custom_attributes:
+          type: array
+          description: Произвольные реквизиты контрагента (ЗначенияРеквизитов в CML2)
+          items:
+            $ref: "#/components/schemas/CustomAttribute"
+        is_active:
+          type: boolean
+          default: true
+        deleted_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      if:
+        properties:
+          type:
+            const: legal_entity
+        required: [ type ]
+      then:
+        properties:
+          inn:
+            pattern: '^\d{10}$'
+          ogrn:
+            pattern: '^\d{13}$'
+      else:
+        properties:
+          inn:
+            pattern: '^\d{12}$'
+          ogrn:
+            pattern: '^\d{15}$'
+
+    Contact:
+      type: object
+      required: [ type, value ]
+      description: |
+        Контактная информация. Аналог компонента КонтактнаяИнформация в CML2.
+        Перечень типов соответствует КонтактТип из CML2.
+      properties:
+        type:
+          type: string
+          enum:
+            - phone
+            - mobile
+            - internal_phone
+            - home_phone
+            - email
+            - fax
+            - web
+            - pager
+            - icq
+            - map_coordinates
+            - other
+          description: |
+            Тип контактной информации (аналог КонтактТип в CML2):
+            - `phone` — Телефон рабочий
+            - `mobile` — Телефон мобильный
+            - `internal_phone` — Телефон внутренний
+            - `home_phone` — Телефон домашний
+            - `email` — Почта
+            - `fax` — Факс
+            - `web` — ВебСайт
+            - `pager` — Пейджер
+            - `icq` — ICQ
+            - `map_coordinates` — Координаты на карте
+            - `other` — Прочее
+        value:
+          type: string
+          description: |
+            Значение контакта. Рекомендуемые форматы:
+            - phone/mobile/home_phone: +7XXXXXXXXXX
+            - email: RFC 5322
+            - web: полный URL с протоколом
+            - map_coordinates: "55.7558, 37.6176" (широта, долгота)
+        comment:
+          type: string
+          description: Назначение / примечание (например, "Бухгалтерия", "звонить с 10 до 18")
+
+    BankAccount:
+      type: object
+      required: [ bik, account ]
+      description: Расчётный счёт контрагента. Аналог компонента РасчётныйСчёт в CML2.
+      properties:
+        bank_name:
+          type: string
+          description: Полное наименование банка
+        bik:
+          type: string
+          pattern: '^\d{9}$'
+          description: БИК банка (9 цифр)
+        account:
+          type: string
+          pattern: '^\d{20}$'
+          description: Расчётный счёт (20 цифр)
+        corr_account:
+          type: string
+          pattern: '^\d{20}$'
+          description: Корреспондентский счёт банка (20 цифр)
+        swift:
+          type: string
+          description: SWIFT-код банка (аналог SWIFT в компоненте Банк CML2)
+        is_default:
+          type: boolean
+          default: false
+          description: Является ли счёт реквизитом по умолчанию
+
+    # ── Warehouses ────────────────────────────────────────────
+
+    Warehouse:
+      type: object
+      required: [ id, name ]
+      description: Склад. Аналог компонента Склад в CML2.
+      properties:
+        id:
+          type: string
+          format: uuid
+        external_id:
+          type: string
+          description: ID склада в ERP
+        name:
+          type: string
+        code:
+          type: string
+          description: Символьный код склада
+        address:
+          $ref: "#/components/schemas/Address"
+        is_active:
+          type: boolean
+          default: true
+        is_default:
+          type: boolean
+          default: false
+          description: Склад отгрузки по умолчанию (не более одного на систему)
+        deleted_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true

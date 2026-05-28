@@ -5,12 +5,12 @@
 - **Пакет:** `geekcodev/laravel-commercejson`
 - **Описание:** Интеграция CommerceJSON v1.0.8 для Laravel 13
 - **Тип:** Laravel-пакет (library)
-- **Стандарт:** OpenAPI 3.1 — `openapi-v1.0.8.yaml` (2682 строки, 40+ схем)
+- **Стандарт:** OpenAPI 3.1 — `spec.yaml` (2682 строки, 40+ схем)
 - **Назначение:** Двусторонний обмен коммерческими данными между ERP (1С) и сайтом
 - **Namespace:** `GeekCo\CommerceJson\`
 - **Провайдер:** `CommerceJsonServiceProvider` (autodiscovery через `composer.json`)
 
-> **Единственный источник истины по API:** `openapi-v1.0.8.yaml`. Любые изменения роутов или схем должны сверяться с
+> **Единственный источник истины по API:** `spec.yaml`. Любые изменения роутов или схем должны сверяться с
 > ним.
 
 ---
@@ -351,7 +351,7 @@ composer format                  # Laravel Pint code style
 
 | Файл                                  | Назначение                                                       |
 |---------------------------------------|------------------------------------------------------------------|
-| `openapi-v1.0.8.yaml`                 | OpenAPI 3.1 спецификация (единственный источник истины)          |
+| `spec.yaml`                           | OpenAPI 3.1 спецификация (единственный источник истины)          |
 | `src/routes/api.php`                  | Определения роутов                                               |
 | `src/CommerceJsonServiceProvider.php` | Service provider с Bus::map() и QueryBus                         |
 | `src/config/commercejson.php`         | Конфигурация пакета                                              |
