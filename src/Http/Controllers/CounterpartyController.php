@@ -12,6 +12,7 @@ use GeekCo\CommerceJson\Exceptions\ForeignKeyViolationException;
 use GeekCo\CommerceJson\Queries\GetCounterpartiesQuery;
 use GeekCo\CommerceJson\Queries\GetCounterpartyQuery;
 use Illuminate\Contracts\Bus\Dispatcher;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -44,10 +45,17 @@ class CounterpartyController extends Controller
 
     public function show(string $id): JsonResponse
     {
-        $query = new GetCounterpartyQuery($id);
-        $counterparty = $this->queryBus->ask($query);
+        try {
+            $query = new GetCounterpartyQuery($id);
+            $counterparty = $this->queryBus->ask($query);
 
-        return response()->json(CounterpartyData::from($counterparty));
+            return response()->json(CounterpartyData::from($counterparty));
+        } catch (ModelNotFoundException) {
+            return response()->json(
+                ErrorResponseData::from(['error' => ['code' => 'NOT_FOUND', 'message' => 'Counterparty not found']]),
+                404
+            );
+        }
     }
 
     public function store(Request $request): JsonResponse

@@ -16,6 +16,7 @@ use GeekCo\CommerceJson\Exceptions\ForeignKeyViolationException;
 use GeekCo\CommerceJson\Queries\GetOrderQuery;
 use GeekCo\CommerceJson\Queries\GetOrdersQuery;
 use Illuminate\Contracts\Bus\Dispatcher;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -48,10 +49,17 @@ class OrderController extends Controller
 
     public function show(string $id): JsonResponse
     {
-        $query = new GetOrderQuery($id);
-        $order = $this->queryBus->ask($query);
+        try {
+            $query = new GetOrderQuery($id);
+            $order = $this->queryBus->ask($query);
 
-        return response()->json(OrderData::from($order));
+            return response()->json(OrderData::from($order));
+        } catch (ModelNotFoundException) {
+            return response()->json(
+                ErrorResponseData::from(['error' => ['code' => 'NOT_FOUND', 'message' => 'Order not found']]),
+                404
+            );
+        }
     }
 
     public function store(Request $request): JsonResponse

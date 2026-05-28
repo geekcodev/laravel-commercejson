@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use GeekCo\CommerceJson\Commands\UpsertOfferCommand;
 use GeekCo\CommerceJson\Queries\GetOffersQuery;
 use GeekCo\CommerceJson\Queries\GetPriceTypesQuery;
 
@@ -35,7 +36,7 @@ describe('OfferController', function () {
     });
 
     describe('POST /offers', function () {
-        it('creates an offer and returns 201', function () {
+        it('imports offers in batch and returns ImportResult', function () {
             $commandBus = mockCommandBus();
             $productId = test()->createTestUuid();
 
@@ -45,12 +46,44 @@ describe('OfferController', function () {
 
             $commandBus->shouldReceive('dispatch')
                 ->once()
+                ->with(Mockery::type(UpsertOfferCommand::class))
                 ->andReturn($offerData);
 
-            $response = $this->postJson('/api/commercejson/offers', $offerData->toArray());
+            $response = $this->postJson('/api/commercejson/offers', [
+                'offers' => [$offerData->toArray()],
+            ]);
 
-            $response->assertStatus(201)
-                ->assertJson(['product_id' => $productId]);
+            $response->assertStatus(200)
+                ->assertJson([
+                    'success' => true,
+                    'processed' => 1,
+                    'errors' => [],
+                ]);
+        });
+
+        it('reports import errors', function () {
+            $commandBus = mockCommandBus();
+            $productId = test()->createTestUuid();
+
+            $offerData = test()->createOfferData([
+                'product_id' => $productId,
+            ]);
+
+            $commandBus->shouldReceive('dispatch')
+                ->once()
+                ->with(Mockery::type(UpsertOfferCommand::class))
+                ->andThrow(new Exception('Something went wrong'));
+
+            $response = $this->postJson('/api/commercejson/offers', [
+                'offers' => [$offerData->toArray()],
+            ]);
+
+            $response->assertStatus(200)
+                ->assertJson([
+                    'success' => false,
+                    'processed' => 0,
+                    'errors' => [['code' => 'INTERNAL_ERROR']],
+                ]);
         });
     });
 

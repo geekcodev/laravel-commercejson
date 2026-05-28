@@ -7,6 +7,7 @@ namespace GeekCo\CommerceJson\Http\Controllers;
 use GeekCo\CommerceJson\Bus\QueryBusInterface;
 use GeekCo\CommerceJson\Commands\DeleteProductCommand;
 use GeekCo\CommerceJson\Commands\UpsertProductCommand;
+use GeekCo\CommerceJson\Data\ErrorResponseData;
 use GeekCo\CommerceJson\Data\ImportResultData;
 use GeekCo\CommerceJson\Data\ProductData;
 use GeekCo\CommerceJson\Data\ProductImportData;
@@ -14,6 +15,7 @@ use GeekCo\CommerceJson\Exceptions\ForeignKeyViolationException;
 use GeekCo\CommerceJson\Queries\GetProductQuery;
 use GeekCo\CommerceJson\Queries\GetProductsQuery;
 use Illuminate\Contracts\Bus\Dispatcher;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -46,10 +48,17 @@ class ProductController extends Controller
 
     public function show(string $id): JsonResponse
     {
-        $query = new GetProductQuery($id);
-        $product = $this->queryBus->ask($query);
+        try {
+            $query = new GetProductQuery($id);
+            $product = $this->queryBus->ask($query);
 
-        return response()->json(ProductData::from($product));
+            return response()->json(ProductData::from($product));
+        } catch (ModelNotFoundException) {
+            return response()->json(
+                ErrorResponseData::from(['error' => ['code' => 'NOT_FOUND', 'message' => 'Product not found']]),
+                404
+            );
+        }
     }
 
     public function store(Request $request): JsonResponse
