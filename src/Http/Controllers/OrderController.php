@@ -10,9 +10,12 @@ use GeekCo\CommerceJson\Commands\UpdateOrderCommand;
 use GeekCo\CommerceJson\Commands\UpsertOrderCommand;
 use GeekCo\CommerceJson\Data\ErrorResponseData;
 use GeekCo\CommerceJson\Data\ImportResultData;
+use GeekCo\CommerceJson\Data\MoneyData;
 use GeekCo\CommerceJson\Data\OrderCreateData;
 use GeekCo\CommerceJson\Data\OrderData;
 use GeekCo\CommerceJson\Data\OrderImportData;
+use GeekCo\CommerceJson\Data\OrderTotalsData;
+use GeekCo\CommerceJson\Enums\CurrencyEnum;
 use GeekCo\CommerceJson\Enums\OrderStatusEnum;
 use GeekCo\CommerceJson\Exceptions\ForeignKeyViolationException;
 use GeekCo\CommerceJson\Queries\GetOrderQuery;
@@ -70,19 +73,33 @@ class OrderController extends Controller
         try {
             $createData = OrderCreateData::from($request->all());
 
+            $currency = $createData->base_currency
+                ?? CurrencyEnum::tryFrom(config('commercejson.default_currency'))
+                ?? CurrencyEnum::RUB;
+
             $items = array_map(fn ($item) => [
                 'id' => (string) Str::uuid(),
                 'product_id' => $item->product_id,
                 'variant_id' => $item->variant_id,
                 'quantity' => $item->quantity,
-                'price' => $item->price,
-                'total' => $item->total,
+                // TODO: server-side price lookup from catalog
+                'price' => MoneyData::from(['amount' => '0', 'currency' => $currency->value]),
+                'total' => MoneyData::from(['amount' => '0', 'currency' => $currency->value]),
             ], $createData->items);
+
+            $zeroMoney = ['amount' => '0', 'currency' => $currency->value];
 
             $data = array_merge($createData->toArray(), [
                 'id' => (string) Str::uuid(),
                 'status' => OrderStatusEnum::New,
                 'items' => $items,
+                'totals' => OrderTotalsData::from([
+                    'subtotal' => MoneyData::from($zeroMoney),
+                    'total' => MoneyData::from($zeroMoney),
+                    'discount' => null,
+                    'delivery' => null,
+                    'tax' => null,
+                ]),
             ]);
 
             $command = new CreateOrderCommand(OrderData::from($data));

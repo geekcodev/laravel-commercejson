@@ -64,13 +64,7 @@ describe('OrderController', function () {
                     [
                         'product_id' => $productId,
                         'quantity' => 1,
-                        'price' => ['amount' => '100.00', 'currency' => CurrencyEnum::RUB->value],
-                        'total' => ['amount' => '100.00', 'currency' => CurrencyEnum::RUB->value],
                     ],
-                ],
-                'totals' => [
-                    'subtotal' => ['amount' => '100.00', 'currency' => CurrencyEnum::RUB->value],
-                    'total' => ['amount' => '100.00', 'currency' => CurrencyEnum::RUB->value],
                 ],
             ]);
 
