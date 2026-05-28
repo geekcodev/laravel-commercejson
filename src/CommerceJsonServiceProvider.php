@@ -134,7 +134,7 @@ class CommerceJsonServiceProvider extends ServiceProvider
         );
 
         // Принимаем даты в различных форматах
-        config()->set('data.date_format', ['Y-m-d H:i:s', DATE_ATOM, 'Y-m-d\TH:i:s']);
+        config()->set('data.date_format', ['Y-m-d H:i:s', DATE_ATOM, 'Y-m-d\TH:i:s', 'Y-m-d']);
 
         // Регистрация HTTP клиента
         $this->app->singleton(HttpClientInterface::class, function ($app) {
