@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace GeekCo\CommerceJson\Database\Seeders;
 
+use GeekCo\CommerceJson\Enums\CurrencyEnum;
 use GeekCo\CommerceJson\Enums\PropertyTypeEnum;
 use GeekCo\CommerceJson\Models\Category;
 use GeekCo\CommerceJson\Models\Counterparty;
@@ -358,7 +359,7 @@ class LoadTestDatabaseSeeder extends Seeder
 
         $currencyByPriceTypeId = [];
         foreach ($priceTypes as $pt) {
-            $currencyByPriceTypeId[$pt['id']] = $pt['currency'] ?? 'RUB';
+            $currencyByPriceTypeId[$pt['id']] = $pt['currency'] ?? CurrencyEnum::RUB->value;
         }
 
         $warehousePool = array_values($warehouseIds);
@@ -642,7 +643,7 @@ class LoadTestDatabaseSeeder extends Seeder
     ): void {
         foreach ($priceTypes as $pt) {
             $ptId = $pt['id'];
-            $currency = $currencyByPriceTypeId[$ptId] ?? 'RUB';
+            $currency = $currencyByPriceTypeId[$ptId] ?? CurrencyEnum::RUB->value;
 
             // Tier 1: min_quantity = 1
             $amount = round($baseAmount * fake()->randomFloat(2, 0.9, 1.2), 2);

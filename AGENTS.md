@@ -260,20 +260,27 @@ ExchangeManager → ProductImporter / OrderImporter / ClassifierImporter / Order
 
 ## Соглашения
 
-1. **Формат пагинации** в ответе: `{data: [...], meta: {current_page, last_page, per_page, total}}`  
+1. **Production-ready код** — любое решение должно быть профессиональным, следовать best-practices (нет хардкода, нет
+   заглушек, значения из конфига/запроса, типизация через enum, корректные расчёты). Если требуется заглушка — она явно
+   документируется в коде с пояснением `// TODO` или `// stub`.
+
+2. **Формат пагинации** в ответе: `{data: [...], meta: {current_page, last_page, per_page, total}}`  
    TODO: привести к spec — `{products: [...], pagination: {page, limit, total, has_next}}`
 
-2. **Soft delete** — `DELETE` проставляет `is_active=false` + `deleted_at`, не удаляет запись
+3. **Soft delete** — `DELETE` проставляет `is_active=false` + `deleted_at`, не удаляет запись
 
-3. **Snake-case DTO** — без `#[MapName(SnakeCaseMapper::class)]`. PHP-свойства названы в `snake_case` как в JSON API
+4. **Snake-case DTO** — без `#[MapName(SnakeCaseMapper::class)]`. PHP-свойства названы в `snake_case` как в JSON API
 
-4. **UUID** — все сущности используют UUIDv4 как primary key (trait `HasUuids`)
+5. **UUID** — все сущности используют UUIDv4 как primary key (trait `HasUuids`)
 
-5. **Транзакции** — CommandHandler оборачивает запись в `DB::transaction()`
+6. **Транзакции** — CommandHandler оборачивает запись в `DB::transaction()`
 
-6. **Ответ с ошибкой** — `{error: {code, message, details?}}`
+7. **Валюта** — все денежные значения без исключения должны быть типизированы через `CurrencyEnum`. Запрещены
+   хардкодные строки `'RUB'`, `'USD'` и т.п. в любом коде, включая миграции и любые другие файлы.
 
-7. **Идемпотентность** — поддерживается через `X-Idempotency-Key` (TODO: реализовать кеширование)
+8. **Ответ с ошибкой** — `{error: {code, message, details?}}`
+
+9. **Идемпотентность** — поддерживается через `X-Idempotency-Key` (TODO: реализовать кеширование)
 
 ---
 
@@ -299,11 +306,13 @@ ExchangeManager → ProductImporter / OrderImporter / ClassifierImporter / Order
 ## Тестирование
 
 ```bash
-vendor/bin/pest                  # Запуск всех тестов (Pest v3.8, 37 тестов, 180 assertions)
-vendor/bin/pest --parallel       # Параллельный запуск
-composer analyse                 # PHPStan статический анализ
-composer format                  # Laravel Pint code style
+docker compose exec app vendor/bin/pest           # Запуск всех тестов (Pest v3.8, 37 тестов, 180 assertions)
+docker compose exec app vendor/bin/pest --parallel# Параллельный запуск
+docker compose exec app composer analyse          # PHPStan статический анализ
+docker compose exec app composer format           # Laravel Pint code style
 ```
+
+> PHP запускается внутри Docker-контейнера: `docker compose exec app <command>`
 
 - **Фреймворк:** Pest PHP v3.8 на движке PHPUnit 11.5.50
 - **Bootstrap:** `tests/TestCase.php` наследует `Orchestra\Testbench\TestCase`, загружает `LaravelDataServiceProvider` +

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace GeekCo\CommerceJson\Database\Factories;
 
 use GeekCo\CommerceJson\Enums\CounterpartyTypeEnum;
+use GeekCo\CommerceJson\Enums\CurrencyEnum;
 use GeekCo\CommerceJson\Models\Counterparty;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -58,7 +59,7 @@ class CounterpartyFactory extends CommerceJsonFactory
             'actual_address_full' => null,
             'price_type_id' => null,
             'credit_limit_amount' => null,
-            'credit_limit_currency' => 'RUB',
+            'credit_limit_currency' => CurrencyEnum::RUB->value,
             'is_active' => true,
             'created_at' => now(),
             'updated_at' => now(),
@@ -112,7 +113,7 @@ class CounterpartyFactory extends CommerceJsonFactory
     {
         return $this->state(fn (array $attributes) => [
             'credit_limit_amount' => $amount,
-            'credit_limit_currency' => 'RUB',
+            'credit_limit_currency' => CurrencyEnum::RUB->value,
         ]);
     }
 

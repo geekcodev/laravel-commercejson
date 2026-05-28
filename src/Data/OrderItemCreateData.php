@@ -20,6 +20,10 @@ class OrderItemCreateData extends Data
         #[Nullable, StringType, Uuid]
         public ?string $variant_id,
         #[Required, Numeric, GreaterThan(0)]
-        public float $quantity
+        public float $quantity,
+        #[Required]
+        public MoneyData $price,
+        #[Required]
+        public MoneyData $total,
     ) {}
 }

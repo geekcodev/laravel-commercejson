@@ -109,11 +109,13 @@ class OfferPriceFactory extends CommerceJsonFactory
     /**
      * Цена в валюте
      */
-    public function inCurrency(string $currency = 'USD'): static
+    public function inCurrency(?CurrencyEnum $currency = null): static
     {
+        $value = ($currency ?? CurrencyEnum::RUB)->value;
+
         return $this->state(fn (array $attributes) => [
-            'price_currency' => $currency,
-            'price_with_discount_currency' => $currency,
+            'price_currency' => $value,
+            'price_with_discount_currency' => $value,
         ]);
     }
 }

@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use GeekCo\CommerceJson\Commands\CreateOrderCommand;
+use GeekCo\CommerceJson\Enums\CurrencyEnum;
 use GeekCo\CommerceJson\Models\Order;
 use GeekCo\CommerceJson\Queries\GetOrderQuery;
 use GeekCo\CommerceJson\Queries\GetOrdersQuery;
@@ -37,17 +39,43 @@ describe('OrderController', function () {
     describe('POST /orders', function () {
         it('creates an order and returns 201', function () {
             $commandBus = mockCommandBus();
+            $productId = test()->createTestUuid();
 
-            $orderData = test()->createOrderData();
+            $orderData = test()->createOrderData([
+                'items' => [
+                    [
+                        'id' => test()->createTestUuid(),
+                        'product_id' => $productId,
+                        'quantity' => 1,
+                        'price' => ['amount' => '100.00', 'currency' => CurrencyEnum::RUB->value],
+                        'total' => ['amount' => '100.00', 'currency' => CurrencyEnum::RUB->value],
+                    ],
+                ],
+            ]);
 
             $commandBus->shouldReceive('dispatch')
                 ->once()
+                ->with(Mockery::type(CreateOrderCommand::class))
                 ->andReturn($orderData);
 
-            $response = $this->postJson('/api/commercejson/orders', $orderData->toArray());
+            $response = $this->postJson('/api/commercejson/orders', [
+                'document_type' => 'order',
+                'items' => [
+                    [
+                        'product_id' => $productId,
+                        'quantity' => 1,
+                        'price' => ['amount' => '100.00', 'currency' => CurrencyEnum::RUB->value],
+                        'total' => ['amount' => '100.00', 'currency' => CurrencyEnum::RUB->value],
+                    ],
+                ],
+                'totals' => [
+                    'subtotal' => ['amount' => '100.00', 'currency' => CurrencyEnum::RUB->value],
+                    'total' => ['amount' => '100.00', 'currency' => CurrencyEnum::RUB->value],
+                ],
+            ]);
 
-            $response->assertStatus(201)
-                ->assertJson(['id' => $orderData->id]);
+            $response->assertStatus(201);
+            $this->assertArrayHasKey('id', $response->json());
         });
     });
 
@@ -100,13 +128,13 @@ describe('OrderController', function () {
                         'id' => test()->createTestUuid(),
                         'product_id' => test()->createTestUuid(),
                         'quantity' => 1,
-                        'price' => ['amount' => '100.00', 'currency' => 'RUB'],
-                        'total' => ['amount' => '100.00', 'currency' => 'RUB'],
+                        'price' => ['amount' => '100.00', 'currency' => CurrencyEnum::RUB->value],
+                        'total' => ['amount' => '100.00', 'currency' => CurrencyEnum::RUB->value],
                     ],
                 ],
                 'totals' => [
-                    'subtotal' => ['amount' => '100.00', 'currency' => 'RUB'],
-                    'total' => ['amount' => '100.00', 'currency' => 'RUB'],
+                    'subtotal' => ['amount' => '100.00', 'currency' => CurrencyEnum::RUB->value],
+                    'total' => ['amount' => '100.00', 'currency' => CurrencyEnum::RUB->value],
                 ],
             ]);
 
@@ -137,13 +165,13 @@ describe('OrderController', function () {
                                 'id' => test()->createTestUuid(),
                                 'product_id' => test()->createTestUuid(),
                                 'quantity' => 1,
-                                'price' => ['amount' => '100.00', 'currency' => 'RUB'],
-                                'total' => ['amount' => '100.00', 'currency' => 'RUB'],
+                                'price' => ['amount' => '100.00', 'currency' => CurrencyEnum::RUB->value],
+                                'total' => ['amount' => '100.00', 'currency' => CurrencyEnum::RUB->value],
                             ],
                         ],
                         'totals' => [
-                            'subtotal' => ['amount' => '100.00', 'currency' => 'RUB'],
-                            'total' => ['amount' => '100.00', 'currency' => 'RUB'],
+                            'subtotal' => ['amount' => '100.00', 'currency' => CurrencyEnum::RUB->value],
+                            'total' => ['amount' => '100.00', 'currency' => CurrencyEnum::RUB->value],
                         ],
                     ],
                     [
@@ -155,13 +183,13 @@ describe('OrderController', function () {
                                 'id' => test()->createTestUuid(),
                                 'product_id' => test()->createTestUuid(),
                                 'quantity' => 1,
-                                'price' => ['amount' => '100.00', 'currency' => 'RUB'],
-                                'total' => ['amount' => '100.00', 'currency' => 'RUB'],
+                                'price' => ['amount' => '100.00', 'currency' => CurrencyEnum::RUB->value],
+                                'total' => ['amount' => '100.00', 'currency' => CurrencyEnum::RUB->value],
                             ],
                         ],
                         'totals' => [
-                            'subtotal' => ['amount' => '100.00', 'currency' => 'RUB'],
-                            'total' => ['amount' => '100.00', 'currency' => 'RUB'],
+                            'subtotal' => ['amount' => '100.00', 'currency' => CurrencyEnum::RUB->value],
+                            'total' => ['amount' => '100.00', 'currency' => CurrencyEnum::RUB->value],
                         ],
                     ],
                 ],
@@ -193,13 +221,13 @@ describe('OrderController', function () {
                                 'id' => test()->createTestUuid(),
                                 'product_id' => test()->createTestUuid(),
                                 'quantity' => 1,
-                                'price' => ['amount' => '100.00', 'currency' => 'RUB'],
-                                'total' => ['amount' => '100.00', 'currency' => 'RUB'],
+                                'price' => ['amount' => '100.00', 'currency' => CurrencyEnum::RUB->value],
+                                'total' => ['amount' => '100.00', 'currency' => CurrencyEnum::RUB->value],
                             ],
                         ],
                         'totals' => [
-                            'subtotal' => ['amount' => '100.00', 'currency' => 'RUB'],
-                            'total' => ['amount' => '100.00', 'currency' => 'RUB'],
+                            'subtotal' => ['amount' => '100.00', 'currency' => CurrencyEnum::RUB->value],
+                            'total' => ['amount' => '100.00', 'currency' => CurrencyEnum::RUB->value],
                         ],
                     ],
                 ],

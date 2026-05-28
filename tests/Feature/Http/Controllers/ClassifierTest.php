@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use GeekCo\CommerceJson\Enums\CurrencyEnum;
+
 describe('ClassifierController', function () {
     describe('GET /catalog/classifier', function () {
         it('returns empty classifier when no data exists', function () {
@@ -71,7 +73,7 @@ describe('ClassifierController', function () {
                     [
                         'id' => $priceTypeId,
                         'name' => 'Retail',
-                        'currency' => 'RUB',
+                        'currency' => CurrencyEnum::RUB->value,
                     ],
                 ],
                 'updated_at' => now()->toIso8601String(),

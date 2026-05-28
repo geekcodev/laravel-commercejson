@@ -10,8 +10,10 @@ use GeekCo\CommerceJson\Commands\UpdateOrderCommand;
 use GeekCo\CommerceJson\Commands\UpsertOrderCommand;
 use GeekCo\CommerceJson\Data\ErrorResponseData;
 use GeekCo\CommerceJson\Data\ImportResultData;
+use GeekCo\CommerceJson\Data\OrderCreateData;
 use GeekCo\CommerceJson\Data\OrderData;
 use GeekCo\CommerceJson\Data\OrderImportData;
+use GeekCo\CommerceJson\Enums\OrderStatusEnum;
 use GeekCo\CommerceJson\Exceptions\ForeignKeyViolationException;
 use GeekCo\CommerceJson\Queries\GetOrderQuery;
 use GeekCo\CommerceJson\Queries\GetOrdersQuery;
@@ -20,6 +22,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Spatie\LaravelData\DataCollection;
 
 class OrderController extends Controller
@@ -65,7 +68,24 @@ class OrderController extends Controller
     public function store(Request $request): JsonResponse
     {
         try {
-            $command = new CreateOrderCommand(OrderData::from($request->all()));
+            $createData = OrderCreateData::from($request->all());
+
+            $items = array_map(fn ($item) => [
+                'id' => (string) Str::uuid(),
+                'product_id' => $item->product_id,
+                'variant_id' => $item->variant_id,
+                'quantity' => $item->quantity,
+                'price' => $item->price,
+                'total' => $item->total,
+            ], $createData->items);
+
+            $data = array_merge($createData->toArray(), [
+                'id' => (string) Str::uuid(),
+                'status' => OrderStatusEnum::New,
+                'items' => $items,
+            ]);
+
+            $command = new CreateOrderCommand(OrderData::from($data));
             $order = $this->commandBus->dispatch($command);
 
             return response()->json(OrderData::from($order), 201);
