@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace GeekCo\CommerceJson\Console\Commands;
 
 use GeekCo\CommerceJson\Console\Concerns\InteractsWithExchange;
+use GeekCo\CommerceJson\Data\ProductData;
 use GeekCo\CommerceJson\Events\ProductsImported;
 use GeekCo\CommerceJson\Services\ProductService;
 use Illuminate\Console\Command;
