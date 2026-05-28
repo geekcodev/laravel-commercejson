@@ -21,6 +21,7 @@ class GetProductQueryHandler implements QueryHandlerInterface
     {
         assert($query instanceof GetProductQuery);
 
-        return $this->repository->findOrFail($query->id);
+        return $this->repository->findOrFail($query->id)
+            ->load(['images', 'propertyValues', 'variants.propertyValues', 'customAttributes', 'analogues', 'components']);
     }
 }

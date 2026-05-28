@@ -84,8 +84,10 @@ info:
     name: MIT
     identifier: Evgeny Semenov
 servers:
-  - url: https://example.com/api/commercejson/v1
-    description: Продуктивный сервер
+  - url: https://transservice.local/api/commercejson
+    description: Локальный сервер
+  - url: https://testdev2.i2tech.ru/api/commercejson
+    description: Тестовый сервер
 
 security:
   - bearerAuth: [ ]
@@ -1350,7 +1352,7 @@ components:
             $ref: "#/components/schemas/CustomAttribute"
         is_active:
           type: boolean
-          default: false
+          default: true
         seo:
           $ref: "#/components/schemas/SeoMeta"
         deleted_at:
