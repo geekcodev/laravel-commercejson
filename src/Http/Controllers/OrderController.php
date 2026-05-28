@@ -164,6 +164,7 @@ class OrderController extends Controller
 
                 $orderArray['id'] ??= (string) Str::uuid();
                 $orderArray['status'] ??= OrderStatusEnum::New;
+                $orderArray['number'] = 'ORD-'.date('Ymd').'-'.Str::upper(Str::random(6));
 
                 if ($bulkItem->items) {
                     $items = [];
