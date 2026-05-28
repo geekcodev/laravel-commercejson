@@ -27,6 +27,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Spatie\LaravelData\DataCollection;
+use Spatie\LaravelData\Exceptions\CannotCastEnum;
 
 class OrderController extends Controller
 {
@@ -106,6 +107,16 @@ class OrderController extends Controller
             $order = $this->commandBus->dispatch($command);
 
             return response()->json(OrderData::from($order), 201);
+        } catch (CannotCastEnum $e) {
+            return response()->json(
+                ErrorResponseData::from([
+                    'error' => [
+                        'code' => 'VALIDATION_ERROR',
+                        'message' => $e->getMessage(),
+                    ],
+                ]),
+                422
+            );
         } catch (QueryException $e) {
             $fe = new ForeignKeyViolationException($e);
 
