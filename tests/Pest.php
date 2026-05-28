@@ -4,6 +4,7 @@ use GeekCo\CommerceJson\Bus\QueryBusInterface;
 use GeekCo\CommerceJson\Tests\TestCase;
 use Illuminate\Contracts\Bus\Dispatcher;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Mockery\MockInterface;
 
 pest()->extend(TestCase::class)
     ->use(LazilyRefreshDatabase::class)
@@ -12,7 +13,7 @@ pest()->extend(TestCase::class)
 pest()->extend(TestCase::class)
     ->in('Unit');
 
-function mockCommandBus(): Dispatcher
+function mockCommandBus(): Dispatcher&MockInterface
 {
     $mock = Mockery::mock(Dispatcher::class);
     app()->instance(Dispatcher::class, $mock);
@@ -20,7 +21,7 @@ function mockCommandBus(): Dispatcher
     return $mock;
 }
 
-function mockQueryBus(): QueryBusInterface
+function mockQueryBus(): QueryBusInterface&MockInterface
 {
     $mock = Mockery::mock(QueryBusInterface::class);
     app()->instance(QueryBusInterface::class, $mock);
