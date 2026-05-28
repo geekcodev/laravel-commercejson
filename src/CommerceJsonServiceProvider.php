@@ -133,8 +133,17 @@ class CommerceJsonServiceProvider extends ServiceProvider
             'commercejson'
         );
 
-        // Принимаем даты в различных форматах
-        config()->set('data.date_format', ['Y-m-d H:i:s', DATE_ATOM, 'Y-m-d\TH:i:s', 'Y-m-d']);
+        // Принимаем даты в различных форматах (миллисекунды + Z, ISO 8601, MySQL)
+        config()->set('data.date_format', [
+            'Y-m-d H:i:s',
+            DATE_ATOM,
+            'Y-m-d\TH:i:s',
+            'Y-m-d\TH:i:s.u\Z',
+            'Y-m-d\TH:i:s.uP',
+            'Y-m-d\TH:i:s.v\Z',
+            'Y-m-d\TH:i:s.vP',
+            'Y-m-d',
+        ]);
 
         // Регистрация HTTP клиента
         $this->app->singleton(HttpClientInterface::class, function ($app) {
