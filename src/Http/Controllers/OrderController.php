@@ -92,6 +92,7 @@ class OrderController extends Controller
 
             $data = array_merge($createData->toArray(), [
                 'id' => (string) Str::uuid(),
+                'number' => 'ORD-'.date('Ymd').'-'.Str::upper(Str::random(6)),
                 'status' => OrderStatusEnum::New,
                 'items' => $items,
                 'totals' => OrderTotalsData::from([
