@@ -8,6 +8,7 @@ use GeekCo\CommerceJson\Http\Client\CommerceJsonHttpClient;
 use GeekCo\CommerceJson\Http\Client\Dto\Response\ResponseDto;
 use GeekCo\CommerceJson\Http\Client\Exceptions\AuthenticationException;
 use GeekCo\CommerceJson\Http\Client\Exceptions\BusinessException;
+use GeekCo\CommerceJson\Http\Client\Exceptions\RateLimitException;
 use GeekCo\CommerceJson\Http\Client\Exceptions\ValidationException;
 use GeekCo\CommerceJson\Http\Client\NoDelayRetryStrategy;
 use GeekCo\CommerceJson\Tests\TestCase;
@@ -18,12 +19,9 @@ use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Middleware;
 use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Response;
+use PHPUnit\Framework\Attributes\CoversClass;
 
-/**
- * Тесты для HTTP клиента CommerceJSON
- *
- * @covers \GeekCo\CommerceJson\Http\Client\CommerceJsonHttpClient
- */
+#[CoversClass(CommerceJsonHttpClient::class)]
 class CommerceJsonHttpClientTest extends TestCase
 {
     protected CommerceJsonHttpClient $http;
@@ -63,8 +61,7 @@ class CommerceJsonHttpClientTest extends TestCase
         parent::tearDown();
     }
 
-    /** @test */
-    public function handshake_request_returns_response(): void
+    public function test_handshake_request_returns_response(): void
     {
         $mockResponse = [
             'version' => '1.0.8',
@@ -82,8 +79,7 @@ class CommerceJsonHttpClientTest extends TestCase
         $this->assertTrue($response->data['capabilities']['catalog']);
     }
 
-    /** @test */
-    public function handshake_without_auth_returns_401(): void
+    public function test_handshake_without_auth_returns_401(): void
     {
         $errorResponse = ['error' => ['message' => 'Authentication failed']];
 
@@ -101,8 +97,7 @@ class CommerceJsonHttpClientTest extends TestCase
         $this->http->get('/handshake');
     }
 
-    /** @test */
-    public function get_request_with_query_params(): void
+    public function test_get_request_with_query_params(): void
     {
         $mockResponse = [
             'products' => [['id' => $this->createTestUuid(), 'name' => 'Product 1']],
@@ -123,8 +118,7 @@ class CommerceJsonHttpClientTest extends TestCase
         $this->assertStringContainsString('page=1', $request->getUri()->getQuery());
     }
 
-    /** @test */
-    public function post_request_with_idempotency_key(): void
+    public function test_post_request_with_idempotency_key(): void
     {
         $idempotencyKey = $this->createTestUuid();
         $mockResponse = ['success' => true, 'processed' => 1];
@@ -143,8 +137,7 @@ class CommerceJsonHttpClientTest extends TestCase
         $this->assertEquals($idempotencyKey, $request->getHeaderLine('X-Idempotency-Key'));
     }
 
-    /** @test */
-    public function patch_request_updates_resource(): void
+    public function test_patch_request_updates_resource(): void
     {
         $orderId = $this->createTestUuid();
         $mockResponse = ['id' => $orderId, 'status' => 'confirmed'];
@@ -157,8 +150,7 @@ class CommerceJsonHttpClientTest extends TestCase
         $this->assertEquals('confirmed', $response->data['status']);
     }
 
-    /** @test */
-    public function delete_request(): void
+    public function test_delete_request(): void
     {
         $productId = $this->createTestUuid();
         $mockResponse = ['id' => $productId, 'deleted' => true];
@@ -171,8 +163,7 @@ class CommerceJsonHttpClientTest extends TestCase
         $this->assertTrue($response->data['deleted']);
     }
 
-    /** @test */
-    public function returns_404_for_nonexistent_resource(): void
+    public function test_returns_404_for_nonexistent_resource(): void
     {
         $errorResponse = ['error' => ['message' => 'Not found']];
 
@@ -191,8 +182,7 @@ class CommerceJsonHttpClientTest extends TestCase
         $this->http->get('/catalog/products/123');
     }
 
-    /** @test */
-    public function returns_400_for_validation_error(): void
+    public function test_returns_400_for_validation_error(): void
     {
         $errorResponse = [
             'error' => [
@@ -215,8 +205,7 @@ class CommerceJsonHttpClientTest extends TestCase
         $this->http->post('/catalog/products', ['name' => '']);
     }
 
-    /** @test */
-    public function returns_422_for_business_error(): void
+    public function test_returns_422_for_business_error(): void
     {
         $errorResponse = ['error' => ['message' => 'Business logic error']];
 
@@ -234,13 +223,12 @@ class CommerceJsonHttpClientTest extends TestCase
         $this->http->post('/orders', ['status' => 'invalid']);
     }
 
-    /** @test */
-    public function returns_429_for_rate_limit(): void
+    public function test_returns_429_for_rate_limit(): void
     {
         $errorResponse = ['error' => ['message' => 'Rate limit exceeded']];
 
-        // Mock 3 retry attempts (retryAttempts = 3 by default)
-        for ($i = 0; $i < 3; $i++) {
+        // Mock 4 retry attempts (maxAttempts = 3, so 1 initial + 3 retries = 4)
+        for ($i = 0; $i < 4; $i++) {
             $this->mockHandler->append(
                 new ClientException(
                     'Too Many Requests',
@@ -250,21 +238,20 @@ class CommerceJsonHttpClientTest extends TestCase
             );
         }
 
-        $this->expectException(BusinessException::class);
+        $this->expectException(RateLimitException::class);
         $this->expectExceptionCode(429);
 
         try {
             $this->http->get('/catalog/products');
-            $this->fail('Expected BusinessException');
-        } catch (BusinessException $e) {
-            // Verify 3 retries were attempted
-            $this->assertCount(3, $this->history);
+            $this->fail('Expected RateLimitException');
+        } catch (RateLimitException $e) {
+            // Verify 4 attempts were made (1 initial + 3 retries)
+            $this->assertCount(4, $this->history);
             throw $e;
         }
     }
 
-    /** @test */
-    public function retries_on_5xx_errors(): void
+    public function test_retries_on_5xx_errors(): void
     {
         $this->mockHandler->append(
             new Response(500, [], json_encode(['error' => 'Internal Server Error'])),
@@ -278,8 +265,7 @@ class CommerceJsonHttpClientTest extends TestCase
         $this->assertCount(3, $this->history); // 3 attempts
     }
 
-    /** @test */
-    public function sets_correct_headers(): void
+    public function test_sets_correct_headers(): void
     {
         $this->mockHandler->append(new Response(200, [], json_encode(['version' => '1.0.8'])));
 
