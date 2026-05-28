@@ -1897,6 +1897,7 @@ components:
           type: string
           pattern: '^[A-Z]{3}$'
           description: Базовая валюта документа (ISO 4217)
+          example: "RUB"
         exchange_rate:
           type: number
           minimum: 0
@@ -2022,6 +2023,7 @@ components:
           type: string
           pattern: '^[A-Z]{3}$'
           description: Валюта документа (ISO 4217)
+          example: "RUB"
         exchange_rate:
           type: number
           minimum: 0
