@@ -80,6 +80,6 @@ class ProductController extends Controller
         $command = new DeleteProductCommand($product);
         $this->commandBus->dispatch($command);
 
-        return response()->json(['message' => 'Product deleted']);
+        return response()->json(ProductData::from($product->fresh()));
     }
 }
