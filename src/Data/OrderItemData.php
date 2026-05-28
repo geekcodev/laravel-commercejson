@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace GeekCo\CommerceJson\Data;
 
-use Spatie\LaravelData\Attributes\MapName;
+use Spatie\LaravelData\Attributes\DataCollectionOf;
 use Spatie\LaravelData\Attributes\Validation\ArrayType;
 use Spatie\LaravelData\Attributes\Validation\GreaterThan;
 use Spatie\LaravelData\Attributes\Validation\Max;
@@ -16,22 +16,20 @@ use Spatie\LaravelData\Attributes\Validation\Required;
 use Spatie\LaravelData\Attributes\Validation\StringType;
 use Spatie\LaravelData\Attributes\Validation\Uuid;
 use Spatie\LaravelData\Data;
-use Spatie\LaravelData\Mappers\SnakeCaseMapper;
 
-#[MapName(SnakeCaseMapper::class)]
 class OrderItemData extends Data
 {
     public function __construct(
         #[Required, StringType, Uuid]
         public string $id,
         #[Required, StringType, Uuid]
-        public string $productId,
+        public string $product_id,
         #[Nullable, StringType, Uuid]
-        public ?string $variantId,
+        public ?string $variant_id,
         #[Nullable, StringType]
-        public ?string $productName,
+        public ?string $product_name,
         #[Nullable, StringType]
-        public ?string $productCode,
+        public ?string $product_code,
         #[Required, Numeric, GreaterThan(0)]
         public float $quantity,
         #[Nullable]
@@ -43,16 +41,16 @@ class OrderItemData extends Data
         #[Required]
         public MoneyData $total,
         #[Nullable, StringType, Regex('/^[A-Z]{2}$/')]
-        public ?string $countryOfOrigin = null,
+        public ?string $country_of_origin = null,
         #[Nullable, StringType, Max(50)]
-        public ?string $customsDeclarationNumber = null,
+        public ?string $customs_declaration_number = null,
         #[Nullable, Numeric, Min(0)]
-        public ?float $taxRate = null,
-        #[Nullable, ArrayType]
+        public ?float $tax_rate = null,
+        #[Nullable, ArrayType, DataCollectionOf(OrderItemTaxData::class)]
         public ?array $taxes = null,
         #[Nullable]
-        public ?MoneyData $excisePerUnit = null,
+        public ?MoneyData $excise_per_unit = null,
         #[Nullable]
-        public ?MoneyData $taxAmount = null,
+        public ?MoneyData $tax_amount = null,
     ) {}
 }

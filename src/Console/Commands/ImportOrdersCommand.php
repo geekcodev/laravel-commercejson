@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace GeekCo\CommerceJson\Console\Commands;
 
 use GeekCo\CommerceJson\Console\Concerns\InteractsWithExchange;
+use GeekCo\CommerceJson\Data\OrderData;
+use GeekCo\CommerceJson\Data\OrderItemData;
+use GeekCo\CommerceJson\Data\OrderItemTaxData;
 use GeekCo\CommerceJson\Events\OrderImported;
 use GeekCo\CommerceJson\Models\Order;
 use GeekCo\CommerceJson\Models\OrderItem;
@@ -99,36 +102,37 @@ class ImportOrdersCommand extends Command
                 try {
                     DB::transaction(function () use ($orderData, $stats) {
                         // Синхронизация заказа
+                        /** @var OrderData $orderData */
                         $order = Order::updateOrCreate(
                             ['id' => $orderData->id],
                             [
                                 'number' => $orderData->number,
-                                'external_id' => $orderData->externalId,
+                                'external_id' => $orderData->external_id,
                                 'status' => $orderData->status->value,
-                                'document_type' => $orderData->documentType->value ?? 'order',
+                                'document_type' => $orderData->document_type->value ?? 'order',
                                 'role' => $orderData->role?->value,
-                                'base_currency' => $orderData->baseCurrency,
-                                'exchange_rate' => $orderData->exchangeRate,
-                                'payment_terms' => $orderData->paymentTerms,
-                                'counterparty_id' => $orderData->counterpartyId,
-                                'warehouse_id' => $orderData->warehouseId,
+                                'base_currency' => $orderData->base_currency,
+                                'exchange_rate' => $orderData->exchange_rate,
+                                'payment_terms' => $orderData->payment_terms,
+                                'counterparty_id' => $orderData->counterparty_id,
+                                'warehouse_id' => $orderData->warehouse_id,
                                 'comment' => $orderData->comment,
                                 'customer_name' => $orderData->customer?->name,
                                 'customer_phone' => $orderData->customer?->phone,
                                 'customer_email' => $orderData->customer?->email,
-                                'customer_counterparty_id' => $orderData->customer?->counterpartyId,
+                                'customer_counterparty_id' => $orderData->customer?->counterparty_id,
                                 'delivery_type' => $orderData->delivery?->type,
                                 'delivery_address_full' => $orderData->delivery?->address?->full,
                                 'delivery_cost_amount' => $orderData->delivery?->cost?->amount,
                                 'delivery_cost_currency' => $orderData->delivery?->cost?->currency,
-                                'delivery_tracking_number' => $orderData->delivery?->trackingNumber,
-                                'delivery_shipped_at' => $orderData->delivery?->shippedAt,
-                                'delivery_estimated_date' => $orderData->delivery?->estimatedDate,
+                                'delivery_tracking_number' => $orderData->delivery?->tracking_number,
+                                'delivery_shipped_at' => $orderData->delivery?->shipped_at,
+                                'delivery_estimated_date' => $orderData->delivery?->estimated_date,
                                 'payment_type' => $orderData->payment?->type,
                                 'payment_status' => $orderData->payment?->status,
                                 'payment_amount' => $orderData->payment?->amount?->amount,
                                 'payment_currency' => $orderData->payment?->amount?->currency,
-                                'payment_paid_at' => $orderData->payment?->paidAt,
+                                'payment_paid_at' => $orderData->payment?->paid_at,
                                 'totals_subtotal_amount' => $orderData->totals->subtotal->amount,
                                 'totals_subtotal_currency' => $orderData->totals->subtotal->currency,
                                 'totals_discount_amount' => $orderData->totals->discount?->amount,
@@ -139,7 +143,7 @@ class ImportOrdersCommand extends Command
                                 'totals_tax_currency' => $orderData->totals->tax?->currency,
                                 'totals_total_amount' => $orderData->totals->total->amount,
                                 'totals_total_currency' => $orderData->totals->total->currency,
-                                'deleted_at' => $orderData->deletedAt,
+                                'deleted_at' => $orderData->deleted_at,
                             ]
                         );
 
@@ -151,32 +155,34 @@ class ImportOrdersCommand extends Command
 
                         // Синхронизация позиций заказа
                         if (! empty($orderData->items)) {
+                            /** @var OrderItemData $itemData */
                             foreach ($orderData->items as $itemData) {
                                 $orderItem = OrderItem::updateOrCreate(
                                     ['id' => $itemData->id],
                                     [
                                         'order_id' => $order->id,
-                                        'product_id' => $itemData->productId,
-                                        'variant_id' => $itemData->variantId,
-                                        'product_name' => $itemData->productName,
-                                        'product_code' => $itemData->productCode,
+                                        'product_id' => $itemData->product_id,
+                                        'variant_id' => $itemData->variant_id,
+                                        'product_name' => $itemData->product_name,
+                                        'product_code' => $itemData->product_code,
                                         'quantity' => $itemData->quantity,
                                         'unit_code' => $itemData->unit?->code,
-                                        'unit_short_name' => $itemData->unit?->shortName,
+                                        'unit_short_name' => $itemData->unit?->short_name,
                                         'price_amount' => $itemData->price->amount,
                                         'price_currency' => $itemData->price->currency,
                                         'discount_amount' => $itemData->discount?->amount,
                                         'discount_currency' => $itemData->discount?->currency,
                                         'total_amount' => $itemData->total->amount,
                                         'total_currency' => $itemData->total->currency,
-                                        'country_of_origin' => $itemData->countryOfOrigin,
-                                        'customs_declaration_number' => $itemData->customsDeclarationNumber,
-                                        'tax_rate' => $itemData->taxRate,
+                                        'country_of_origin' => $itemData->country_of_origin,
+                                        'customs_declaration_number' => $itemData->customs_declaration_number,
+                                        'tax_rate' => $itemData->tax_rate,
                                     ]
                                 );
 
                                 // Синхронизация налогов позиции
                                 if (! empty($itemData->taxes)) {
+                                    /** @var OrderItemTaxData $taxData */
                                     foreach ($itemData->taxes as $taxData) {
                                         OrderItemTax::updateOrCreate(
                                             [
@@ -187,7 +193,7 @@ class ImportOrdersCommand extends Command
                                                 'rate' => $taxData->rate,
                                                 'amount' => $taxData->amount->amount,
                                                 'currency' => $taxData->amount->currency,
-                                                'is_included' => $taxData->isIncluded,
+                                                'is_included' => $taxData->is_included,
                                             ]
                                         );
                                     }

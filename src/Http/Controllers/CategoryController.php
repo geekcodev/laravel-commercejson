@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace GeekCo\CommerceJson\Http\Controllers;
 
-use GeekCo\CommerceJson\Bus\CommandBusInterface;
 use GeekCo\CommerceJson\Bus\QueryBusInterface;
 use GeekCo\CommerceJson\Commands\CreateCategoryCommand;
 use GeekCo\CommerceJson\Commands\DeleteCategoryCommand;
@@ -12,6 +11,7 @@ use GeekCo\CommerceJson\Commands\UpdateCategoryCommand;
 use GeekCo\CommerceJson\Data\CategoryData;
 use GeekCo\CommerceJson\Queries\GetCategoriesQuery;
 use GeekCo\CommerceJson\Queries\GetCategoryQuery;
+use Illuminate\Contracts\Bus\Dispatcher;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Spatie\LaravelData\DataCollection;
@@ -19,7 +19,7 @@ use Spatie\LaravelData\DataCollection;
 class CategoryController extends Controller
 {
     public function __construct(
-        private readonly CommandBusInterface $commandBus,
+        private readonly Dispatcher $commandBus,
         private readonly QueryBusInterface $queryBus
     ) {}
 

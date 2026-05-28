@@ -7,15 +7,12 @@ namespace GeekCo\CommerceJson\Data;
 use Carbon\Carbon;
 use GeekCo\CommerceJson\Enums\PaymentMethodEnum;
 use GeekCo\CommerceJson\Enums\PaymentStatusEnum;
-use Spatie\LaravelData\Attributes\MapName;
 use Spatie\LaravelData\Attributes\Validation\Enum;
 use Spatie\LaravelData\Attributes\Validation\Nullable;
 use Spatie\LaravelData\Attributes\Validation\Required;
 use Spatie\LaravelData\Attributes\Validation\StringType;
 use Spatie\LaravelData\Data;
-use Spatie\LaravelData\Mappers\SnakeCaseMapper;
 
-#[MapName(SnakeCaseMapper::class)]
 class OrderPaymentData extends Data
 {
     public function __construct(
@@ -26,6 +23,6 @@ class OrderPaymentData extends Data
         #[Nullable]
         public ?MoneyData $amount = null,
         #[Nullable, StringType]
-        public ?Carbon $paidAt = null,
+        public ?Carbon $paid_at = null,
     ) {}
 }

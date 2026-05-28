@@ -3,49 +3,64 @@ includes:
 
 parameters:
     paths:
+        - src/Commands
         - src/Console
+        - src/Data
+        - src/Enums
         - src/Events
         - src/Exceptions
         - src/Exchange
         - src/Facades
+        - src/Handlers
         - src/Http
         - src/Jobs
         - src/Models
-        - src/Rules
+        - src/Queries
+        - src/Repositories
         - src/Services
-        - src/Support
-        - src/Enums
     excludePaths:
-        - src/Data/*
         - src/database/*
     level: 5
     parallel:
         maximumNumberOfProcesses: 1
+    reportUnmatchedIgnoredErrors: false
     ignoreErrors:
-        # Models use updateOrCreate() from Eloquent
-        - '#Call to an undefined static method.*updateOrCreate#'
-        # Models with HasUuids have $id property
-        - '#Access to an undefined property.*::\$id#'
-        # ResponseInterface doesn't have toArray()
-        - '#Call to an undefined method.*ResponseInterface::toArray#'
-        # factory() methods for models
-        - '#Call to an undefined static method.*::factory#'
-        # Str helper in factories
-        - '#Call to static method.*Str::#'
-        # Faker methods
-        - '#Call to an undefined method Faker.*#'
-        # duration always exists
-        - '#Offset .*duration.* on left side of \?\? always exists#'
-        # ResponseInterface properties
-        - '#Access to an undefined property.*ResponseInterface::#'
-        # Enum nullsafe unnecessary
-        - '#Using nullsafe property access.*on left side of \?\? is unnecessary#'
-        # Enum offset always exists
-        - '#Offset.*on left side of \?\? always exists#'
-        # Factory @extends
-        - '#The @extends tag.*describes.*Factory but the class extends.*CommerceJsonFactory#'
-        # Factory method overrides
-        - '#Non-static method.*overrides static method#'
-        - '#Return type static.*is not covariant with return type#'
-        # count() methods
-        - '#Call to an undefined static method.*::count#'
+        # Eloquent Model dynamic/static methods
+        - '#Call to an undefined (static )?method Illuminate\\Database\\Eloquent\\Model::#'
+        - '#Call to an undefined (static )?method Illuminate\\Database\\Eloquent\\Collection::#'
+        # Specific model static methods (updateOrCreate, etc.)
+        - '#Call to an undefined static method GeekCo\\CommerceJson\\Models\\\w+::#'
+        # Eloquent relations without generic type params
+        - '#Method.*return type with generic class Illuminate\\Database\\Eloquent\\Relations\\#'
+        # Eloquent HasFactory generic trait
+        - '#Class.*uses generic trait Illuminate\\Database\\Eloquent\\Factories\\HasFactory#'
+        # Model $casts without value type
+        - '#Property.*\$casts.*type has no value type specified in iterable type#'
+        # Array params/returns without value type
+        - '#has parameter \$.* with no value type specified in iterable type#'
+        - '#return type has no value type specified in iterable type#'
+        # Generic Collection/LengthAwarePaginator without type params
+        - '#return type with generic (class|interface) Illuminate\\(Database\\)?(Contracts\\)?(Pagination\\)?(Collection|LengthAwarePaginator)#'
+        # Spatie Data magic static methods (from, collect, fromModel)
+        - '#Call to an undefined static method GeekCo\\CommerceJson\\Data\\\w+::\w+\(\)#'
+        # Spatie DataCollectionOf attribute constructor
+        - '#Attribute class.*DataCollectionOf.*does not have the constructor parameter#'
+        # HasUuids models — $id property
+        - '#Access to an undefined property.*\\\w+::\$id#'
+        # Job dynamic properties (set via constructor or config)
+        - '#Access to an undefined property.*Job::\$#'
+        - '#Access to an undefined property.*Import\w+Job::\$#'
+        # Mapper dynamic return
+        - '#Call to an undefined method.*Mapper::toModel\(\)#'
+        # ?? and ?-> on non-nullable (enum arrays, console concerns, HTTP client)
+        - '#Expression on left side of \?\? is not nullable#'
+        - '#on left side of \?\? always exists#'
+        - '#Using nullsafe (property access|method call) on non-nullable type#'
+        # StreamInterface === null always false
+        - '#Strict comparison using === between.*StreamInterface and null will always evaluate to false#'
+        # ResponseDto return type widen
+        - '#should return.*ResponseDto<array> but returns.*ResponseDto<array\|object\|null>#'
+        # RedirectResponse dynamic methods from request() helper
+        - '#Call to an undefined method Illuminate\\Http\\RedirectResponse::header\(\)#'
+        # Eloquent relation access via property returns Collection, but PHPStan sees array
+        - '#Cannot call method get\(\) on array\.#'

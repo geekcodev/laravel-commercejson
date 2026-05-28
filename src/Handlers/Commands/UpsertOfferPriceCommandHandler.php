@@ -19,17 +19,17 @@ class UpsertOfferPriceCommandHandler implements CommandHandlerInterface
             return OfferPrice::updateOrCreate(
                 [
                     'offer_id' => $command->offerId,
-                    'price_type_id' => $command->priceData->priceTypeId,
-                    'min_quantity' => $command->priceData->minQuantity ?? 0,
+                    'price_type_id' => $command->priceData->price_type_id,
+                    'min_quantity' => $command->priceData->min_quantity ?? 0,
                 ],
                 [
                     'price_amount' => $command->priceData->price->amount,
                     'price_currency' => $command->priceData->price->currency,
-                    'price_with_discount_amount' => $command->priceData->priceWithDiscount?->amount,
-                    'discount_percent' => $command->priceData->discountPercent,
+                    'price_with_discount_amount' => $command->priceData->price_with_discount?->amount,
+                    'discount_percent' => $command->priceData->discount_percent,
                     'unit_code' => $command->priceData->unit?->code,
-                    'valid_from' => $command->priceData->validFrom,
-                    'valid_to' => $command->priceData->validTo,
+                    'valid_from' => $command->priceData->valid_from,
+                    'valid_to' => $command->priceData->valid_to,
                 ]
             );
         });

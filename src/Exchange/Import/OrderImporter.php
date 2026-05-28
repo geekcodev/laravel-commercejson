@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace GeekCo\CommerceJson\Exchange\Import;
 
-use GeekCo\CommerceJson\Bus\CommandBusInterface;
 use GeekCo\CommerceJson\Commands\UpsertOrderCommand;
 use GeekCo\CommerceJson\Data\OrderData;
 use GeekCo\CommerceJson\Models\Order;
 use GeekCo\CommerceJson\Services\OrderService;
+use Illuminate\Contracts\Bus\Dispatcher;
 
 /**
  * Импортер заказов
@@ -17,7 +17,7 @@ class OrderImporter
 {
     public function __construct(
         protected OrderService $orderService,
-        protected CommandBusInterface $commandBus
+        protected Dispatcher $commandBus
     ) {}
 
     /**
@@ -48,7 +48,7 @@ class OrderImporter
             }
 
             $page++;
-        } while ($orderList->pagination->hasNext);
+        } while ($orderList->pagination->has_next);
 
         return $stats;
     }

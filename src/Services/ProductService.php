@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace GeekCo\CommerceJson\Services;
 
 use DateTimeInterface;
-use GeekCo\CommerceJson\Bus\CommandBusInterface;
 use GeekCo\CommerceJson\Bus\QueryBusInterface;
 use GeekCo\CommerceJson\Commands\UpsertOfferCommand;
 use GeekCo\CommerceJson\Commands\UpsertProductCommand;
@@ -18,6 +17,7 @@ use GeekCo\CommerceJson\Events\ProductDeactivated;
 use GeekCo\CommerceJson\Http\Client\HttpClientInterface;
 use GeekCo\CommerceJson\Models\Offer;
 use GeekCo\CommerceJson\Models\Product;
+use Illuminate\Contracts\Bus\Dispatcher;
 use Illuminate\Support\Collection;
 
 /**
@@ -27,7 +27,7 @@ class ProductService implements ServiceInterface
 {
     public function __construct(
         protected HttpClientInterface $http,
-        protected CommandBusInterface $commandBus,
+        protected Dispatcher $commandBus,
         protected QueryBusInterface $queryBus
     ) {}
 
@@ -43,15 +43,13 @@ class ProductService implements ServiceInterface
         return $this->http;
     }
 
-    public function getCommandBus(): CommandBusInterface
+    public function getCommandBus(): Dispatcher
     {
         return $this->commandBus;
     }
 
     /**
      * Получить список товаров с пагинацией
-     *
-     * @param  array<string, mixed>  $filters
      */
     public function getProducts(
         int $page = 1,
@@ -144,7 +142,7 @@ class ProductService implements ServiceInterface
             }
 
             $page++;
-        } while ($productList->pagination->hasNext);
+        } while ($productList->pagination->has_next);
     }
 
     /**

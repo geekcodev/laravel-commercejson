@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace GeekCo\CommerceJson\Data;
 
 use GeekCo\CommerceJson\Enums\PropertyTypeEnum;
-use Spatie\LaravelData\Attributes\MapName;
 use Spatie\LaravelData\Attributes\Validation\ArrayType;
 use Spatie\LaravelData\Attributes\Validation\BooleanType;
 use Spatie\LaravelData\Attributes\Validation\Distinct;
@@ -15,9 +14,7 @@ use Spatie\LaravelData\Attributes\Validation\Required;
 use Spatie\LaravelData\Attributes\Validation\StringType;
 use Spatie\LaravelData\Attributes\Validation\Uuid;
 use Spatie\LaravelData\Data;
-use Spatie\LaravelData\Mappers\SnakeCaseMapper;
 
-#[MapName(SnakeCaseMapper::class)]
 class PropertyDefinitionData extends Data
 {
     public function __construct(
@@ -32,20 +29,20 @@ class PropertyDefinitionData extends Data
         #[Nullable, StringType]
         public ?string $unit = null,
         #[Nullable, BooleanType]
-        public ?bool $isFilterable = null,
+        public ?bool $is_filterable = null,
         #[Nullable, BooleanType]
-        public ?bool $isRequired = null,
+        public ?bool $is_required = null,
         #[Nullable, BooleanType]
-        public ?bool $useForCatalog = null,
+        public ?bool $use_for_catalog = null,
         #[Nullable, BooleanType]
-        public ?bool $useForOffers = null,
+        public ?bool $use_for_offers = null,
         #[Nullable, BooleanType]
-        public ?bool $useForDocuments = null,
+        public ?bool $use_for_documents = null,
         #[Nullable, ArrayType, Distinct]
-        public ?array $enumValues = null,
+        public ?array $enum_values = null,
         #[Nullable, BooleanType]
-        public ?bool $appliesToAll = null,
+        public ?bool $applies_to_all = null,
         #[Nullable, ArrayType, Distinct]
-        public ?array $categoryIds = null,
+        public ?array $category_ids = null,
     ) {}
 }

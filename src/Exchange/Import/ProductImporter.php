@@ -43,7 +43,7 @@ class ProductImporter
             }
 
             $page++;
-        } while ($productList->pagination->hasNext);
+        } while ($productList->pagination->has_next);
 
         return $stats;
     }
@@ -76,7 +76,7 @@ class ProductImporter
             }
 
             $page++;
-        } while ($offerList->pagination->hasNext);
+        } while ($offerList->pagination->has_next);
 
         return $stats;
     }

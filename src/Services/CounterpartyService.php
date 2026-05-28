@@ -6,13 +6,13 @@ namespace GeekCo\CommerceJson\Services;
 
 use DateTime;
 use DateTimeInterface;
-use GeekCo\CommerceJson\Bus\CommandBusInterface;
 use GeekCo\CommerceJson\Commands\UpsertCounterpartyCommand;
 use GeekCo\CommerceJson\Data\CounterpartyData;
 use GeekCo\CommerceJson\Data\CounterpartyListData;
 use GeekCo\CommerceJson\Data\ImportResultData;
 use GeekCo\CommerceJson\Http\Client\HttpClientInterface;
 use GeekCo\CommerceJson\Models\Counterparty;
+use Illuminate\Contracts\Bus\Dispatcher;
 
 /**
  * Сервис для работы с контрагентами
@@ -21,7 +21,7 @@ class CounterpartyService implements ServiceInterface
 {
     public function __construct(
         protected HttpClientInterface $http,
-        protected CommandBusInterface $commandBus
+        protected Dispatcher $commandBus
     ) {}
 
     public function setHttpClient(HttpClientInterface $http): static
@@ -36,7 +36,7 @@ class CounterpartyService implements ServiceInterface
         return $this->http;
     }
 
-    public function getCommandBus(): CommandBusInterface
+    public function getCommandBus(): Dispatcher
     {
         return $this->commandBus;
     }

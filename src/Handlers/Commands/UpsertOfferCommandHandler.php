@@ -25,8 +25,8 @@ class UpsertOfferCommandHandler implements CommandHandlerInterface
         return DB::transaction(function () use ($command) {
             return $this->repository->updateOrCreate(
                 [
-                    'product_id' => $command->offerData->productId,
-                    'variant_id' => $command->offerData->variantId,
+                    'product_id' => $command->offerData->product_id,
+                    'variant_id' => $command->offerData->variant_id,
                 ],
                 $command->offerData->toArray()
             );

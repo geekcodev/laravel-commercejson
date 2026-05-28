@@ -1,0 +1,123 @@
+<?php
+
+declare(strict_types=1);
+
+use GeekCo\CommerceJson\Models\Product;
+use GeekCo\CommerceJson\Queries\GetProductQuery;
+use GeekCo\CommerceJson\Queries\GetProductsQuery;
+
+describe('ProductController', function () {
+    describe('GET /catalog/products', function () {
+        it('returns paginated products list', function () {
+            $queryBus = mockQueryBus();
+            $mockResult = Mockery::mock(stdClass::class);
+            $mockResult->shouldReceive('items')->andReturn(collect([
+                test()->createProductData(),
+                test()->createProductData(),
+            ]));
+            $mockResult->shouldReceive('currentPage')->andReturn(1);
+            $mockResult->shouldReceive('lastPage')->andReturn(1);
+            $mockResult->shouldReceive('perPage')->andReturn(15);
+            $mockResult->shouldReceive('total')->andReturn(2);
+
+            $queryBus->shouldReceive('ask')
+                ->once()
+                ->with(Mockery::type(GetProductsQuery::class))
+                ->andReturn($mockResult);
+
+            $response = $this->getJson('/api/commercejson/catalog/products');
+
+            $response->assertStatus(200)
+                ->assertJsonStructure([
+                    'data' => [
+                        '*' => ['id', 'name', 'code'],
+                    ],
+                    'meta' => ['current_page', 'last_page', 'per_page', 'total'],
+                ])
+                ->assertJson([
+                    'meta' => ['total' => 2],
+                ]);
+        });
+    });
+
+    describe('GET /catalog/products/{id}', function () {
+        it('returns a single product', function () {
+            $queryBus = mockQueryBus();
+            $productId = test()->createTestUuid();
+            $product = Product::factory()->make([
+                'id' => $productId,
+                'name' => 'Test Product',
+                'code' => 'TEST-001',
+                'category_id' => test()->createTestUuid(),
+            ]);
+
+            $queryBus->shouldReceive('ask')
+                ->once()
+                ->with(Mockery::type(GetProductQuery::class))
+                ->andReturn($product);
+
+            $response = $this->getJson("/api/commercejson/catalog/products/{$productId}");
+
+            $response->assertStatus(200)
+                ->assertJson([
+                    'id' => $productId,
+                    'name' => 'Test Product',
+                ]);
+        });
+    });
+
+    describe('POST /catalog/products', function () {
+        it('creates a product and returns 201', function () {
+            $commandBus = mockCommandBus();
+            $productId = test()->createTestUuid();
+            $categoryId = test()->createTestUuid();
+            $product = Product::factory()->make([
+                'id' => $productId,
+                'name' => 'New Product',
+                'code' => 'NEW-001',
+                'category_id' => $categoryId,
+            ]);
+
+            $commandBus->shouldReceive('dispatch')
+                ->once()
+                ->andReturn($product);
+
+            $response = $this->postJson('/api/commercejson/catalog/products', [
+                'id' => $productId,
+                'name' => 'New Product',
+                'code' => 'NEW-001',
+                'category_id' => $categoryId,
+            ]);
+
+            $response->assertStatus(201)
+                ->assertJson([
+                    'id' => $productId,
+                    'name' => 'New Product',
+                ]);
+        });
+    });
+
+    describe('DELETE /catalog/products/{id}', function () {
+        it('soft-deletes a product', function () {
+            $commandBus = mockCommandBus();
+            $queryBus = mockQueryBus();
+            $productId = test()->createTestUuid();
+            $product = Product::factory()->make([
+                'id' => $productId,
+                'category_id' => test()->createTestUuid(),
+            ]);
+
+            $queryBus->shouldReceive('ask')
+                ->once()
+                ->andReturn($product);
+            $commandBus->shouldReceive('dispatch')
+                ->once()
+                ->andReturn(true);
+
+            $response = $this->deleteJson("/api/commercejson/catalog/products/{$productId}");
+
+            $response->assertStatus(200)
+                ->assertJson(['message' => 'Product deleted']);
+        });
+    });
+});

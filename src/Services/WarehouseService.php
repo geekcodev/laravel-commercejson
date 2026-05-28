@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace GeekCo\CommerceJson\Services;
 
-use GeekCo\CommerceJson\Bus\CommandBusInterface;
 use GeekCo\CommerceJson\Commands\UpsertWarehouseCommand;
 use GeekCo\CommerceJson\Data\ImportResultData;
 use GeekCo\CommerceJson\Data\WarehouseData;
 use GeekCo\CommerceJson\Http\Client\HttpClientInterface;
+use Illuminate\Contracts\Bus\Dispatcher;
 
 /**
  * Сервис для работы со складами
@@ -17,7 +17,7 @@ class WarehouseService implements ServiceInterface
 {
     public function __construct(
         protected HttpClientInterface $http,
-        protected CommandBusInterface $commandBus
+        protected Dispatcher $commandBus
     ) {}
 
     public function setHttpClient(HttpClientInterface $http): static
@@ -32,7 +32,7 @@ class WarehouseService implements ServiceInterface
         return $this->http;
     }
 
-    public function getCommandBus(): CommandBusInterface
+    public function getCommandBus(): Dispatcher
     {
         return $this->commandBus;
     }

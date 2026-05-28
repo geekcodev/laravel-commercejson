@@ -6,7 +6,6 @@ namespace GeekCo\CommerceJson\Data;
 
 use Carbon\Carbon;
 use Spatie\LaravelData\Attributes\DataCollectionOf;
-use Spatie\LaravelData\Attributes\MapName;
 use Spatie\LaravelData\Attributes\Validation\ArrayType;
 use Spatie\LaravelData\Attributes\Validation\BooleanType;
 use Spatie\LaravelData\Attributes\Validation\Distinct;
@@ -18,16 +17,14 @@ use Spatie\LaravelData\Attributes\Validation\Required;
 use Spatie\LaravelData\Attributes\Validation\StringType;
 use Spatie\LaravelData\Attributes\Validation\Uuid;
 use Spatie\LaravelData\Data;
-use Spatie\LaravelData\Mappers\SnakeCaseMapper;
 
-#[MapName(SnakeCaseMapper::class)]
 class ProductData extends Data
 {
     public function __construct(
         #[Required, StringType, Uuid]
         public string $id,
         #[Nullable, StringType]
-        public ?string $externalId,
+        public ?string $external_id,
         #[Required, StringType, Max(255)]
         public string $name,
         #[Nullable, StringType]
@@ -35,11 +32,11 @@ class ProductData extends Data
         #[Nullable, StringType, Max(14)]
         public ?string $barcode,
         #[Required, StringType, Uuid]
-        public string $categoryId,
+        public string $category_id,
         #[Nullable, StringType]
         public ?string $description = null,
         #[Nullable, StringType, Max(500)]
-        public ?string $shortDescription = null,
+        public ?string $short_description = null,
         #[Nullable, ArrayType, DataCollectionOf(ProductImageData::class)]
         public ?array $images = null,
         #[Nullable, ArrayType, DataCollectionOf(PropertyValueData::class)]
@@ -47,7 +44,7 @@ class ProductData extends Data
         #[Nullable, ArrayType, DataCollectionOf(ProductVariantData::class)]
         public ?array $variants = null,
         #[Nullable, Numeric, Min(0)]
-        public ?float $taxRate = null,
+        public ?float $tax_rate = null,
         #[Nullable]
         public ?UnitData $unit = null,
         #[Nullable, Numeric, Min(0)]
@@ -61,16 +58,16 @@ class ProductData extends Data
         #[Nullable, ArrayType]
         public ?array $components = null,
         #[Nullable, ArrayType, DataCollectionOf(CustomAttributeData::class)]
-        public ?array $customAttributes = null,
+        public ?array $custom_attributes = null,
         #[Nullable, BooleanType]
-        public ?bool $isActive = null,
+        public ?bool $is_active = null,
         #[Nullable]
         public ?SeoMetaData $seo = null,
         #[Nullable, StringType]
-        public ?Carbon $createdAt = null,
+        public ?Carbon $created_at = null,
         #[Nullable, StringType]
-        public ?Carbon $updatedAt = null,
+        public ?Carbon $updated_at = null,
         #[Nullable, StringType]
-        public ?Carbon $deletedAt = null,
+        public ?Carbon $deleted_at = null,
     ) {}
 }

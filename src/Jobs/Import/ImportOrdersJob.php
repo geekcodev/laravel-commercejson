@@ -101,7 +101,7 @@ class ImportOrdersJob implements ShouldQueue
         );
 
         // Dispatch следующей страницы
-        if ($orderList->pagination->hasNext) {
+        if ($orderList->pagination->has_next) {
             ImportOrdersJob::dispatch(
                 page: $this->page + 1,
                 limit: $this->limit,

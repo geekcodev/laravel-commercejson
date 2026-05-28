@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace GeekCo\CommerceJson\Console\Commands;
 
 use GeekCo\CommerceJson\Console\Concerns\InteractsWithExchange;
+use GeekCo\CommerceJson\Data\OrderData;
 use GeekCo\CommerceJson\Data\OrderImportData;
 use GeekCo\CommerceJson\Events\OrderExported;
 use GeekCo\CommerceJson\Services\OrderService;
@@ -72,6 +73,7 @@ class ExportOrdersCommand extends Command
             $exportData = [];
             $stats = ['exported' => 0, 'failed' => 0];
 
+            /** @var OrderData $order */
             foreach ($orderList->orders as $order) {
                 try {
                     // Формирование данных для экспорта
@@ -82,11 +84,11 @@ class ExportOrdersCommand extends Command
                         'document_type' => $order->document_type,
                         'comment' => $order->comment,
                         'delivery' => [
-                            'tracking_number' => $order->delivery_tracking_number,
-                            'shipped_at' => $order->delivery_shipped_at?->toIso8601String(),
-                            'estimated_date' => $order->delivery_estimated_date,
+                            'tracking_number' => $order->delivery->tracking_number,
+                            'shipped_at' => $order->delivery->shipped_at?->toIso8601String(),
+                            'estimated_date' => $order->delivery->estimated_date,
                         ],
-                        'custom_attributes' => $order->customAttributes()
+                        'custom_attributes' => $order->custom_attributes
                             ->get()
                             ->map(fn ($attr) => [
                                 'key' => $attr->key,

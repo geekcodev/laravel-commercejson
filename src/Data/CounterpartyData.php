@@ -7,7 +7,6 @@ namespace GeekCo\CommerceJson\Data;
 use Carbon\Carbon;
 use GeekCo\CommerceJson\Enums\CounterpartyTypeEnum;
 use Spatie\LaravelData\Attributes\DataCollectionOf;
-use Spatie\LaravelData\Attributes\MapName;
 use Spatie\LaravelData\Attributes\Validation\ArrayType;
 use Spatie\LaravelData\Attributes\Validation\BooleanType;
 use Spatie\LaravelData\Attributes\Validation\Enum;
@@ -17,22 +16,20 @@ use Spatie\LaravelData\Attributes\Validation\Required;
 use Spatie\LaravelData\Attributes\Validation\StringType;
 use Spatie\LaravelData\Attributes\Validation\Uuid;
 use Spatie\LaravelData\Data;
-use Spatie\LaravelData\Mappers\SnakeCaseMapper;
 
-#[MapName(SnakeCaseMapper::class)]
 class CounterpartyData extends Data
 {
     public function __construct(
         #[Required, StringType, Uuid]
         public string $id,
         #[Nullable, StringType]
-        public ?string $externalId,
+        public ?string $external_id,
         #[Required, Enum(CounterpartyTypeEnum::class)]
         public CounterpartyTypeEnum $type,
         #[Required, StringType]
         public string $name,
         #[Nullable, StringType]
-        public ?string $shortName,
+        public ?string $short_name,
         #[Nullable, StringType]
         public ?string $inn,
         #[Nullable, StringType, Regex('/^\d{9}$/')]
@@ -48,30 +45,30 @@ class CounterpartyData extends Data
         #[Nullable, StringType]
         public ?string $okfs,
         #[Nullable, StringType]
-        public ?Carbon $registrationDate,
+        public ?Carbon $registration_date,
         #[Nullable]
-        public ?AddressData $legalAddress,
+        public ?AddressData $legal_address,
         #[Nullable]
-        public ?AddressData $actualAddress,
+        public ?AddressData $actual_address,
         #[Nullable, ArrayType, DataCollectionOf(ContactData::class)]
         public ?array $contacts,
         #[Nullable, ArrayType]
         public ?array $representatives,
         #[Nullable, ArrayType, DataCollectionOf(BankAccountData::class)]
-        public ?array $bankAccounts,
+        public ?array $bank_accounts,
         #[Nullable, StringType, Uuid]
-        public ?string $priceTypeId,
+        public ?string $price_type_id,
         #[Nullable]
-        public ?MoneyData $creditLimit,
+        public ?MoneyData $credit_limit,
         #[Nullable, ArrayType, DataCollectionOf(CustomAttributeData::class)]
-        public ?array $customAttributes,
+        public ?array $custom_attributes,
         #[Nullable, BooleanType]
-        public ?bool $isActive,
+        public ?bool $is_active,
         #[Nullable, StringType]
-        public ?Carbon $createdAt,
+        public ?Carbon $created_at,
         #[Nullable, StringType]
-        public ?Carbon $updatedAt,
+        public ?Carbon $updated_at,
         #[Nullable, StringType]
-        public ?Carbon $deletedAt,
+        public ?Carbon $deleted_at,
     ) {}
 }

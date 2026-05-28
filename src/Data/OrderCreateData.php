@@ -7,7 +7,6 @@ namespace GeekCo\CommerceJson\Data;
 use GeekCo\CommerceJson\Enums\CurrencyEnum;
 use GeekCo\CommerceJson\Enums\PartyRoleEnum;
 use Spatie\LaravelData\Attributes\DataCollectionOf;
-use Spatie\LaravelData\Attributes\MapName;
 use Spatie\LaravelData\Attributes\Validation\ArrayType;
 use Spatie\LaravelData\Attributes\Validation\Enum;
 use Spatie\LaravelData\Attributes\Validation\Min;
@@ -17,20 +16,18 @@ use Spatie\LaravelData\Attributes\Validation\Required;
 use Spatie\LaravelData\Attributes\Validation\StringType;
 use Spatie\LaravelData\Attributes\Validation\Uuid;
 use Spatie\LaravelData\Data;
-use Spatie\LaravelData\Mappers\SnakeCaseMapper;
 
-#[MapName(SnakeCaseMapper::class)]
 class OrderCreateData extends Data
 {
     public function __construct(
         #[Required]
-        public mixed $documentType,
+        public mixed $document_type,
         #[Nullable, Enum(PartyRoleEnum::class)]
         public ?PartyRoleEnum $role,
         #[Nullable]
         public ?OrderCustomerData $customer,
         #[Nullable, StringType, Uuid]
-        public ?string $counterpartyId,
+        public ?string $counterparty_id,
         #[Nullable]
         public ?OrderDeliveryData $delivery,
         #[Nullable]
@@ -38,17 +35,17 @@ class OrderCreateData extends Data
         #[Required, ArrayType, Min(1), DataCollectionOf(OrderItemCreateData::class)]
         public array $items,
         #[Nullable, StringType, Uuid]
-        public ?string $warehouseId = null,
+        public ?string $warehouse_id = null,
         #[Nullable, Enum(CurrencyEnum::class)]
-        public ?CurrencyEnum $baseCurrency = null,
+        public ?CurrencyEnum $base_currency = null,
         #[Nullable, Numeric, Min(0)]
-        public ?float $exchangeRate = null,
+        public ?float $exchange_rate = null,
         #[Nullable, StringType]
-        public ?string $paymentTerms = null,
+        public ?string $payment_terms = null,
         #[Nullable, StringType]
         public ?string $comment = null,
         #[Nullable, ArrayType, DataCollectionOf(CustomAttributeData::class)]
-        public ?array $customAttributes = null,
+        public ?array $custom_attributes = null,
         #[Nullable, ArrayType, DataCollectionOf(SignatoryData::class)]
         public ?array $signatories = null,
     ) {}

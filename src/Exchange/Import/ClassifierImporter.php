@@ -39,8 +39,8 @@ class ClassifierImporter implements ImporterInterface
         }
 
         // Синхронизация типов цен
-        if (! empty($classifier->priceTypes)) {
-            $stats['priceTypes'] = $this->classifierService->syncPriceTypes($classifier->priceTypes);
+        if (! empty($classifier->price_types)) {
+            $stats['priceTypes'] = $this->classifierService->syncPriceTypes($classifier->price_types);
         }
 
         return $stats;

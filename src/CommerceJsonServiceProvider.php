@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace GeekCo\CommerceJson;
 
-use GeekCo\CommerceJson\Bus\CommandBus;
-use GeekCo\CommerceJson\Bus\CommandBusInterface;
 use GeekCo\CommerceJson\Bus\QueryBus;
 use GeekCo\CommerceJson\Bus\QueryBusInterface;
 use GeekCo\CommerceJson\Commands\CreateCategoryCommand;
@@ -79,8 +77,10 @@ use GeekCo\CommerceJson\Handlers\Queries\GetOfferQueryHandler;
 use GeekCo\CommerceJson\Handlers\Queries\GetOffersQueryHandler;
 use GeekCo\CommerceJson\Handlers\Queries\GetOrderQueryHandler;
 use GeekCo\CommerceJson\Handlers\Queries\GetOrdersQueryHandler;
+use GeekCo\CommerceJson\Handlers\Queries\GetPriceTypesQueryHandler;
 use GeekCo\CommerceJson\Handlers\Queries\GetProductQueryHandler;
 use GeekCo\CommerceJson\Handlers\Queries\GetProductsQueryHandler;
+use GeekCo\CommerceJson\Handlers\Queries\GetWarehousesQueryHandler;
 use GeekCo\CommerceJson\Http\Client\CommerceJsonHttpClient;
 use GeekCo\CommerceJson\Http\Client\ExponentialBackoffStrategy;
 use GeekCo\CommerceJson\Http\Client\HttpClientInterface;
@@ -100,8 +100,10 @@ use GeekCo\CommerceJson\Queries\GetOfferQuery;
 use GeekCo\CommerceJson\Queries\GetOffersQuery;
 use GeekCo\CommerceJson\Queries\GetOrderQuery;
 use GeekCo\CommerceJson\Queries\GetOrdersQuery;
+use GeekCo\CommerceJson\Queries\GetPriceTypesQuery;
 use GeekCo\CommerceJson\Queries\GetProductQuery;
 use GeekCo\CommerceJson\Queries\GetProductsQuery;
+use GeekCo\CommerceJson\Queries\GetWarehousesQuery;
 use GeekCo\CommerceJson\Repositories\CategoryRepository;
 use GeekCo\CommerceJson\Repositories\CounterpartyRepository;
 use GeekCo\CommerceJson\Repositories\OfferRepository;
@@ -116,7 +118,7 @@ use GeekCo\CommerceJson\Services\OfferService;
 use GeekCo\CommerceJson\Services\OrderService;
 use GeekCo\CommerceJson\Services\ProductService;
 use GeekCo\CommerceJson\Services\WarehouseService;
-use GeekCo\CommerceJson\Support\Mappers\ProductMapper;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\ServiceProvider;
 
 class CommerceJsonServiceProvider extends ServiceProvider
@@ -161,9 +163,6 @@ class CommerceJsonServiceProvider extends ServiceProvider
         $this->app->singleton(WarehouseService::class);
         $this->app->singleton(CounterpartyService::class);
 
-        // Регистрация мапперов
-        $this->app->singleton(ProductMapper::class);
-
         // Регистрация Exchange компонентов
         $this->app->singleton(ProductImporter::class);
         $this->app->singleton(OrderImporter::class);
@@ -202,97 +201,7 @@ class CommerceJsonServiceProvider extends ServiceProvider
             return new WarehouseRepository($app->make(Warehouse::class));
         });
 
-        // Регистрация CommandBus и QueryBus
-        $this->app->singleton(CommandBusInterface::class, function ($app) {
-            $commandBus = new CommandBus;
-
-            // Регистрация Command handlers
-            $commandBus->register(CreateProductCommand::class, function ($command) use ($app) {
-                return $app->make(CreateProductCommandHandler::class)->handle($command);
-            });
-            $commandBus->register(UpdateProductCommand::class, function ($command) use ($app) {
-                return $app->make(UpdateProductCommandHandler::class)->handle($command);
-            });
-            $commandBus->register(DeleteProductCommand::class, function ($command) use ($app) {
-                return $app->make(DeleteProductCommandHandler::class)->handle($command);
-            });
-
-            $commandBus->register(CreateOrderCommand::class, function ($command) use ($app) {
-                return $app->make(CreateOrderCommandHandler::class)->handle($command);
-            });
-            $commandBus->register(UpdateOrderCommand::class, function ($command) use ($app) {
-                return $app->make(UpdateOrderCommandHandler::class)->handle($command);
-            });
-            $commandBus->register(DeleteOrderCommand::class, function ($command) use ($app) {
-                return $app->make(DeleteOrderCommandHandler::class)->handle($command);
-            });
-
-            $commandBus->register(CreateCounterpartyCommand::class, function ($command) use ($app) {
-                return $app->make(CreateCounterpartyCommandHandler::class)->handle($command);
-            });
-            $commandBus->register(UpdateCounterpartyCommand::class, function ($command) use ($app) {
-                return $app->make(UpdateCounterpartyCommandHandler::class)->handle($command);
-            });
-            $commandBus->register(DeleteCounterpartyCommand::class, function ($command) use ($app) {
-                return $app->make(DeleteCounterpartyCommandHandler::class)->handle($command);
-            });
-
-            $commandBus->register(CreateCategoryCommand::class, function ($command) use ($app) {
-                return $app->make(CreateCategoryCommandHandler::class)->handle($command);
-            });
-            $commandBus->register(UpdateCategoryCommand::class, function ($command) use ($app) {
-                return $app->make(UpdateCategoryCommandHandler::class)->handle($command);
-            });
-            $commandBus->register(DeleteCategoryCommand::class, function ($command) use ($app) {
-                return $app->make(DeleteCategoryCommandHandler::class)->handle($command);
-            });
-
-            $commandBus->register(CreateOfferCommand::class, function ($command) use ($app) {
-                return $app->make(CreateOfferCommandHandler::class)->handle($command);
-            });
-            $commandBus->register(UpdateOfferCommand::class, function ($command) use ($app) {
-                return $app->make(UpdateOfferCommandHandler::class)->handle($command);
-            });
-            $commandBus->register(DeleteOfferCommand::class, function ($command) use ($app) {
-                return $app->make(DeleteOfferCommandHandler::class)->handle($command);
-            });
-
-            $commandBus->register(UpsertProductCommand::class, function ($command) use ($app) {
-                return $app->make(UpsertProductCommandHandler::class)->handle($command);
-            });
-            $commandBus->register(UpsertOfferCommand::class, function ($command) use ($app) {
-                return $app->make(UpsertOfferCommandHandler::class)->handle($command);
-            });
-            $commandBus->register(UpsertOrderCommand::class, function ($command) use ($app) {
-                return $app->make(UpsertOrderCommandHandler::class)->handle($command);
-            });
-            $commandBus->register(UpsertCategoryCommand::class, function ($command) use ($app) {
-                return $app->make(UpsertCategoryCommandHandler::class)->handle($command);
-            });
-            $commandBus->register(UpsertPriceTypeCommand::class, function ($command) use ($app) {
-                return $app->make(UpsertPriceTypeCommandHandler::class)->handle($command);
-            });
-            $commandBus->register(UpsertPropertyDefinitionCommand::class, function ($command) use ($app) {
-                return $app->make(UpsertPropertyDefinitionCommandHandler::class)->handle($command);
-            });
-            $commandBus->register(UpsertCounterpartyCommand::class, function ($command) use ($app) {
-                return $app->make(UpsertCounterpartyCommandHandler::class)->handle($command);
-            });
-            $commandBus->register(UpsertWarehouseCommand::class, function ($command) use ($app) {
-                return $app->make(UpsertWarehouseCommandHandler::class)->handle($command);
-            });
-
-            $commandBus->register(UpsertOfferPriceCommand::class, function ($command) use ($app) {
-                return $app->make(UpsertOfferPriceCommandHandler::class)->handle($command);
-            });
-
-            $commandBus->register(UpsertStockCommand::class, function ($command) use ($app) {
-                return $app->make(UpsertStockCommandHandler::class)->handle($command);
-            });
-
-            return $commandBus;
-        });
-
+        // Регистрация QueryBus (read-операции)
         $this->app->singleton(QueryBusInterface::class, function ($app) {
             $queryBus = new QueryBus;
 
@@ -332,6 +241,13 @@ class CommerceJsonServiceProvider extends ServiceProvider
                 return $app->make(GetOfferQueryHandler::class)->handle($query);
             });
 
+            $queryBus->register(GetPriceTypesQuery::class, function ($query) use ($app) {
+                return $app->make(GetPriceTypesQueryHandler::class)->handle($query);
+            });
+            $queryBus->register(GetWarehousesQuery::class, function ($query) use ($app) {
+                return $app->make(GetWarehousesQueryHandler::class)->handle($query);
+            });
+
             return $queryBus;
         });
     }
@@ -341,6 +257,35 @@ class CommerceJsonServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Регистрация Command → Handler маппинга (Laravel Bus)
+        Bus::map([
+            CreateProductCommand::class => CreateProductCommandHandler::class,
+            UpdateProductCommand::class => UpdateProductCommandHandler::class,
+            DeleteProductCommand::class => DeleteProductCommandHandler::class,
+            CreateOrderCommand::class => CreateOrderCommandHandler::class,
+            UpdateOrderCommand::class => UpdateOrderCommandHandler::class,
+            DeleteOrderCommand::class => DeleteOrderCommandHandler::class,
+            CreateCounterpartyCommand::class => CreateCounterpartyCommandHandler::class,
+            UpdateCounterpartyCommand::class => UpdateCounterpartyCommandHandler::class,
+            DeleteCounterpartyCommand::class => DeleteCounterpartyCommandHandler::class,
+            CreateCategoryCommand::class => CreateCategoryCommandHandler::class,
+            UpdateCategoryCommand::class => UpdateCategoryCommandHandler::class,
+            DeleteCategoryCommand::class => DeleteCategoryCommandHandler::class,
+            CreateOfferCommand::class => CreateOfferCommandHandler::class,
+            UpdateOfferCommand::class => UpdateOfferCommandHandler::class,
+            DeleteOfferCommand::class => DeleteOfferCommandHandler::class,
+            UpsertProductCommand::class => UpsertProductCommandHandler::class,
+            UpsertOfferCommand::class => UpsertOfferCommandHandler::class,
+            UpsertOrderCommand::class => UpsertOrderCommandHandler::class,
+            UpsertCategoryCommand::class => UpsertCategoryCommandHandler::class,
+            UpsertPriceTypeCommand::class => UpsertPriceTypeCommandHandler::class,
+            UpsertPropertyDefinitionCommand::class => UpsertPropertyDefinitionCommandHandler::class,
+            UpsertCounterpartyCommand::class => UpsertCounterpartyCommandHandler::class,
+            UpsertWarehouseCommand::class => UpsertWarehouseCommandHandler::class,
+            UpsertOfferPriceCommand::class => UpsertOfferPriceCommandHandler::class,
+            UpsertStockCommand::class => UpsertStockCommandHandler::class,
+        ]);
+
         $this->publishes([
             __DIR__.'/config/commercejson.php' => config_path('commercejson.php'),
         ], 'commercejson-config');

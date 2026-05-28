@@ -103,7 +103,7 @@ class ImportOffersJob implements ShouldQueue
         );
 
         // Dispatch следующей страницы
-        if ($offerList->pagination->hasNext) {
+        if ($offerList->pagination->has_next) {
             ImportOffersJob::dispatch(
                 page: $this->page + 1,
                 limit: $this->limit,

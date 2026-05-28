@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace GeekCo\CommerceJson\Console\Commands;
 
 use GeekCo\CommerceJson\Console\Concerns\InteractsWithExchange;
+use GeekCo\CommerceJson\Data\OfferData;
+use GeekCo\CommerceJson\Data\OfferPriceData;
+use GeekCo\CommerceJson\Data\StockData;
 use GeekCo\CommerceJson\Events\OffersImported;
 use GeekCo\CommerceJson\Models\OfferPrice;
 use GeekCo\CommerceJson\Models\Stock;
@@ -91,6 +94,7 @@ class ImportOffersCommand extends Command
                 try {
                     DB::transaction(function () use ($offerData, $offerService, &$stats) {
                         // Синхронизация предложения
+                        /** @var OfferData $offerData */
                         $offer = $offerService->syncOffer($offerData);
 
                         if ($offer->wasRecentlyCreated) {
@@ -101,25 +105,26 @@ class ImportOffersCommand extends Command
 
                         // Синхронизация цен
                         if (! empty($offerData->prices)) {
+                            /** @var OfferPriceData $priceData */
                             foreach ($offerData->prices as $priceData) {
                                 OfferPrice::updateOrCreate(
                                     [
                                         'offer_id' => $offer->id,
-                                        'price_type_id' => $priceData->priceTypeId,
-                                        'min_quantity' => $priceData->minQuantity ?? 0,
+                                        'price_type_id' => $priceData->price_type_id,
+                                        'min_quantity' => $priceData->min_quantity ?? 0,
                                     ],
                                     [
                                         'price_amount' => $priceData->price->amount,
                                         'price_currency' => $priceData->price->currency,
-                                        'price_with_discount_amount' => $priceData->priceWithDiscount?->amount,
-                                        'price_with_discount_currency' => $priceData->priceWithDiscount?->currency,
-                                        'discount_percent' => $priceData->discountPercent,
+                                        'price_with_discount_amount' => $priceData->price_with_discount?->amount,
+                                        'price_with_discount_currency' => $priceData->price_with_discount?->currency,
+                                        'discount_percent' => $priceData->discount_percent,
                                         'unit_code' => $priceData->unit?->code,
-                                        'unit_short_name' => $priceData->unit?->shortName,
-                                        'unit_full_name' => $priceData->unit?->fullName,
+                                        'unit_short_name' => $priceData->unit?->short_name,
+                                        'unit_full_name' => $priceData->unit?->full_name,
                                         'unit_international' => $priceData->unit?->international,
-                                        'valid_from' => $priceData->validFrom,
-                                        'valid_to' => $priceData->validTo,
+                                        'valid_from' => $priceData->valid_from,
+                                        'valid_to' => $priceData->valid_to,
                                     ]
                                 );
                             }
@@ -127,15 +132,16 @@ class ImportOffersCommand extends Command
 
                         // Синхронизация остатков
                         if (! empty($offerData->stocks)) {
+                            /** @var StockData $stockData */
                             foreach ($offerData->stocks as $stockData) {
                                 Stock::updateOrCreate(
                                     [
                                         'offer_id' => $offer->id,
-                                        'warehouse_id' => $stockData->warehouseId,
+                                        'warehouse_id' => $stockData->warehouse_id,
                                     ],
                                     [
                                         'quantity' => $stockData->quantity,
-                                        'quantity_reserved' => $stockData->quantityReserved,
+                                        'quantity_reserved' => $stockData->quantity_reserved,
                                     ]
                                 );
                             }

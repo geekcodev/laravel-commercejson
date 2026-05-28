@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace GeekCo\CommerceJson\Services;
 
 use DateTimeInterface;
-use GeekCo\CommerceJson\Bus\CommandBusInterface;
 use GeekCo\CommerceJson\Commands\UpsertOfferCommand;
 use GeekCo\CommerceJson\Commands\UpsertOfferPriceCommand;
 use GeekCo\CommerceJson\Commands\UpsertStockCommand;
@@ -17,6 +16,7 @@ use GeekCo\CommerceJson\Data\OfferPriceData;
 use GeekCo\CommerceJson\Data\StockData;
 use GeekCo\CommerceJson\Http\Client\HttpClientInterface;
 use GeekCo\CommerceJson\Models\Offer;
+use Illuminate\Contracts\Bus\Dispatcher;
 
 /**
  * Сервис для работы с предложениями (цены и остатки)
@@ -25,7 +25,7 @@ class OfferService implements ServiceInterface
 {
     public function __construct(
         protected HttpClientInterface $http,
-        protected CommandBusInterface $commandBus
+        protected Dispatcher $commandBus
     ) {}
 
     public function setHttpClient(HttpClientInterface $http): static
@@ -40,7 +40,7 @@ class OfferService implements ServiceInterface
         return $this->http;
     }
 
-    public function getCommandBus(): CommandBusInterface
+    public function getCommandBus(): Dispatcher
     {
         return $this->commandBus;
     }
@@ -123,14 +123,15 @@ class OfferService implements ServiceInterface
         do {
             $result = $this->getOffers(page: $page, limit: 100);
 
+            /** @var OfferData $offer */
             foreach ($result->offers as $offer) {
-                if ($offer->productId === $productId) {
+                if ($offer->product_id === $productId) {
                     $offers[] = $offer;
                 }
             }
 
             $page++;
-        } while ($result->pagination->hasNext);
+        } while ($result->pagination->has_next);
 
         return $offers;
     }
