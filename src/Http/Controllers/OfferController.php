@@ -6,12 +6,15 @@ namespace GeekCo\CommerceJson\Http\Controllers;
 
 use GeekCo\CommerceJson\Bus\QueryBusInterface;
 use GeekCo\CommerceJson\Commands\CreateOfferCommand;
+use GeekCo\CommerceJson\Data\ErrorResponseData;
 use GeekCo\CommerceJson\Data\OfferData;
 use GeekCo\CommerceJson\Data\PriceTypeData;
+use GeekCo\CommerceJson\Exceptions\ForeignKeyViolationException;
 use GeekCo\CommerceJson\Queries\GetOfferQuery;
 use GeekCo\CommerceJson\Queries\GetOffersQuery;
 use GeekCo\CommerceJson\Queries\GetPriceTypesQuery;
 use Illuminate\Contracts\Bus\Dispatcher;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Spatie\LaravelData\DataCollection;
@@ -51,10 +54,19 @@ class OfferController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $command = new CreateOfferCommand(OfferData::from($request->all()));
-        $offer = $this->commandBus->dispatch($command);
+        try {
+            $command = new CreateOfferCommand(OfferData::from($request->all()));
+            $offer = $this->commandBus->dispatch($command);
 
-        return response()->json(OfferData::from($offer), 201);
+            return response()->json(OfferData::from($offer), 201);
+        } catch (QueryException $e) {
+            $fe = new ForeignKeyViolationException($e);
+
+            return response()->json(
+                ErrorResponseData::from(['error' => ['code' => $fe->errorCode, 'message' => $fe->getMessage()]]),
+                422
+            );
+        }
     }
 
     public function priceTypes(Request $request): JsonResponse

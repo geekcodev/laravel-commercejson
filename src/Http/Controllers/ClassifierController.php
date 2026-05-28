@@ -13,10 +13,12 @@ use GeekCo\CommerceJson\Data\ImportResultData;
 use GeekCo\CommerceJson\Data\PriceTypeData;
 use GeekCo\CommerceJson\Data\PropertyDefinitionData;
 use GeekCo\CommerceJson\Events\ClassifierImported;
+use GeekCo\CommerceJson\Exceptions\ForeignKeyViolationException;
 use GeekCo\CommerceJson\Repositories\CategoryRepository;
 use GeekCo\CommerceJson\Repositories\PriceTypeRepository;
 use GeekCo\CommerceJson\Repositories\PropertyDefinitionRepository;
 use Illuminate\Contracts\Bus\Dispatcher;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -80,6 +82,9 @@ class ClassifierController extends Controller
                     try {
                         $this->commandBus->dispatch(new UpsertCategoryCommand($categoryData));
                         $processed++;
+                    } catch (QueryException $e) {
+                        $fe = new ForeignKeyViolationException($e);
+                        $errors[] = ['id' => $categoryData->id, 'code' => $fe->errorCode, 'message' => $fe->getMessage()];
                     } catch (\Exception $e) {
                         $errors[] = ['id' => $categoryData->id, 'message' => $e->getMessage()];
                     }
@@ -91,6 +96,9 @@ class ClassifierController extends Controller
                     try {
                         $this->commandBus->dispatch(new UpsertPropertyDefinitionCommand($propertyData));
                         $processed++;
+                    } catch (QueryException $e) {
+                        $fe = new ForeignKeyViolationException($e);
+                        $errors[] = ['id' => $propertyData->id, 'code' => $fe->errorCode, 'message' => $fe->getMessage()];
                     } catch (\Exception $e) {
                         $errors[] = ['id' => $propertyData->id, 'message' => $e->getMessage()];
                     }
@@ -102,6 +110,9 @@ class ClassifierController extends Controller
                     try {
                         $this->commandBus->dispatch(new UpsertPriceTypeCommand($priceTypeData));
                         $processed++;
+                    } catch (QueryException $e) {
+                        $fe = new ForeignKeyViolationException($e);
+                        $errors[] = ['id' => $priceTypeData->id, 'code' => $fe->errorCode, 'message' => $fe->getMessage()];
                     } catch (\Exception $e) {
                         $errors[] = ['id' => $priceTypeData->id, 'message' => $e->getMessage()];
                     }

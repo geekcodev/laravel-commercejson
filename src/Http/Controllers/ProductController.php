@@ -10,9 +10,11 @@ use GeekCo\CommerceJson\Commands\UpsertProductCommand;
 use GeekCo\CommerceJson\Data\ImportResultData;
 use GeekCo\CommerceJson\Data\ProductData;
 use GeekCo\CommerceJson\Data\ProductImportData;
+use GeekCo\CommerceJson\Exceptions\ForeignKeyViolationException;
 use GeekCo\CommerceJson\Queries\GetProductQuery;
 use GeekCo\CommerceJson\Queries\GetProductsQuery;
 use Illuminate\Contracts\Bus\Dispatcher;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Spatie\LaravelData\DataCollection;
@@ -61,8 +63,11 @@ class ProductController extends Controller
             try {
                 $this->commandBus->dispatch(new UpsertProductCommand($productData));
                 $processed++;
+            } catch (QueryException $e) {
+                $fe = new ForeignKeyViolationException($e);
+                $errors[] = ['id' => $productData->id, 'code' => $fe->errorCode, 'message' => $fe->getMessage()];
             } catch (\Exception $e) {
-                $errors[] = ['id' => $productData->id, 'message' => $e->getMessage()];
+                $errors[] = ['id' => $productData->id, 'code' => 'INTERNAL_ERROR', 'message' => $e->getMessage()];
             }
         }
 

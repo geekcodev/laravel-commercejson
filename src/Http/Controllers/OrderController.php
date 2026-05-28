@@ -8,12 +8,15 @@ use GeekCo\CommerceJson\Bus\QueryBusInterface;
 use GeekCo\CommerceJson\Commands\CreateOrderCommand;
 use GeekCo\CommerceJson\Commands\UpdateOrderCommand;
 use GeekCo\CommerceJson\Commands\UpsertOrderCommand;
+use GeekCo\CommerceJson\Data\ErrorResponseData;
 use GeekCo\CommerceJson\Data\ImportResultData;
 use GeekCo\CommerceJson\Data\OrderData;
 use GeekCo\CommerceJson\Data\OrderImportData;
+use GeekCo\CommerceJson\Exceptions\ForeignKeyViolationException;
 use GeekCo\CommerceJson\Queries\GetOrderQuery;
 use GeekCo\CommerceJson\Queries\GetOrdersQuery;
 use Illuminate\Contracts\Bus\Dispatcher;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Spatie\LaravelData\DataCollection;
@@ -53,19 +56,37 @@ class OrderController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $command = new CreateOrderCommand(OrderData::from($request->all()));
-        $order = $this->commandBus->dispatch($command);
+        try {
+            $command = new CreateOrderCommand(OrderData::from($request->all()));
+            $order = $this->commandBus->dispatch($command);
 
-        return response()->json(OrderData::from($order), 201);
+            return response()->json(OrderData::from($order), 201);
+        } catch (QueryException $e) {
+            $fe = new ForeignKeyViolationException($e);
+
+            return response()->json(
+                ErrorResponseData::from(['error' => ['code' => $fe->errorCode, 'message' => $fe->getMessage()]]),
+                422
+            );
+        }
     }
 
     public function update(Request $request, string $id): JsonResponse
     {
-        $order = $this->queryBus->ask(new GetOrderQuery($id));
-        $command = new UpdateOrderCommand($order, OrderData::from($request->all()));
-        $order = $this->commandBus->dispatch($command);
+        try {
+            $order = $this->queryBus->ask(new GetOrderQuery($id));
+            $command = new UpdateOrderCommand($order, OrderData::from($request->all()));
+            $order = $this->commandBus->dispatch($command);
 
-        return response()->json(OrderData::from($order));
+            return response()->json(OrderData::from($order));
+        } catch (QueryException $e) {
+            $fe = new ForeignKeyViolationException($e);
+
+            return response()->json(
+                ErrorResponseData::from(['error' => ['code' => $fe->errorCode, 'message' => $fe->getMessage()]]),
+                422
+            );
+        }
     }
 
     public function bulkUpdate(Request $request): JsonResponse
@@ -80,9 +101,17 @@ class OrderController extends Controller
                     OrderData::from($bulkItem->toArray())
                 ));
                 $processed++;
+            } catch (QueryException $e) {
+                $fe = new ForeignKeyViolationException($e);
+                $errors[] = [
+                    'id' => $bulkItem->id ?? $bulkItem->external_id,
+                    'code' => $fe->errorCode,
+                    'message' => $fe->getMessage(),
+                ];
             } catch (\Exception $e) {
                 $errors[] = [
                     'id' => $bulkItem->id ?? $bulkItem->external_id,
+                    'code' => 'INTERNAL_ERROR',
                     'message' => $e->getMessage(),
                 ];
             }
