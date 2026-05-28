@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace GeekCo\CommerceJson\Http\Controllers;
 
 use GeekCo\CommerceJson\Bus\QueryBusInterface;
-use GeekCo\CommerceJson\Commands\CreateProductCommand;
 use GeekCo\CommerceJson\Commands\DeleteProductCommand;
+use GeekCo\CommerceJson\Commands\UpsertProductCommand;
+use GeekCo\CommerceJson\Data\ImportResultData;
 use GeekCo\CommerceJson\Data\ProductData;
+use GeekCo\CommerceJson\Data\ProductImportData;
 use GeekCo\CommerceJson\Queries\GetProductQuery;
 use GeekCo\CommerceJson\Queries\GetProductsQuery;
 use Illuminate\Contracts\Bus\Dispatcher;
@@ -50,10 +52,26 @@ class ProductController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $command = new CreateProductCommand(ProductData::from($request->all()));
-        $product = $this->commandBus->dispatch($command);
+        $import = ProductImportData::from($request->all());
 
-        return response()->json(ProductData::from($product), 201);
+        $processed = 0;
+        $errors = [];
+
+        foreach ($import->products as $productData) {
+            try {
+                $this->commandBus->dispatch(new UpsertProductCommand($productData));
+                $processed++;
+            } catch (\Exception $e) {
+                $errors[] = ['id' => $productData->id, 'message' => $e->getMessage()];
+            }
+        }
+
+        return response()->json(ImportResultData::from([
+            'success' => empty($errors),
+            'processed' => $processed,
+            'errors' => $errors,
+            'warnings' => [],
+        ]));
     }
 
     public function destroy(string $id): JsonResponse

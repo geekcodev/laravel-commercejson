@@ -67,32 +67,31 @@ describe('ProductController', function () {
     });
 
     describe('POST /catalog/products', function () {
-        it('creates a product and returns 201', function () {
+        it('creates a product and returns 200', function () {
             $commandBus = mockCommandBus();
             $productId = test()->createTestUuid();
             $categoryId = test()->createTestUuid();
-            $product = Product::factory()->make([
-                'id' => $productId,
-                'name' => 'New Product',
-                'code' => 'NEW-001',
-                'category_id' => $categoryId,
-            ]);
 
             $commandBus->shouldReceive('dispatch')
                 ->once()
-                ->andReturn($product);
+                ->andReturn(null);
 
             $response = $this->postJson('/api/commercejson/catalog/products', [
-                'id' => $productId,
-                'name' => 'New Product',
-                'code' => 'NEW-001',
-                'category_id' => $categoryId,
+                'products' => [
+                    [
+                        'id' => $productId,
+                        'name' => 'New Product',
+                        'code' => 'NEW-001',
+                        'category_id' => $categoryId,
+                    ],
+                ],
             ]);
 
-            $response->assertStatus(201)
+            $response->assertStatus(200)
                 ->assertJson([
-                    'id' => $productId,
-                    'name' => 'New Product',
+                    'success' => true,
+                    'processed' => 1,
+                    'errors' => [],
                 ]);
         });
     });

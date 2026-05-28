@@ -68,6 +68,7 @@ class ClassifierController extends Controller
                     if ($b->parent_id === null) {
                         return 1;
                     }
+
                     return $a->parent_id === $b->id ? 1 : -1;
                 });
 
