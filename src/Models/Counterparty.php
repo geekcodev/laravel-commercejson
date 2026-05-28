@@ -25,6 +25,7 @@ class Counterparty extends Model
     }
 
     protected $fillable = [
+        'id',
         'external_id',
         'type',
         'name',

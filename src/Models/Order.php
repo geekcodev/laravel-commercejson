@@ -30,6 +30,7 @@ class Order extends Model
     }
 
     protected $fillable = [
+        'id',
         'number',
         'external_id',
         'status',

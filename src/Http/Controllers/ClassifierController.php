@@ -60,7 +60,22 @@ class ClassifierController extends Controller
 
         DB::transaction(function () use ($classifierData, &$processed, &$errors) {
             if ($classifierData->categories) {
-                foreach ($classifierData->categories as $categoryData) {
+                $sortedCategories = $classifierData->categories;
+                usort($sortedCategories, function (CategoryData $a, CategoryData $b) {
+                    if ($a->parent_id === null) {
+                        return -1;
+                    }
+                    if ($b->parent_id === null) {
+                        return 1;
+                    }
+                    return $a->parent_id === $b->id ? 1 : -1;
+                });
+
+                foreach ($sortedCategories as $categoryData) {
+                    if ($categoryData->parent_id === $categoryData->id) {
+                        $categoryData->parent_id = null;
+                    }
+
                     try {
                         $this->commandBus->dispatch(new UpsertCategoryCommand($categoryData));
                         $processed++;

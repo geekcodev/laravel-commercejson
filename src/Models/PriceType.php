@@ -21,6 +21,7 @@ class PriceType extends Model
     }
 
     protected $fillable = [
+        'id',
         'name',
         'currency',
         'description',
