@@ -26,6 +26,7 @@ class Offer extends Model
     public const null CREATED_AT = null;
 
     protected $fillable = [
+        'id',
         'product_id',
         'variant_id',
     ];

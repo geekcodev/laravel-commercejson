@@ -21,6 +21,7 @@ class Warehouse extends Model
     }
 
     protected $fillable = [
+        'id',
         'external_id',
         'name',
         'code',

@@ -23,6 +23,7 @@ class PropertyDefinition extends Model
     public $timestamps = false;
 
     protected $fillable = [
+        'id',
         'name',
         'code',
         'type',
