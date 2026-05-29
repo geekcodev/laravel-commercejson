@@ -12,13 +12,15 @@ use GeekCo\CommerceJson\Enums\DocumentTypeEnum;
 use GeekCo\CommerceJson\Enums\OrderStatusEnum;
 use GeekCo\CommerceJson\Models\Order;
 use GeekCo\CommerceJson\Repositories\OrderRepository;
+use GeekCo\CommerceJson\Repositories\ProductRepository;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class BulkUpsertOrderCommandHandler implements CommandHandlerInterface
 {
     public function __construct(
-        private readonly OrderRepository $repository,
+        private readonly OrderRepository $orderRepository,
+        private readonly ProductRepository $productRepository,
     ) {}
 
     public function handle(CommandInterface $command): mixed
@@ -26,7 +28,7 @@ class BulkUpsertOrderCommandHandler implements CommandHandlerInterface
         assert($command instanceof BulkUpsertOrderCommand);
 
         return DB::transaction(function () use ($command) {
-            $existing = $this->repository->find($command->id);
+            $existing = $this->orderRepository->find($command->id);
 
             if ($existing instanceof Order) {
                 return $this->updateExisting($existing, $command);
@@ -38,7 +40,7 @@ class BulkUpsertOrderCommandHandler implements CommandHandlerInterface
 
     private function createNew(BulkUpsertOrderCommand $command): Order
     {
-        $order = $this->repository->create([
+        $order = $this->orderRepository->create([
             'id' => $command->id,
             'number' => 'ORD-'.date('Ymd').'-'.Str::upper(Str::random(6)),
             'external_id' => $command->external_id,
@@ -89,6 +91,11 @@ class BulkUpsertOrderCommandHandler implements CommandHandlerInterface
         $currency = CurrencyEnum::RUB->value;
         $totalSum = 0;
 
+        $productIds = array_unique(array_filter(array_map(fn ($i) => $i['product_id'] ?? null, $items)));
+        $products = ! empty($productIds)
+            ? $this->productRepository->findMany($productIds)->keyBy('id')
+            : collect();
+
         foreach ($items as $item) {
             $itemCurrency = $item['price']['currency'] ?? CurrencyEnum::RUB->value;
             $priceAmount = $item['price']['amount'] ?? '0';
@@ -97,10 +104,19 @@ class BulkUpsertOrderCommandHandler implements CommandHandlerInterface
             $lineCurrency = $item['total']['currency'] ?? $itemCurrency;
             $totalSum += (float) $lineTotal;
 
+            $productId = $item['product_id'] ?? '';
+            $product = $products->get($productId);
+
             $order->items()->create([
                 'id' => $item['id'] ?? (string) Str::uuid(),
-                'product_id' => $item['product_id'] ?? '',
+                'product_id' => $productId,
                 'variant_id' => $item['variant_id'] ?? null,
+                'product_name' => $product ? $product->name : $productId,
+                'product_code' => $product?->code,
+                'unit_code' => $product?->unit_code,
+                'unit_short_name' => $product?->unit_short_name,
+                'unit_full_name' => $product?->unit_full_name,
+                'unit_international' => $product?->unit_international,
                 'quantity' => $item['quantity'] ?? 1,
                 'price_amount' => $priceAmount,
                 'price_currency' => $itemCurrency,
