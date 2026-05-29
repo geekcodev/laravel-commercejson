@@ -16,6 +16,15 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * @property bool $is_active
+ * @property string $name
+ * @property string|null $code
+ * @property string|null $barcode
+ * @property string|null $category_id
+ * @property string|null $description
+ * @property string|null $unit_code
+ * @property string|null $unit_short_name
+ * @property string|null $unit_full_name
+ * @property string|null $unit_international
  */
 class Product extends Model
 {

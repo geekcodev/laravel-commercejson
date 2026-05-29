@@ -9,9 +9,78 @@
 - **Назначение:** Двусторонний обмен коммерческими данными между ERP (1С) и сайтом
 - **Namespace:** `GeekCo\CommerceJson\`
 - **Провайдер:** `CommerceJsonServiceProvider` (autodiscovery через `composer.json`)
+- **Архитектурные принципы:** SOLID, DRY, KISS, CQRS, инкапсуляция данных через Repository/Query
 
 > **Единственный источник истины по API:** `spec.yaml`. Любые изменения роутов или схем должны сверяться с
 > ним.
+
+---
+
+## Архитектурные принципы
+
+### Доступ к данным — только через Repository или Query
+
+Запрещено прямое обращение к Eloquent-моделям (`Model::where(...)`, `Model::find(...)`, `DB::table(...)`) вне
+слоя Repository. Доступ к данным осуществляется только через:
+
+- **Query** — для read-операций (через QueryBus)
+- **Repository** — для read и write-операций (инкапсулирует Eloquent)
+
+```php
+// ✅ Правильно
+$products = $this->productRepository->findMany($ids);
+$order = $this->queryBus->ask(new GetOrderQuery($id));
+
+// ❌ Неправильно
+$products = Product::whereIn('id', $ids)->get();
+$order = Order::find($id);
+```
+
+Исключение — прямое обращение к связанным моделям через отношения (`$order->items()->create(...)`) внутри
+Handler'а, если это не нарушает инкапсуляцию и не дублирует логику репозитория.
+
+### Инъекция репозиториев
+
+Репозитории всегда инжектятся через конструктор. Имена свойств — в camelCase по имени репозитория:
+
+```php
+// ✅ Правильно
+private readonly OrderRepository $orderRepository;
+private readonly ProductRepository $productRepository;
+private readonly WarehouseRepository $warehouseRepository;
+
+// ❌ Неправильно
+private readonly OrderRepository $repo;
+private readonly ProductRepository $productRepo;
+```
+
+Laravel auto-resolves типизированные зависимости из контейнера (репозитории зарегистрированы как singletons
+в `CommerceJsonServiceProvider::register()`).
+
+### SOLID
+
+| Принцип                       | Как соблюдается                                                                                    |
+|-------------------------------|----------------------------------------------------------------------------------------------------|
+| **S** — Single Responsibility | Контроллер — только валидация и диспетчеризация; Handler — бизнес-логика; Repository — работа с БД |
+| **O** — Open/Closed           | Command/Query открыты для расширения (новые хендлеры), закрыты для модификации                     |
+| **L** — Liskov Substitution   | `CommandInterface`/`QueryInterface` гарантируют контракт; все хендлеры взаимозаменяемы             |
+| **I** — Interface Segregation | `RepositoryInterface` — минимальный набор методов; QueryBus отделён от CommandBus                  |
+| **D** — Dependency Inversion  | Хендлеры зависят от абстракций (интерфейсов репозиториев), не от конкретных классов                |
+
+### DRY — Don't Repeat Yourself
+
+- Общая логика работы с БД — в `BaseRepository`
+- Обработка ошибок (ForeignKeyViolationException, ModelNotFoundException) — в контроллерах, не дублируется в
+  хендлерах
+- Конфигурация — в `config/commercejson.php`, не хардкодится
+- Валютные значения — только через `CurrencyEnum`, запрещены строки `'RUB'`, `'USD'`
+
+### KISS — Keep It Simple, Stupid
+
+- Команды — плоские DTO с публичными полями, без методов
+- Хендлеры — один метод `handle()`, без лишней абстракции
+- Контроллеры — только диспетчеризация, без бизнес-логики
+- Если решение становится сложным — разбить на шаги или пересмотреть архитектуру
 
 ---
 
@@ -200,7 +269,7 @@ interface RepositoryInterface
 
 `BaseRepository` — абстрактная реализация через Eloquent. Специализированные:
 
-- `ProductRepository` (+ `findByCategory()`)
+- `ProductRepository` (+ `findByCategory()`, `findMany()`)
 - `CategoryRepository` (+ `findByParent()`)
 - `WarehouseRepository` (+ `allWithTrashed()`)
 - `PriceTypeRepository`, `PropertyDefinitionRepository`, `OfferRepository`, `OrderRepository`, `CounterpartyRepository`

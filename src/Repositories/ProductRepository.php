@@ -6,12 +6,19 @@ namespace GeekCo\CommerceJson\Repositories;
 
 use GeekCo\CommerceJson\Models\Product;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
 
 class ProductRepository extends BaseRepository
 {
     public function __construct(Product $model)
     {
         parent::__construct($model);
+    }
+
+    /** @return Collection<int, Product> */
+    public function findMany(array $ids): Collection
+    {
+        return $this->model->whereIn('id', $ids)->get();
     }
 
     public function findByCategory(string $categoryId): array
