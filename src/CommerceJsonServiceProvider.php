@@ -6,6 +6,7 @@ namespace GeekCo\CommerceJson;
 
 use GeekCo\CommerceJson\Bus\QueryBus;
 use GeekCo\CommerceJson\Bus\QueryBusInterface;
+use GeekCo\CommerceJson\Commands\BulkUpsertOrderCommand;
 use GeekCo\CommerceJson\Commands\CreateCategoryCommand;
 use GeekCo\CommerceJson\Commands\CreateCounterpartyCommand;
 use GeekCo\CommerceJson\Commands\CreateOfferCommand;
@@ -44,6 +45,7 @@ use GeekCo\CommerceJson\Exchange\Import\ClassifierImporter;
 use GeekCo\CommerceJson\Exchange\Import\OrderImporter;
 use GeekCo\CommerceJson\Exchange\Import\ProductImporter;
 use GeekCo\CommerceJson\Facades\CommerceJson;
+use GeekCo\CommerceJson\Handlers\Commands\BulkUpsertOrderCommandHandler;
 use GeekCo\CommerceJson\Handlers\Commands\CreateCategoryCommandHandler;
 use GeekCo\CommerceJson\Handlers\Commands\CreateCounterpartyCommandHandler;
 use GeekCo\CommerceJson\Handlers\Commands\CreateOfferCommandHandler;
@@ -288,6 +290,7 @@ class CommerceJsonServiceProvider extends ServiceProvider
             DeleteOfferCommand::class => DeleteOfferCommandHandler::class,
             UpsertProductCommand::class => UpsertProductCommandHandler::class,
             UpsertOfferCommand::class => UpsertOfferCommandHandler::class,
+            BulkUpsertOrderCommand::class => BulkUpsertOrderCommandHandler::class,
             UpsertOrderCommand::class => UpsertOrderCommandHandler::class,
             UpsertCategoryCommand::class => UpsertCategoryCommandHandler::class,
             UpsertPriceTypeCommand::class => UpsertPriceTypeCommandHandler::class,

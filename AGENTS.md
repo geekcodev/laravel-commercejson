@@ -286,17 +286,17 @@ ExchangeManager → ProductImporter / OrderImporter / ClassifierImporter / Order
 
 ## Известные проблемы (несоответствия spec и мёртвый код)
 
-| Проблема                    | Детали                                                                                                                                                    |
-|-----------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `CategoryController`        | Мёртвый — нет роутов; категории доступны только через `/catalog/classifier`                                                                               |
-| `OfferController::show()`   | Мёртвый — нет роута `GET /offers/{id}`                                                                                                                    |
-| `UpdateProductCommand`      | Зарегистрирован в `Bus::map()` но никогда не диспатчится                                                                                                  |
-| `UpdateCounterpartyCommand` | То же                                                                                                                                                     |
-| `DeleteOrderCommand`        | То же                                                                                                                                                     |
-| `DeleteOfferCommand`        | То же                                                                                                                                                     |
-| `GetOfferQuery`             | Зарегистрирован в QueryBus но не используется                                                                                                             |
-| `GetCategoryQuery`          | То же                                                                                                                                                     |
-| `GetCategoriesQuery`        | То же                                                                                                                                                     |
+| Проблема                    | Детали                                                                      |
+|-----------------------------|-----------------------------------------------------------------------------|
+| `CategoryController`        | Мёртвый — нет роутов; категории доступны только через `/catalog/classifier` |
+| `OfferController::show()`   | Мёртвый — нет роута `GET /offers/{id}`                                      |
+| `UpdateProductCommand`      | Зарегистрирован в `Bus::map()` но никогда не диспатчится                    |
+| `UpdateCounterpartyCommand` | То же                                                                       |
+| `DeleteOrderCommand`        | То же                                                                       |
+| `DeleteOfferCommand`        | То же                                                                       |
+| `GetOfferQuery`             | Зарегистрирован в QueryBus но не используется                               |
+| `GetCategoryQuery`          | То же                                                                       |
+| `GetCategoriesQuery`        | То же                                                                       |
 
 ---
 
@@ -373,20 +373,38 @@ docker compose exec app composer format           # Laravel Pint code style
 - Добавлен тест `it handles delivery tracking in bulk import` с точными данными из spec
 - Все 39 тестов проходят (186 assertions), PHPStan clean
 
+### Сессия 4 — BulkUpsertOrderCommand (независимый от OrderData)
+
+- Создан `BulkUpsertOrderCommand` — независимый от `OrderData`, принимает `id`, `external_id`, `status`,
+  `comment`, `custom_attributes`, `items` (`?array`), `deliveryTrack`
+- Создан `BulkUpsertOrderCommandHandler` с раздельными путями create/update:
+    - **Create:** генерирует `number`, `document_type`, статус; опционально создаёт items и рассчитывает
+      `totals_subtotal/total_amount/currency`; опционально применяет deliveryTrack
+    - **Update:** обновляет только переданные поля (`external_id`, `status`, `comment`);
+      если `items` !== null — удаляет старые и создаёт новые позиции (spec: "полностью заменяет позиции");
+      если `items === null` — не трогает позиции (spec: "если поле отсутствует — не изменяются");
+      опционально применяет deliveryTrack
+- `OrderController::bulkUpdate()` переписан: больше не билдит `$orderArray` → `OrderData` → `UpsertOrderCommand`,
+  вместо этого передаёт сырые данные в `BulkUpsertOrderCommand` напрямую
+- Убран мёртвый код из контроллера: `DocumentTypeEnum` import, `UpsertOrderCommand` import
+- PHPStan clean (0 errors), 39 тестов (186 assertions)
+
 ---
 
 ## Ключевые файлы
 
-| Файл                                  | Назначение                                                       |
-|---------------------------------------|------------------------------------------------------------------|
-| `spec.yaml`                           | OpenAPI 3.1 спецификация (единственный источник истины)          |
-| `src/routes/api.php`                  | Определения роутов                                               |
-| `src/CommerceJsonServiceProvider.php` | Service provider с Bus::map() и QueryBus                         |
-| `src/config/commercejson.php`         | Конфигурация пакета                                              |
-| `src/Http/Controllers/`               | 7 контроллеров + HandshakeController                             |
-| `src/Data/`                           | 49 DTO (Spatie Laravel Data v4)                                  |
-| `src/Models/`                         | 23 Eloquent-модели                                               |
-| `src/Repositories/`                   | RepositoryInterface + 8 реализаций                               |
-| `src/Exchange/`                       | Координация синхронизации (импортёры, экспортёры, jobs, команды) |
-| `tests/TestCase.php`                  | Testbench bootstrap                                              |
-| `tests/Pest.php`                      | Глобальные хелперы и конфигурация                                |
+| Файл                                                      | Назначение                                                       |
+|-----------------------------------------------------------|------------------------------------------------------------------|
+| `spec.yaml`                                               | OpenAPI 3.1 спецификация (единственный источник истины)          |
+| `src/routes/api.php`                                      | Определения роутов                                               |
+| `src/CommerceJsonServiceProvider.php`                     | Service provider с Bus::map() и QueryBus                         |
+| `src/config/commercejson.php`                             | Конфигурация пакета                                              |
+| `src/Http/Controllers/`                                   | 7 контроллеров + HandshakeController                             |
+| `src/Data/`                                               | 49 DTO (Spatie Laravel Data v4)                                  |
+| `src/Models/`                                             | 23 Eloquent-модели                                               |
+| `src/Repositories/`                                       | RepositoryInterface + 8 реализаций                               |
+| `src/Exchange/`                                           | Координация синхронизации (импортёры, экспортёры, jobs, команды) |
+| `tests/TestCase.php`                                      | Testbench bootstrap                                              |
+| `tests/Pest.php`                                          | Глобальные хелперы и конфигурация                                |
+| `src/Commands/BulkUpsertOrderCommand.php`                 | Bulk-команда для `POST /orders/bulk` (не зависит от `OrderData`) |
+| `src/Handlers/Commands/BulkUpsertOrderCommandHandler.php` | Handler с раздельными create/update путями и опциональными items |

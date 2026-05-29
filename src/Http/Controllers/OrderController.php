@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace GeekCo\CommerceJson\Http\Controllers;
 
 use GeekCo\CommerceJson\Bus\QueryBusInterface;
+use GeekCo\CommerceJson\Commands\BulkUpsertOrderCommand;
 use GeekCo\CommerceJson\Commands\CreateOrderCommand;
 use GeekCo\CommerceJson\Commands\UpdateOrderCommand;
-use GeekCo\CommerceJson\Commands\UpsertOrderCommand;
 use GeekCo\CommerceJson\Data\ErrorResponseData;
 use GeekCo\CommerceJson\Data\ImportResultData;
 use GeekCo\CommerceJson\Data\MoneyData;
@@ -154,18 +154,7 @@ class OrderController extends Controller
 
         foreach ($importData->orders as $bulkItem) {
             try {
-                $orderArray = array_filter([
-                    'id' => $bulkItem->id,
-                    'external_id' => $bulkItem->external_id,
-                    'status' => $bulkItem->status,
-                    'comment' => $bulkItem->comment,
-                    'custom_attributes' => $bulkItem->custom_attributes,
-                ], fn ($v) => $v !== null);
-
-                $orderArray['id'] ??= (string) Str::uuid();
-                $orderArray['status'] ??= OrderStatusEnum::New;
-                $orderArray['number'] = 'ORD-'.date('Ymd').'-'.Str::upper(Str::random(6));
-
+                $items = null;
                 if ($bulkItem->items) {
                     $items = [];
                     foreach ($bulkItem->items as $item) {
@@ -180,19 +169,16 @@ class OrderController extends Controller
                             'total' => ['amount' => $amount, 'currency' => $currency],
                         ];
                     }
-                    $orderArray['items'] = $items;
-
-                    $sum = array_reduce($items, fn ($c, $i) => $c + ((float) $i['price']['amount'] * $i['quantity']), 0);
-                    $currency = $items[0]['price']['currency'] ?? CurrencyEnum::RUB->value;
-                    $orderArray['totals'] = [
-                        'subtotal' => ['amount' => number_format($sum, 2, '.', ''), 'currency' => $currency],
-                        'total' => ['amount' => number_format($sum, 2, '.', ''), 'currency' => $currency],
-                    ];
                 }
 
-                $this->commandBus->dispatch(new UpsertOrderCommand(
-                    OrderData::from($orderArray),
-                    $bulkItem->delivery
+                $this->commandBus->dispatch(new BulkUpsertOrderCommand(
+                    id: $bulkItem->id ?? (string) Str::uuid(),
+                    external_id: $bulkItem->external_id,
+                    status: $bulkItem->status,
+                    comment: $bulkItem->comment,
+                    custom_attributes: $bulkItem->custom_attributes,
+                    items: $items,
+                    deliveryTrack: $bulkItem->delivery,
                 ));
                 $processed++;
             } catch (QueryException $e) {

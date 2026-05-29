@@ -23,9 +23,16 @@ class UpsertOrderCommandHandler implements CommandHandlerInterface
         assert($command instanceof UpsertOrderCommand);
 
         return DB::transaction(function () use ($command) {
+            $data = $command->orderData->toArray();
+
+            // Don't overwrite readOnly or creation-only fields on existing orders
+            if ($this->repository->find($command->orderData->id)) {
+                unset($data['number'], $data['document_type']);
+            }
+
             $order = $this->repository->updateOrCreate(
                 ['id' => $command->orderData->id],
-                $command->orderData->toArray()
+                $data
             );
 
             if ($command->deliveryTrack) {
