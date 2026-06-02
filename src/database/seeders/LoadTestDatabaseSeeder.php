@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace GeekCo\CommerceJson\Database\Seeders;
 
+use Carbon\CarbonInterface;
 use GeekCo\CommerceJson\Enums\CurrencyEnum;
 use GeekCo\CommerceJson\Enums\PropertyTypeEnum;
 use GeekCo\CommerceJson\Models\Category;
@@ -13,7 +14,6 @@ use GeekCo\CommerceJson\Models\PropertyDefinition;
 use GeekCo\CommerceJson\Models\Warehouse;
 use Illuminate\Database\QueryException;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -157,7 +157,7 @@ class LoadTestDatabaseSeeder extends Seeder
         ));
     }
 
-    private function seedExtraCategories(int $count, int $chunkSize, Carbon $now): void
+    private function seedExtraCategories(int $count, int $chunkSize, CarbonInterface $now): void
     {
         $this->command?->info(" - Seeding {$count} extra categories...");
 
@@ -223,7 +223,7 @@ class LoadTestDatabaseSeeder extends Seeder
         }
     }
 
-    private function seedExtraCounterparties(int $count, int $chunkSize, Carbon $now, int $seed): void
+    private function seedExtraCounterparties(int $count, int $chunkSize, CarbonInterface $now, int $seed): void
     {
         $this->command?->info(" - Seeding {$count} extra counterparties...");
 
@@ -274,7 +274,7 @@ class LoadTestDatabaseSeeder extends Seeder
         }
     }
 
-    private function seedPropertyDefinitions(int $count, Carbon $now): void
+    private function seedPropertyDefinitions(int $count, CarbonInterface $now): void
     {
         $this->command?->info(" - Seeding {$count} property definitions...");
 
@@ -345,7 +345,7 @@ class LoadTestDatabaseSeeder extends Seeder
         int $productPropertiesPerEntity,
         int $variantPropertiesPerEntity,
         int $chunkSize,
-        Carbon $now
+        CarbonInterface $now
     ): void {
         $this->command?->info(" - Seeding {$productsCount} products (+ variants/offers/prices/stocks/images/properties)...");
 
@@ -639,7 +639,7 @@ class LoadTestDatabaseSeeder extends Seeder
         array $currencyByPriceTypeId,
         float $baseAmount,
         int $priceTiers,
-        Carbon $now
+        CarbonInterface $now
     ): void {
         foreach ($priceTypes as $pt) {
             $ptId = $pt['id'];
@@ -706,7 +706,7 @@ class LoadTestDatabaseSeeder extends Seeder
         array $warehousePool,
         string $defaultWarehouseId,
         int $perOffer,
-        Carbon $now
+        CarbonInterface $now
     ): void {
         $selected = [];
         if ($perOffer === 1) {
@@ -747,7 +747,7 @@ class LoadTestDatabaseSeeder extends Seeder
         array $propertyDefinitions,
         int $perEntity,
         int $seqStart,
-        Carbon $now
+        CarbonInterface $now
     ): void {
         $count = min($perEntity, count($propertyDefinitions));
         if ($count <= 0) {
