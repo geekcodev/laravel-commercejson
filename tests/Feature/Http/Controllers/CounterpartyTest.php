@@ -12,7 +12,12 @@ describe('CounterpartyController', function () {
             $queryBus = mockQueryBus();
             $mockResult = Mockery::mock(stdClass::class);
             $mockResult->shouldReceive('items')->andReturn(collect([
-                test()->createCounterpartyData(),
+                Counterparty::factory()->make([
+                    'id' => test()->createTestUuid(),
+                    'name' => 'Test Company',
+                    'type' => 'legal_entity',
+                    'inn' => '1234567890',
+                ]),
             ]));
             $mockResult->shouldReceive('currentPage')->andReturn(1);
             $mockResult->shouldReceive('lastPage')->andReturn(1);

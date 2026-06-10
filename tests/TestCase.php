@@ -7,7 +7,6 @@ namespace GeekCo\CommerceJson\Tests;
 use GeekCo\CommerceJson\CommerceJsonServiceProvider;
 use GeekCo\CommerceJson\Data\AddressData;
 use GeekCo\CommerceJson\Data\CategoryData;
-use GeekCo\CommerceJson\Data\CounterpartyData;
 use GeekCo\CommerceJson\Data\OfferData;
 use GeekCo\CommerceJson\Data\OrderData;
 use GeekCo\CommerceJson\Data\PriceTypeData;
@@ -244,17 +243,6 @@ abstract class TestCase extends BaseTestCase
                     'price' => ['amount' => '100.00', 'currency' => CurrencyEnum::RUB->value],
                 ],
             ],
-        ]);
-    }
-
-    protected function createCounterpartyData(array $attributes = []): CounterpartyData
-    {
-        return CounterpartyData::factory()->from([
-            'id' => $attributes['id'] ?? $this->createTestUuid(),
-            'name' => $attributes['name'] ?? 'Test Company',
-            'type' => $attributes['type'] ?? 'legal_entity',
-            'inn' => $attributes['inn'] ?? '1234567890',
-            'kpp' => $attributes['kpp'] ?? null,
         ]);
     }
 

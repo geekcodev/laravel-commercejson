@@ -150,4 +150,18 @@ class Product extends Model
             ->withPivot('quantity')
             ->withTimestamps();
     }
+
+    public function setRelationForApi(): void
+    {
+        $this->setRelation('analogues', $this->analogues->pluck('id')->values()->toArray());
+
+        $components = [];
+        foreach ($this->components as $component) {
+            $components[] = [
+                'product_id' => $component->id,
+                'quantity' => (float) $component->pivot->getAttribute('quantity'),
+            ];
+        }
+        $this->setRelation('components', $components);
+    }
 }
