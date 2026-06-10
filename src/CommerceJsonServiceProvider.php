@@ -7,21 +7,10 @@ namespace GeekCo\CommerceJson;
 use GeekCo\CommerceJson\Bus\QueryBus;
 use GeekCo\CommerceJson\Bus\QueryBusInterface;
 use GeekCo\CommerceJson\Commands\BulkUpsertOrderCommand;
-use GeekCo\CommerceJson\Commands\CreateCategoryCommand;
 use GeekCo\CommerceJson\Commands\CreateCounterpartyCommand;
-use GeekCo\CommerceJson\Commands\CreateOfferCommand;
 use GeekCo\CommerceJson\Commands\CreateOrderCommand;
-use GeekCo\CommerceJson\Commands\CreateProductCommand;
-use GeekCo\CommerceJson\Commands\DeleteCategoryCommand;
-use GeekCo\CommerceJson\Commands\DeleteCounterpartyCommand;
-use GeekCo\CommerceJson\Commands\DeleteOfferCommand;
-use GeekCo\CommerceJson\Commands\DeleteOrderCommand;
 use GeekCo\CommerceJson\Commands\DeleteProductCommand;
-use GeekCo\CommerceJson\Commands\UpdateCategoryCommand;
-use GeekCo\CommerceJson\Commands\UpdateCounterpartyCommand;
-use GeekCo\CommerceJson\Commands\UpdateOfferCommand;
 use GeekCo\CommerceJson\Commands\UpdateOrderCommand;
-use GeekCo\CommerceJson\Commands\UpdateProductCommand;
 use GeekCo\CommerceJson\Commands\UpsertCategoryCommand;
 use GeekCo\CommerceJson\Commands\UpsertCounterpartyCommand;
 use GeekCo\CommerceJson\Commands\UpsertOfferCommand;
@@ -46,21 +35,10 @@ use GeekCo\CommerceJson\Exchange\Import\OrderImporter;
 use GeekCo\CommerceJson\Exchange\Import\ProductImporter;
 use GeekCo\CommerceJson\Facades\CommerceJson;
 use GeekCo\CommerceJson\Handlers\Commands\BulkUpsertOrderCommandHandler;
-use GeekCo\CommerceJson\Handlers\Commands\CreateCategoryCommandHandler;
 use GeekCo\CommerceJson\Handlers\Commands\CreateCounterpartyCommandHandler;
-use GeekCo\CommerceJson\Handlers\Commands\CreateOfferCommandHandler;
 use GeekCo\CommerceJson\Handlers\Commands\CreateOrderCommandHandler;
-use GeekCo\CommerceJson\Handlers\Commands\CreateProductCommandHandler;
-use GeekCo\CommerceJson\Handlers\Commands\DeleteCategoryCommandHandler;
-use GeekCo\CommerceJson\Handlers\Commands\DeleteCounterpartyCommandHandler;
-use GeekCo\CommerceJson\Handlers\Commands\DeleteOfferCommandHandler;
-use GeekCo\CommerceJson\Handlers\Commands\DeleteOrderCommandHandler;
 use GeekCo\CommerceJson\Handlers\Commands\DeleteProductCommandHandler;
-use GeekCo\CommerceJson\Handlers\Commands\UpdateCategoryCommandHandler;
-use GeekCo\CommerceJson\Handlers\Commands\UpdateCounterpartyCommandHandler;
-use GeekCo\CommerceJson\Handlers\Commands\UpdateOfferCommandHandler;
 use GeekCo\CommerceJson\Handlers\Commands\UpdateOrderCommandHandler;
-use GeekCo\CommerceJson\Handlers\Commands\UpdateProductCommandHandler;
 use GeekCo\CommerceJson\Handlers\Commands\UpsertCategoryCommandHandler;
 use GeekCo\CommerceJson\Handlers\Commands\UpsertCounterpartyCommandHandler;
 use GeekCo\CommerceJson\Handlers\Commands\UpsertOfferCommandHandler;
@@ -72,47 +50,50 @@ use GeekCo\CommerceJson\Handlers\Commands\UpsertPropertyDefinitionCommandHandler
 use GeekCo\CommerceJson\Handlers\Commands\UpsertStockCommandHandler;
 use GeekCo\CommerceJson\Handlers\Commands\UpsertWarehouseCommandHandler;
 use GeekCo\CommerceJson\Handlers\Queries\GetCategoriesQueryHandler;
-use GeekCo\CommerceJson\Handlers\Queries\GetCategoryQueryHandler;
 use GeekCo\CommerceJson\Handlers\Queries\GetCounterpartiesQueryHandler;
 use GeekCo\CommerceJson\Handlers\Queries\GetCounterpartyQueryHandler;
-use GeekCo\CommerceJson\Handlers\Queries\GetOfferQueryHandler;
 use GeekCo\CommerceJson\Handlers\Queries\GetOffersQueryHandler;
 use GeekCo\CommerceJson\Handlers\Queries\GetOrderQueryHandler;
 use GeekCo\CommerceJson\Handlers\Queries\GetOrdersQueryHandler;
 use GeekCo\CommerceJson\Handlers\Queries\GetPriceTypesQueryHandler;
 use GeekCo\CommerceJson\Handlers\Queries\GetProductQueryHandler;
 use GeekCo\CommerceJson\Handlers\Queries\GetProductsQueryHandler;
+use GeekCo\CommerceJson\Handlers\Queries\GetPropertyDefinitionsQueryHandler;
 use GeekCo\CommerceJson\Handlers\Queries\GetWarehousesQueryHandler;
 use GeekCo\CommerceJson\Http\Client\CommerceJsonHttpClient;
 use GeekCo\CommerceJson\Http\Client\ExponentialBackoffStrategy;
 use GeekCo\CommerceJson\Http\Client\HttpClientInterface;
+use GeekCo\CommerceJson\Http\Middleware\IdempotencyMiddleware;
 use GeekCo\CommerceJson\Models\Category;
 use GeekCo\CommerceJson\Models\Counterparty;
 use GeekCo\CommerceJson\Models\Offer;
+use GeekCo\CommerceJson\Models\OfferPrice;
 use GeekCo\CommerceJson\Models\Order;
 use GeekCo\CommerceJson\Models\PriceType;
 use GeekCo\CommerceJson\Models\Product;
 use GeekCo\CommerceJson\Models\PropertyDefinition;
+use GeekCo\CommerceJson\Models\Stock;
 use GeekCo\CommerceJson\Models\Warehouse;
 use GeekCo\CommerceJson\Queries\GetCategoriesQuery;
-use GeekCo\CommerceJson\Queries\GetCategoryQuery;
 use GeekCo\CommerceJson\Queries\GetCounterpartiesQuery;
 use GeekCo\CommerceJson\Queries\GetCounterpartyQuery;
-use GeekCo\CommerceJson\Queries\GetOfferQuery;
 use GeekCo\CommerceJson\Queries\GetOffersQuery;
 use GeekCo\CommerceJson\Queries\GetOrderQuery;
 use GeekCo\CommerceJson\Queries\GetOrdersQuery;
 use GeekCo\CommerceJson\Queries\GetPriceTypesQuery;
 use GeekCo\CommerceJson\Queries\GetProductQuery;
 use GeekCo\CommerceJson\Queries\GetProductsQuery;
+use GeekCo\CommerceJson\Queries\GetPropertyDefinitionsQuery;
 use GeekCo\CommerceJson\Queries\GetWarehousesQuery;
 use GeekCo\CommerceJson\Repositories\CategoryRepository;
 use GeekCo\CommerceJson\Repositories\CounterpartyRepository;
+use GeekCo\CommerceJson\Repositories\OfferPriceRepository;
 use GeekCo\CommerceJson\Repositories\OfferRepository;
 use GeekCo\CommerceJson\Repositories\OrderRepository;
 use GeekCo\CommerceJson\Repositories\PriceTypeRepository;
 use GeekCo\CommerceJson\Repositories\ProductRepository;
 use GeekCo\CommerceJson\Repositories\PropertyDefinitionRepository;
+use GeekCo\CommerceJson\Repositories\StockRepository;
 use GeekCo\CommerceJson\Repositories\WarehouseRepository;
 use GeekCo\CommerceJson\Services\ClassifierService;
 use GeekCo\CommerceJson\Services\CounterpartyService;
@@ -214,6 +195,12 @@ class CommerceJsonServiceProvider extends ServiceProvider
         $this->app->singleton(WarehouseRepository::class, function ($app) {
             return new WarehouseRepository($app->make(Warehouse::class));
         });
+        $this->app->singleton(StockRepository::class, function ($app) {
+            return new StockRepository($app->make(Stock::class));
+        });
+        $this->app->singleton(OfferPriceRepository::class, function ($app) {
+            return new OfferPriceRepository($app->make(OfferPrice::class));
+        });
 
         // Регистрация QueryBus (read-операции)
         $this->app->singleton(QueryBusInterface::class, function ($app) {
@@ -244,19 +231,16 @@ class CommerceJsonServiceProvider extends ServiceProvider
             $queryBus->register(GetCategoriesQuery::class, function ($query) use ($app) {
                 return $app->make(GetCategoriesQueryHandler::class)->handle($query);
             });
-            $queryBus->register(GetCategoryQuery::class, function ($query) use ($app) {
-                return $app->make(GetCategoryQueryHandler::class)->handle($query);
-            });
 
             $queryBus->register(GetOffersQuery::class, function ($query) use ($app) {
                 return $app->make(GetOffersQueryHandler::class)->handle($query);
             });
-            $queryBus->register(GetOfferQuery::class, function ($query) use ($app) {
-                return $app->make(GetOfferQueryHandler::class)->handle($query);
-            });
 
             $queryBus->register(GetPriceTypesQuery::class, function ($query) use ($app) {
                 return $app->make(GetPriceTypesQueryHandler::class)->handle($query);
+            });
+            $queryBus->register(GetPropertyDefinitionsQuery::class, function ($query) use ($app) {
+                return $app->make(GetPropertyDefinitionsQueryHandler::class)->handle($query);
             });
             $queryBus->register(GetWarehousesQuery::class, function ($query) use ($app) {
                 return $app->make(GetWarehousesQueryHandler::class)->handle($query);
@@ -273,21 +257,10 @@ class CommerceJsonServiceProvider extends ServiceProvider
     {
         // Регистрация Command → Handler маппинга (Laravel Bus)
         Bus::map([
-            CreateProductCommand::class => CreateProductCommandHandler::class,
-            UpdateProductCommand::class => UpdateProductCommandHandler::class,
             DeleteProductCommand::class => DeleteProductCommandHandler::class,
             CreateOrderCommand::class => CreateOrderCommandHandler::class,
             UpdateOrderCommand::class => UpdateOrderCommandHandler::class,
-            DeleteOrderCommand::class => DeleteOrderCommandHandler::class,
             CreateCounterpartyCommand::class => CreateCounterpartyCommandHandler::class,
-            UpdateCounterpartyCommand::class => UpdateCounterpartyCommandHandler::class,
-            DeleteCounterpartyCommand::class => DeleteCounterpartyCommandHandler::class,
-            CreateCategoryCommand::class => CreateCategoryCommandHandler::class,
-            UpdateCategoryCommand::class => UpdateCategoryCommandHandler::class,
-            DeleteCategoryCommand::class => DeleteCategoryCommandHandler::class,
-            CreateOfferCommand::class => CreateOfferCommandHandler::class,
-            UpdateOfferCommand::class => UpdateOfferCommandHandler::class,
-            DeleteOfferCommand::class => DeleteOfferCommandHandler::class,
             UpsertProductCommand::class => UpsertProductCommandHandler::class,
             UpsertOfferCommand::class => UpsertOfferCommandHandler::class,
             BulkUpsertOrderCommand::class => BulkUpsertOrderCommandHandler::class,
@@ -311,6 +284,12 @@ class CommerceJsonServiceProvider extends ServiceProvider
 
         // Загрузка миграций по умолчанию (если приложение не переопределило)
         $this->loadMigrationsFrom(__DIR__.'/database/migrations');
+
+        // Регистрация middleware
+        $this->app['router']->aliasMiddleware(
+            'commercejson.idempotency',
+            IdempotencyMiddleware::class
+        );
 
         // Загрузка маршрутов
         $this->loadRoutesFrom(__DIR__.'/routes/api.php');

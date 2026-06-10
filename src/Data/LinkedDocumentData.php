@@ -4,24 +4,22 @@ declare(strict_types=1);
 
 namespace GeekCo\CommerceJson\Data;
 
-use Carbon\Carbon;
-use GeekCo\CommerceJson\Enums\OrderStatusEnum;
+use GeekCo\CommerceJson\Enums\DocumentTypeEnum;
 use Spatie\LaravelData\Attributes\Validation\Enum;
 use Spatie\LaravelData\Attributes\Validation\Nullable;
 use Spatie\LaravelData\Attributes\Validation\Required;
 use Spatie\LaravelData\Attributes\Validation\StringType;
+use Spatie\LaravelData\Attributes\Validation\Uuid;
 use Spatie\LaravelData\Data;
 
-class StatusHistoryEntryData extends Data
+class LinkedDocumentData extends Data
 {
     public function __construct(
-        #[Required, Enum(OrderStatusEnum::class)]
-        public OrderStatusEnum $status,
-        #[Required]
-        public Carbon $changed_at,
+        #[Required, StringType, Uuid]
+        public string $id,
+        #[Required, Enum(DocumentTypeEnum::class)]
+        public DocumentTypeEnum $type,
         #[Nullable, StringType]
-        public ?string $changed_by = null,
-        #[Nullable, StringType]
-        public ?string $comment = null,
+        public ?string $external_id = null,
     ) {}
 }

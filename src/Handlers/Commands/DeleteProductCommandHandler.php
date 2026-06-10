@@ -23,10 +23,13 @@ class DeleteProductCommandHandler implements CommandHandlerInterface
         assert($command instanceof DeleteProductCommand);
 
         return DB::transaction(function () use ($command) {
-            $command->product->is_active = false;
-            $command->product->save();
+            $product = $this->repository->findOrFail($command->id);
 
-            return $this->repository->delete($command->product);
+            $this->repository->update($product, ['is_active' => false]);
+
+            $this->repository->delete($product);
+
+            return $product->fresh();
         });
     }
 }

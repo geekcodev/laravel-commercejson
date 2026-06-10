@@ -10,13 +10,10 @@ use GeekCo\CommerceJson\Commands\CreateOrderCommand;
 use GeekCo\CommerceJson\Commands\UpdateOrderCommand;
 use GeekCo\CommerceJson\Data\ErrorResponseData;
 use GeekCo\CommerceJson\Data\ImportResultData;
-use GeekCo\CommerceJson\Data\MoneyData;
 use GeekCo\CommerceJson\Data\OrderCreateData;
 use GeekCo\CommerceJson\Data\OrderData;
 use GeekCo\CommerceJson\Data\OrderImportData;
-use GeekCo\CommerceJson\Data\OrderTotalsData;
 use GeekCo\CommerceJson\Enums\CurrencyEnum;
-use GeekCo\CommerceJson\Enums\OrderStatusEnum;
 use GeekCo\CommerceJson\Exceptions\ForeignKeyViolationException;
 use GeekCo\CommerceJson\Queries\GetOrderQuery;
 use GeekCo\CommerceJson\Queries\GetOrdersQuery;
@@ -39,17 +36,19 @@ class OrderController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = new GetOrdersQuery(
-            perPage: (int) ($request->input('per_page', 15))
+            perPage: (int) ($request->input('limit', 15))
         );
         $orders = $this->queryBus->ask($query);
 
+        $items = OrderData::collect($orders->items(), DataCollection::class);
+
         return response()->json([
-            'data' => OrderData::collect($orders->items(), DataCollection::class),
-            'meta' => [
-                'current_page' => $orders->currentPage(),
-                'last_page' => $orders->lastPage(),
-                'per_page' => $orders->perPage(),
+            'orders' => $items,
+            'pagination' => [
+                'page' => $orders->currentPage(),
+                'limit' => $orders->perPage(),
                 'total' => $orders->total(),
+                'has_next' => $orders->currentPage() < $orders->lastPage(),
             ],
         ]);
     }
@@ -73,39 +72,7 @@ class OrderController extends Controller
     {
         try {
             $createData = OrderCreateData::from($request->all());
-
-            $currency = $createData->base_currency
-                ?? CurrencyEnum::tryFrom(config('commercejson.default_currency'))
-                ?? CurrencyEnum::RUB;
-
-            $items = array_map(fn ($item) => [
-                'id' => (string) Str::uuid(),
-                'product_id' => $item->product_id,
-                'variant_id' => $item->variant_id,
-                'quantity' => $item->quantity,
-                // TODO: server-side price lookup from catalog
-                'price' => MoneyData::from(['amount' => '0', 'currency' => $currency->value]),
-                'total' => MoneyData::from(['amount' => '0', 'currency' => $currency->value]),
-            ], $createData->items);
-
-            $zeroMoney = ['amount' => '0', 'currency' => $currency->value];
-
-            $data = array_merge($createData->toArray(), [
-                'id' => (string) Str::uuid(),
-                'number' => 'ORD-'.date('Ymd').'-'.Str::upper(Str::random(6)),
-                'status' => OrderStatusEnum::New,
-                'items' => $items,
-                'totals' => OrderTotalsData::from([
-                    'subtotal' => MoneyData::from($zeroMoney),
-                    'total' => MoneyData::from($zeroMoney),
-                    'discount' => null,
-                    'delivery' => null,
-                    'tax' => null,
-                ]),
-            ]);
-
-            $command = new CreateOrderCommand(OrderData::from($data));
-            $order = $this->commandBus->dispatch($command);
+            $order = $this->commandBus->dispatch(new CreateOrderCommand($createData));
 
             return response()->json(OrderData::from($order), 201);
         } catch (CannotCastEnum $e) {
@@ -131,8 +98,7 @@ class OrderController extends Controller
     public function update(Request $request, string $id): JsonResponse
     {
         try {
-            $order = $this->queryBus->ask(new GetOrderQuery($id));
-            $command = new UpdateOrderCommand($order, OrderData::from($request->all()));
+            $command = new UpdateOrderCommand($id, OrderData::from($request->all()));
             $order = $this->commandBus->dispatch($command);
 
             return response()->json(OrderData::from($order));

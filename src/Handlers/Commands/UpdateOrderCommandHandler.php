@@ -23,7 +23,9 @@ class UpdateOrderCommandHandler implements CommandHandlerInterface
         assert($command instanceof UpdateOrderCommand);
 
         return DB::transaction(function () use ($command) {
-            return $this->repository->update($command->order, $command->orderData->toArray());
+            $order = $this->repository->findOrFail($command->id);
+
+            return $this->repository->update($order, $command->orderData->toArray());
         });
     }
 }

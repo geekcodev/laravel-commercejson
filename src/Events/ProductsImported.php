@@ -17,6 +17,7 @@ class ProductsImported
     public function __construct(
         public int $importedCount,
         public int $updatedCount,
-        public int $deletedCount
+        public int $deletedCount,
+        public int $failedCount = 0,
     ) {}
 }

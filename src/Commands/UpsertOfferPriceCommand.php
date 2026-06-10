@@ -9,7 +9,7 @@ use GeekCo\CommerceJson\Data\OfferPriceData;
 class UpsertOfferPriceCommand extends Command
 {
     public function __construct(
-        public int $offerId,
+        public string $offerId,
         public OfferPriceData $priceData
     ) {}
 }

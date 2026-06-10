@@ -157,7 +157,7 @@ class OfferService implements ServiceInterface
         $count = 0;
 
         foreach ($pricesData as $priceData) {
-            $command = new UpsertOfferPriceCommand($offer->id, OfferPriceData::from($priceData));
+            $command = new UpsertOfferPriceCommand((string) $offer->id, OfferPriceData::from($priceData));
             $this->commandBus->dispatch($command);
             $count++;
         }
@@ -176,7 +176,7 @@ class OfferService implements ServiceInterface
         $count = 0;
 
         foreach ($stocksData as $stockData) {
-            $command = new UpsertStockCommand($offer->id, StockData::from($stockData));
+            $command = new UpsertStockCommand((string) $offer->id, StockData::from($stockData));
             $this->commandBus->dispatch($command);
             $count++;
         }

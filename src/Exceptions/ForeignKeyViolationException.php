@@ -26,10 +26,15 @@ class ForeignKeyViolationException extends RuntimeException
     private static function parse(QueryException $e): array
     {
         $message = $e->getMessage();
+        $fk = null;
 
         if (preg_match('/foreign key constraint.*"(?P<fk>[^"]+)"/i', $message, $m)) {
             $fk = $m['fk'];
+        } elseif (preg_match('/CONSTRAINT `(?P<fk>\w+)`/', $message, $m)) {
+            $fk = $m['fk'];
+        }
 
+        if ($fk !== null) {
             return match (true) {
                 str_contains($fk, 'category_id') => [
                     'code' => 'MISSING_CATEGORY',
@@ -66,7 +71,9 @@ class ForeignKeyViolationException extends RuntimeException
             };
         }
 
-        if ($e->getCode() === '23503') {
+        $sqlCode = $e->getCode();
+
+        if (in_array($sqlCode, ['23503', '23000'], true)) {
             return [
                 'code' => 'FOREIGN_KEY_VIOLATION',
                 'message' => 'Referenced entity does not exist',

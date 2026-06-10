@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace GeekCo\CommerceJson\Jobs\Sync;
 
-use GeekCo\CommerceJson\Events\SyncCompleted;
 use GeekCo\CommerceJson\Events\SyncFailed;
-use GeekCo\CommerceJson\Events\SyncStarted;
 use GeekCo\CommerceJson\Jobs\Concerns\InteractsWithCommerceJson;
 use GeekCo\CommerceJson\Jobs\Import\ImportOffersJob;
 use GeekCo\CommerceJson\Jobs\Import\ImportOrdersJob;
@@ -44,29 +42,20 @@ class SyncIncrementalJob implements ShouldQueue
      */
     public function handle(): void
     {
-        $startTime = time();
         $since = $this->since ?? now()->subHour()->toIso8601String();
 
         $this->logJobAction("Starting INCREMENTAL sync (since: {$since})");
 
-        // Dispatch event
-        event(new SyncStarted('incremental', new \DateTime($since)));
-
         try {
-            // Цепочка jobs для последовательного выполнения
             $chain = [
                 new ImportProductsJob(updatedAfter: $since),
                 new ImportOffersJob(updatedAfter: $since),
                 new ImportOrdersJob(updatedAfter: $since),
             ];
 
-            // Запуск цепочки
             ImportProductsJob::withChain($chain)->dispatch();
 
-            $duration = time() - $startTime;
-            $this->logJobAction("INCREMENTAL sync chain dispatched ({$duration}s)");
-
-            event(new SyncCompleted('incremental', $duration));
+            $this->logJobAction('INCREMENTAL sync chain dispatched');
         } catch (\Exception $e) {
             $this->logJobError('INCREMENTAL sync failed: '.$e->getMessage());
             event(new SyncFailed('incremental', $e));
@@ -80,6 +69,5 @@ class SyncIncrementalJob implements ShouldQueue
     public function failed(\Throwable $exception): void
     {
         $this->logJobError('INCREMENTAL sync job failed: '.$exception->getMessage());
-        event(new SyncFailed('incremental', $exception));
     }
 }

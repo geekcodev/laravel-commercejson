@@ -55,6 +55,26 @@ return [
 
         // Middleware для защиты маршрутов API (кроме handshake)
         'middleware' => ['api', 'auth:sanctum'], // Пример: ['api', 'auth:sanctum'] или ['api', 'commercejson.auth']
+
+        // Rate limiting: max попыток / минута (null = отключено)
+        'rate_limit' => env('COMMERCEJSON_RATE_LIMIT', 60),
+        'rate_limit_decay' => env('COMMERCEJSON_RATE_LIMIT_DECAY', 1),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Idempotency Settings
+    |--------------------------------------------------------------------------
+    |
+    | Настройки идемпотентности запросов через X-Idempotency-Key
+    |
+    */
+    'idempotency' => [
+        // TTL кеша идемпотентных ключей (секунды)
+        'ttl' => (int) env('COMMERCEJSON_IDEMPOTENCY_TTL', 3600),
+
+        // Драйвер кеша (null = использовать драйвер по умолчанию)
+        'store' => env('COMMERCEJSON_IDEMPOTENCY_STORE'),
     ],
 
     /*

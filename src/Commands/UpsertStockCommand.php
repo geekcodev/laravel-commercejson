@@ -9,7 +9,7 @@ use GeekCo\CommerceJson\Data\StockData;
 class UpsertStockCommand extends Command
 {
     public function __construct(
-        public int $offerId,
+        public string $offerId,
         public StockData $stockData
     ) {}
 }

@@ -14,12 +14,12 @@ use Spatie\LaravelData\Data;
 class BankAccountData extends Data
 {
     public function __construct(
-        #[Nullable, StringType]
-        public ?string $bank_name,
         #[Required, StringType, Regex('/^\d{9}$/')]
         public string $bik,
         #[Required, StringType, Regex('/^\d{20}$/')]
         public string $account,
+        #[Nullable, StringType]
+        public ?string $bank_name = null,
         #[Nullable, StringType, Regex('/^\d{20}$/')]
         public ?string $corr_account = null,
         #[Nullable, StringType]

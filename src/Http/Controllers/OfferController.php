@@ -13,7 +13,6 @@ use GeekCo\CommerceJson\Data\OfferData;
 use GeekCo\CommerceJson\Data\OfferImportData;
 use GeekCo\CommerceJson\Data\PriceTypeData;
 use GeekCo\CommerceJson\Exceptions\ForeignKeyViolationException;
-use GeekCo\CommerceJson\Queries\GetOfferQuery;
 use GeekCo\CommerceJson\Queries\GetOffersQuery;
 use GeekCo\CommerceJson\Queries\GetPriceTypesQuery;
 use Illuminate\Contracts\Bus\Dispatcher;
@@ -32,27 +31,21 @@ class OfferController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = new GetOffersQuery(
-            perPage: (int) ($request->input('per_page', 15))
+            perPage: (int) ($request->input('limit', 15))
         );
         $offers = $this->queryBus->ask($query);
 
+        $items = OfferData::collect($offers->items(), DataCollection::class);
+
         return response()->json([
-            'data' => OfferData::collect($offers->items(), DataCollection::class),
-            'meta' => [
-                'current_page' => $offers->currentPage(),
-                'last_page' => $offers->lastPage(),
-                'per_page' => $offers->perPage(),
+            'offers' => $items,
+            'pagination' => [
+                'page' => $offers->currentPage(),
+                'limit' => $offers->perPage(),
                 'total' => $offers->total(),
+                'has_next' => $offers->currentPage() < $offers->lastPage(),
             ],
         ]);
-    }
-
-    public function show(string $id): JsonResponse
-    {
-        $query = new GetOfferQuery($id);
-        $offer = $this->queryBus->ask($query);
-
-        return response()->json(OfferData::from($offer));
     }
 
     public function store(Request $request): JsonResponse

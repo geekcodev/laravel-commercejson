@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace GeekCo\CommerceJson\Data;
 
+use Spatie\LaravelData\Attributes\DataCollectionOf;
 use Spatie\LaravelData\Attributes\Validation\ArrayType;
 use Spatie\LaravelData\Attributes\Validation\BooleanType;
 use Spatie\LaravelData\Attributes\Validation\IntegerType;
@@ -19,7 +20,7 @@ class ImportResultData extends Data
         public bool $success,
         #[Required, IntegerType, Min(0)]
         public int $processed,
-        #[Required, ArrayType]
+        #[Required, ArrayType, DataCollectionOf(ImportErrorData::class)]
         public array $errors,
         #[Nullable, ArrayType]
         public ?array $warnings = null

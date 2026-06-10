@@ -18,7 +18,10 @@ class ProductRepository extends BaseRepository
     /** @return Collection<int, Product> */
     public function findMany(array $ids): Collection
     {
-        return $this->model->whereIn('id', $ids)->get();
+        /** @var Collection<int, Product> $products */
+        $products = $this->model->whereIn('id', $ids)->get();
+
+        return $products;
     }
 
     public function findByCategory(string $categoryId): array

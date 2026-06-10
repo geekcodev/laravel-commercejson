@@ -20,10 +20,10 @@ class CategoryData extends Data
     public function __construct(
         #[Required, StringType, Uuid]
         public string $id,
-        #[Nullable, StringType, Uuid]
-        public ?string $parent_id,
         #[Required, StringType, Max(255)]
         public string $name,
+        #[Nullable, StringType, Uuid]
+        public ?string $parent_id = null,
         #[Nullable, StringType]
         public ?string $code = null,
         #[Nullable, IntegerType]
@@ -34,9 +34,9 @@ class CategoryData extends Data
         public ?string $image_url = null,
         #[Nullable]
         public ?SeoMetaData $seo = null,
-        #[Nullable, StringType]
+        #[Nullable]
         public ?Carbon $created_at = null,
-        #[Nullable, StringType]
+        #[Nullable]
         public ?Carbon $updated_at = null,
     ) {}
 }

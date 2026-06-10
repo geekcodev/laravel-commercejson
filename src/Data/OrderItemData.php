@@ -24,22 +24,22 @@ class OrderItemData extends Data
         public string $id,
         #[Required, StringType, Uuid]
         public string $product_id,
-        #[Nullable, StringType, Uuid]
-        public ?string $variant_id,
-        #[Nullable, StringType]
-        public ?string $product_name,
-        #[Nullable, StringType]
-        public ?string $product_code,
         #[Required, Numeric, GreaterThan(0)]
         public float $quantity,
-        #[Nullable]
-        public ?UnitData $unit,
         #[Required]
         public MoneyData $price,
-        #[Nullable]
-        public ?MoneyData $discount,
         #[Required]
         public MoneyData $total,
+        #[Nullable, StringType, Uuid]
+        public ?string $variant_id = null,
+        #[Nullable, StringType]
+        public ?string $product_name = null,
+        #[Nullable, StringType]
+        public ?string $product_code = null,
+        #[Nullable]
+        public ?UnitData $unit = null,
+        #[Nullable]
+        public ?MoneyData $discount = null,
         #[Nullable, StringType, Regex('/^[A-Z]{2}$/')]
         public ?string $country_of_origin = null,
         #[Nullable, StringType, Max(50)]

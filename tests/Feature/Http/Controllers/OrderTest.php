@@ -30,8 +30,8 @@ describe('OrderController', function () {
 
             $response->assertStatus(200)
                 ->assertJsonStructure([
-                    'data' => [['id', 'number', 'status']],
-                    'meta' => ['current_page', 'last_page', 'per_page', 'total'],
+                    'orders' => [['id', 'number', 'status']],
+                    'pagination' => ['page', 'limit', 'total', 'has_next'],
                 ]);
         });
     });
@@ -94,7 +94,6 @@ describe('OrderController', function () {
     describe('PATCH /orders/{id}', function () {
         it('updates an order', function () {
             $commandBus = mockCommandBus();
-            $queryBus = mockQueryBus();
             $orderId = test()->createTestUuid();
             $order = Order::factory()->make([
                 'id' => $orderId,
@@ -107,9 +106,6 @@ describe('OrderController', function () {
                 'status' => 'confirmed',
             ]);
 
-            $queryBus->shouldReceive('ask')
-                ->once()
-                ->andReturn($order);
             $commandBus->shouldReceive('dispatch')
                 ->once()
                 ->andReturn($updatedOrderData);

@@ -30,9 +30,9 @@ class OfferPriceData extends Data
         public ?float $min_quantity = null,
         #[Nullable]
         public ?UnitData $unit = null,
-        #[Nullable, StringType]
+        #[Nullable]
         public ?Carbon $valid_from = null,
-        #[Nullable, StringType]
+        #[Nullable]
         public ?Carbon $valid_to = null,
     ) {}
 }

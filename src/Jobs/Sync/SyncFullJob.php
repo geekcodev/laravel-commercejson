@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace GeekCo\CommerceJson\Jobs\Sync;
 
-use GeekCo\CommerceJson\Events\SyncCompleted;
 use GeekCo\CommerceJson\Events\SyncFailed;
-use GeekCo\CommerceJson\Events\SyncStarted;
 use GeekCo\CommerceJson\Jobs\Concerns\InteractsWithCommerceJson;
 use GeekCo\CommerceJson\Jobs\Import\ImportClassifierJob;
 use GeekCo\CommerceJson\Jobs\Import\ImportOffersJob;
@@ -44,14 +42,9 @@ class SyncFullJob implements ShouldQueue
      */
     public function handle(): void
     {
-        $startTime = time();
         $this->logJobAction('Starting FULL sync');
 
-        // Dispatch event
-        event(new SyncStarted('full'));
-
         try {
-            // Цепочка jobs для последовательного выполнения
             $chain = [
                 new ImportClassifierJob,
                 new ImportProductsJob,
@@ -59,13 +52,9 @@ class SyncFullJob implements ShouldQueue
                 new ImportOrdersJob,
             ];
 
-            // Запуск цепочки
             ImportClassifierJob::withChain($chain)->dispatch();
 
-            $duration = time() - $startTime;
-            $this->logJobAction("FULL sync chain dispatched ({$duration}s)");
-
-            event(new SyncCompleted('full', $duration));
+            $this->logJobAction('FULL sync chain dispatched');
         } catch (\Exception $e) {
             $this->logJobError('FULL sync failed: '.$e->getMessage());
             event(new SyncFailed('full', $e));
@@ -79,6 +68,5 @@ class SyncFullJob implements ShouldQueue
     public function failed(\Throwable $exception): void
     {
         $this->logJobError('FULL sync job failed: '.$exception->getMessage());
-        event(new SyncFailed('full', $exception));
     }
 }

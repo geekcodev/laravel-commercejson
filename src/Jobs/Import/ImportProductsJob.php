@@ -104,7 +104,8 @@ class ImportProductsJob implements ShouldQueue
             event(new ProductsImported(
                 $stats['created'],
                 $stats['updated'],
-                0
+                0,
+                $stats['failed']
             ));
         }
     }

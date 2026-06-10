@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace GeekCo\CommerceJson\Models;
 
 use GeekCo\CommerceJson\Database\Factories\ProductFactory;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -12,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\Pivot;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
@@ -25,6 +27,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string|null $unit_short_name
  * @property string|null $unit_full_name
  * @property string|null $unit_international
+ * @property-read Collection<int, Product> $analogues
+ * @property-read Collection<int, Product> $components
+ * @property-read Pivot|null $pivot
  */
 class Product extends Model
 {

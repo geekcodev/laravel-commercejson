@@ -29,8 +29,8 @@ describe('OfferController', function () {
 
             $response->assertStatus(200)
                 ->assertJsonStructure([
-                    'data' => [['product_id', 'prices']],
-                    'meta' => ['current_page', 'last_page', 'per_page', 'total'],
+                    'offers' => [['product_id', 'prices']],
+                    'pagination' => ['page', 'limit', 'total', 'has_next'],
                 ]);
         });
     });

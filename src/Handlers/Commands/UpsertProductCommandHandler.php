@@ -7,12 +7,12 @@ namespace GeekCo\CommerceJson\Handlers\Commands;
 use GeekCo\CommerceJson\Commands\CommandInterface;
 use GeekCo\CommerceJson\Commands\UpsertProductCommand;
 use GeekCo\CommerceJson\Data\CustomAttributeData;
+use GeekCo\CommerceJson\Data\ProductComponentData;
 use GeekCo\CommerceJson\Data\ProductData;
 use GeekCo\CommerceJson\Data\ProductImageData;
 use GeekCo\CommerceJson\Data\ProductVariantData;
 use GeekCo\CommerceJson\Data\PropertyValueData;
 use GeekCo\CommerceJson\Models\Product;
-use GeekCo\CommerceJson\Models\ProductVariant;
 use GeekCo\CommerceJson\Repositories\ProductRepository;
 use Illuminate\Support\Facades\DB;
 
@@ -171,10 +171,9 @@ class UpsertProductCommandHandler implements CommandHandlerInterface
 
         /** @var ProductVariantData $vd */
         foreach ($variantsData as $vd) {
-            $variant = ProductVariant::updateOrCreate(
+            $variant = $product->variants()->updateOrCreate(
                 ['id' => $vd->id],
                 [
-                    'product_id' => $product->id,
                     'external_id' => $vd->external_id,
                     'name' => $vd->name,
                     'code' => $vd->code,
@@ -204,7 +203,7 @@ class UpsertProductCommandHandler implements CommandHandlerInterface
 
         $toDelete = array_diff($existingIds, $incomingIds);
         if ($toDelete !== []) {
-            ProductVariant::whereIn('id', $toDelete)->delete();
+            $product->variants()->whereIn('id', $toDelete)->delete();
         }
     }
 
@@ -248,8 +247,8 @@ class UpsertProductCommandHandler implements CommandHandlerInterface
 
         $sync = [];
         foreach ($componentsData as $component) {
-            if (is_array($component)) {
-                $sync[$component['id']] = ['quantity' => $component['quantity'] ?? 1];
+            if ($component instanceof ProductComponentData) {
+                $sync[$component->product_id] = ['quantity' => $component->quantity];
             }
         }
 

@@ -17,10 +17,10 @@ class WarehouseData extends Data
     public function __construct(
         #[Required, StringType, Uuid]
         public string $id,
-        #[Nullable, StringType]
-        public ?string $external_id,
         #[Required, StringType]
         public string $name,
+        #[Nullable, StringType]
+        public ?string $external_id = null,
         #[Nullable, StringType]
         public ?string $code = null,
         #[Nullable]
@@ -29,11 +29,11 @@ class WarehouseData extends Data
         public ?bool $is_active = null,
         #[Nullable, BooleanType]
         public ?bool $is_default = null,
-        #[Nullable, StringType]
+        #[Nullable]
         public ?Carbon $created_at = null,
-        #[Nullable, StringType]
+        #[Nullable]
         public ?Carbon $updated_at = null,
-        #[Nullable, StringType]
+        #[Nullable]
         public ?Carbon $deleted_at = null,
     ) {}
 }

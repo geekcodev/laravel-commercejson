@@ -31,17 +31,19 @@ class ProductController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = new GetProductsQuery(
-            perPage: (int) ($request->input('per_page', 15))
+            perPage: (int) ($request->input('limit', 15))
         );
         $products = $this->queryBus->ask($query);
 
+        $items = ProductData::collect($products->items(), DataCollection::class);
+
         return response()->json([
-            'data' => ProductData::collect($products->items(), DataCollection::class),
-            'meta' => [
-                'current_page' => $products->currentPage(),
-                'last_page' => $products->lastPage(),
-                'per_page' => $products->perPage(),
+            'products' => $items,
+            'pagination' => [
+                'page' => $products->currentPage(),
+                'limit' => $products->perPage(),
                 'total' => $products->total(),
+                'has_next' => $products->currentPage() < $products->lastPage(),
             ],
         ]);
     }
@@ -90,10 +92,8 @@ class ProductController extends Controller
 
     public function destroy(string $id): JsonResponse
     {
-        $product = $this->queryBus->ask(new GetProductQuery($id));
-        $command = new DeleteProductCommand($product);
-        $this->commandBus->dispatch($command);
+        $product = $this->commandBus->dispatch(new DeleteProductCommand($id));
 
-        return response()->json(ProductData::from($product->fresh()));
+        return response()->json(ProductData::from($product));
     }
 }

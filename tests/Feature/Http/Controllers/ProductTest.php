@@ -29,13 +29,13 @@ describe('ProductController', function () {
 
             $response->assertStatus(200)
                 ->assertJsonStructure([
-                    'data' => [
+                    'products' => [
                         '*' => ['id', 'name', 'code'],
                     ],
-                    'meta' => ['current_page', 'last_page', 'per_page', 'total'],
+                    'pagination' => ['page', 'limit', 'total', 'has_next'],
                 ])
                 ->assertJson([
-                    'meta' => ['total' => 2],
+                    'pagination' => ['total' => 2],
                 ]);
         });
     });
@@ -98,7 +98,6 @@ describe('ProductController', function () {
 
     describe('DELETE /catalog/products/{id}', function () {
         it('soft-deletes a product', function () {
-            $queryBus = mockQueryBus();
             $productId = test()->createTestUuid();
             $product = Product::factory()->create([
                 'id' => $productId,
@@ -106,10 +105,6 @@ describe('ProductController', function () {
                 'code' => 'TST',
                 'category_id' => test()->createTestUuid(),
             ]);
-
-            $queryBus->shouldReceive('ask')
-                ->once()
-                ->andReturn($product);
 
             $response = $this->deleteJson("/api/commercejson/catalog/products/{$productId}");
 

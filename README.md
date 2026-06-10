@@ -41,16 +41,18 @@ ERP-системами, поддерживающими стандарт Commerce
 
 ## Возможности
 
-- HTTP-клиент с поддержкой повторных запросов, идемпотентности и пагинации
-- 23 модели Eloquent с отношениями и приведением типов
+- HTTP-клиент с поддержкой повторных запросов, идемпотентности (`X-Idempotency-Key`) и пагинации
+- 23 модели Eloquent с UUIDv4, SoftDeletes и отношениями
 - 24 миграции базы данных с оптимизированными индексами
-- 49 Data-классов для валидации данных
-- 6 сервисов для бизнес-логики
-- 7 очередей заданий для асинхронных операций
-- 7 Artisan-команд для работы через CLI
-- 11 событий для интеграции
+- 49 Spatie Data DTO для строгой валидации
+- 6 сервисов для HTTP-клиента (классы для интеграции с ERP)
+- 7 очередей заданий для асинхронной обработки
+- 7 Artisan-команд для CLI-работы
+- 11 событий для интеграции с приложением
+- CQRS-архитектура: CommandBus (Laravel Bus) + QueryBus (in-memory)
+- Репозитории через `RepositoryInterface` (инкапсуляция Eloquent)
+- Rate limiting и идемпотентность на API-роутах
 - Фабрики и сидеры для тестирования
-- Полная документация
 
 ## Установка
 
@@ -61,7 +63,8 @@ ERP-системами, поддерживающими стандарт Commerce
 $this->loadRoutesFrom(__DIR__.'/routes/api.php');
 ```
 
-**Готовые REST API endpoints** становятся доступны по префиксу `/api/commercejson` (настраивается через `config('commercejson.api_routes.prefix')`).
+**Готовые REST API endpoints** становятся доступны по префиксу `/api/commercejson` (настраивается через
+`config('commercejson.api_routes.prefix')`).
 
 ```bash
 composer require geekcodev/laravel-commercejson
@@ -278,7 +281,8 @@ php artisan commercejson:export-orders --limit=50
 
 ### Готовые REST API endpoints
 
-Пакет автоматически регистрирует маршруты в соответствии с OpenAPI спецификацией CommerceJSON v1.0.8:
+Пакет автоматически регистрирует маршруты в соответствии с OpenAPI спецификацией CommerceJSON v1.0.8.
+**Все эндпоинты (кроме `/handshake`) защищены аутентификацией, rate limiting и идемпотентностью.**
 
 ```
 Без auth:
@@ -308,6 +312,9 @@ php artisan commercejson:export-orders --limit=50
 
 **Важно:** `POST /orders/bulk` должен быть объявлен до `GET /orders/{id}`.
 
+**Пагинация:** query-параметр `limit` (не `per_page`). Ответ:
+`{entity: [...], pagination: {page, limit, total, has_next}}`.
+
 **Пример запроса:**
 
 ```bash
@@ -322,6 +329,10 @@ curl -X POST "https://your-app.test/api/commercejson/catalog/products" \
   -d '{"id": "uuid-here", "name": "Product 1", "code": "PROD-001", "is_active": true}'
 ```
 
+### Архитектура
+
+Подробное описание архитектуры (CQRS, SOLID, Repository pattern, DTO конвенции, security) — в [`AGENTS.md`](AGENTS.md).
+
 ### Структура пакета
 
 ```
@@ -331,26 +342,27 @@ src/
 │   └── commercejson.php               # Конфигурация (235 строк)
 ├── routes/
 │   └── api.php                        # OpenAPI-совместимые роуты
-├── Commands/                          # Command DTO (запись, 27)
-│   ├── CreateProductCommand.php
+├── Commands/                          # Command DTO (запись, 17)
+│   ├── UpsertProductCommand.php
 │   └── ...
-├── Queries/                           # Query DTO (чтение, 14)
+├── Queries/                           # Query DTO (чтение, 13)
 │   ├── GetProductQuery.php
 │   └── ...
 ├── Bus/                               # Шины
 │   └── QueryBusInterface.php          # Кастомная шина запросов
-├── Handlers/                          # Обработчики (39)
-│   ├── Commands/                      # Обработчики команд (Laravel Bus)
-│   └── Queries/                       # Обработчики запросов
-├── Repositories/                      # Репозитории (10)
+├── Handlers/                          # Обработчики (28)
+│   ├── Commands/                      # Обработчики команд (Laravel Bus, 16)
+│   └── Queries/                       # Обработчики запросов (11)
+├── Repositories/                      # Репозитории (12)
 │   ├── RepositoryInterface.php
 │   ├── BaseRepository.php
 │   ├── ProductRepository.php
 │   └── ...
 ├── Http/
 │   ├── Client/                        # HTTP-клиент для ERP
-│   └── Controllers/                   # API контроллеры (7 + Handshake)
-├── Services/                          # Сервисы бизнес-логики (6)
+│   ├── Middleware/                     # IdempotencyMiddleware, throttle
+│   └── Controllers/                   # API контроллеры (6 + HandshakeController)
+├── Services/                          # HTTP-клиент для ERP (6)
 │   ├── ProductService.php
 │   ├── OrderService.php
 │   └── ...
@@ -397,12 +409,12 @@ $data = $response->data; // Массив данных
 
 ```php
 use GeekCo\CommerceJson\Bus\QueryBusInterface;
-use GeekCo\CommerceJson\Commands\CreateProductCommand;
+use GeekCo\CommerceJson\Commands\UpsertProductCommand;
 use GeekCo\CommerceJson\Queries\GetProductQuery;
 use Illuminate\Contracts\Bus\Dispatcher;
 
 // Команда (запись) — через Laravel Bus
-$command = new CreateProductCommand($productData);
+$command = new UpsertProductCommand($productData);
 $product = $this->commandBus->dispatch($command); // Dispatcher
 
 // Запрос (чтение) — через кастомный QueryBus
@@ -434,7 +446,7 @@ use GeekCo\CommerceJson\Http\Controllers\ProductController;
 // GET /api/commercejson/products
 public function index(Request $request): JsonResponse
 {
-    $query = new GetProductsQuery(perPage: 15);
+    $query = new GetProductsQuery(limit: 15);
     $products = $this->queryBus->ask($query);
     
     return response()->json(ProductData::collect($products->items()));
@@ -443,14 +455,24 @@ public function index(Request $request): JsonResponse
 // POST /api/commercejson/products
 public function store(Request $request): JsonResponse
 {
-    $command = new CreateProductCommand(ProductData::from($request->all()));
+    $command = new UpsertProductCommand(ProductData::from($request->all()));
     $product = $this->commandBus->dispatch($command);
     
     return response()->json(ProductData::from($product), 201);
 }
 ```
 
-#### 5. Exceptions
+#### 5. Middleware
+
+API-роуты защищены слоем middleware:
+
+- **Аутентификация** — `auth:commercejson` для всех эндпоинтов кроме `/handshake`
+- **Rate limiting** — `throttle` на всех auth-роутах (конфиг `rate_limit`/`rate_limit_decay`, по умолч. 60/мин)
+- **Идемпотентность** — `IdempotencyMiddleware` кеширует ответ POST/PATCH по `X-Idempotency-Key` + fingerprint запроса (
+  TTL из конфига)
+- **Rate limiting** — `throttle:rate_limit,rate_limit_decay` на всех write-роутах (по умолч. 60/мин)
+
+#### 6. Exceptions
 
 ```php
 use GeekCo\CommerceJson\Http\Client\Exceptions\AuthenticationException;
@@ -503,20 +525,20 @@ try {
 Документация по генерации большого объёма данных для нагрузочного тестирования: [TESTING.md](TESTING.md).
 
 ```bash
-# Запуск всех тестов (Pest)
-vendor/bin/pest
+# PHP запускается внутри Docker-контейнера
+docker compose exec app vendor/bin/pest
 
 # Параллельный запуск
-vendor/bin/pest --parallel
+docker compose exec app vendor/bin/pest --parallel
 
 # С покрытием (HTML отчёт)
-composer test:coverage
+docker compose exec app composer test:coverage
 
 # PHPStan статический анализ
-composer analyse
+docker compose exec app composer analyse
 
 # Laravel Pint code style
-composer format
+docker compose exec app composer format
 ```
 
 После генерации HTML отчёта, откройте `coverage/index.html` в браузере.
@@ -526,7 +548,7 @@ composer format
 Текущее
 покрытие: [![Code Coverage](https://img.shields.io/codecov/c/github/geekcodev/laravel-commercejson/main?style=flat-square)](https://codecov.io/gh/geekcodev/laravel-commercejson)
 
-**37 тестов, 180 assertions.** Покрытие требует расширения — см. [CODE_AUDIT.md](CODE_AUDIT.md) (Фазы 2–5) и
+**49 тестов, 230 assertions.** Покрытие требует расширения — см. [CODE_AUDIT.md](CODE_AUDIT.md) (Фазы 2–5) и
 [COVERAGE.md](COVERAGE.md).
 
 ## Документация

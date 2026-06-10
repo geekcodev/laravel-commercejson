@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace GeekCo\CommerceJson\Data;
 
 use GeekCo\CommerceJson\Enums\CurrencyEnum;
+use GeekCo\CommerceJson\Enums\DocumentTypeEnum;
 use GeekCo\CommerceJson\Enums\PartyRoleEnum;
 use Spatie\LaravelData\Attributes\DataCollectionOf;
 use Spatie\LaravelData\Attributes\Validation\ArrayType;
@@ -20,20 +21,20 @@ use Spatie\LaravelData\Data;
 class OrderCreateData extends Data
 {
     public function __construct(
-        #[Required]
-        public mixed $document_type,
-        #[Nullable, Enum(PartyRoleEnum::class)]
-        public ?PartyRoleEnum $role,
-        #[Nullable]
-        public ?OrderCustomerData $customer,
-        #[Nullable, StringType, Uuid]
-        public ?string $counterparty_id,
-        #[Nullable]
-        public ?OrderDeliveryData $delivery,
-        #[Nullable]
-        public ?OrderPaymentData $payment,
+        #[Required, Enum(DocumentTypeEnum::class)]
+        public DocumentTypeEnum $document_type,
         #[Required, ArrayType, Min(1), DataCollectionOf(OrderItemCreateData::class)]
         public array $items,
+        #[Nullable, Enum(PartyRoleEnum::class)]
+        public ?PartyRoleEnum $role = null,
+        #[Nullable]
+        public ?OrderCustomerData $customer = null,
+        #[Nullable, StringType, Uuid]
+        public ?string $counterparty_id = null,
+        #[Nullable]
+        public ?OrderDeliveryData $delivery = null,
+        #[Nullable]
+        public ?OrderPaymentData $payment = null,
         #[Nullable, StringType, Uuid]
         public ?string $warehouse_id = null,
         #[Nullable, Enum(CurrencyEnum::class)]

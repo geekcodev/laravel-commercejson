@@ -8,6 +8,7 @@ use GeekCo\CommerceJson\Bus\QueryBusInterface;
 use GeekCo\CommerceJson\Commands\UpsertWarehouseCommand;
 use GeekCo\CommerceJson\Data\ImportResultData;
 use GeekCo\CommerceJson\Data\WarehouseData;
+use GeekCo\CommerceJson\Data\WarehouseImportData;
 use GeekCo\CommerceJson\Exceptions\ForeignKeyViolationException;
 use GeekCo\CommerceJson\Queries\GetWarehousesQuery;
 use Illuminate\Contracts\Bus\Dispatcher;
@@ -35,14 +36,14 @@ class WarehouseController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $data = $request->validate(['warehouses' => 'required|array|min:1']);
+        $import = WarehouseImportData::from($request->all());
         $processed = 0;
         $errors = [];
 
-        foreach ($data['warehouses'] as $warehouseItem) {
+        foreach ($import->warehouses as $warehouseItem) {
             try {
                 $this->commandBus->dispatch(
-                    new UpsertWarehouseCommand(WarehouseData::from($warehouseItem))
+                    new UpsertWarehouseCommand($warehouseItem)
                 );
                 $processed++;
             } catch (QueryException $e) {

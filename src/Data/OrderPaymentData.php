@@ -10,7 +10,6 @@ use GeekCo\CommerceJson\Enums\PaymentStatusEnum;
 use Spatie\LaravelData\Attributes\Validation\Enum;
 use Spatie\LaravelData\Attributes\Validation\Nullable;
 use Spatie\LaravelData\Attributes\Validation\Required;
-use Spatie\LaravelData\Attributes\Validation\StringType;
 use Spatie\LaravelData\Data;
 
 class OrderPaymentData extends Data
@@ -22,7 +21,7 @@ class OrderPaymentData extends Data
         public ?PaymentStatusEnum $status = null,
         #[Nullable]
         public ?MoneyData $amount = null,
-        #[Nullable, StringType]
+        #[Nullable]
         public ?Carbon $paid_at = null,
     ) {}
 }
