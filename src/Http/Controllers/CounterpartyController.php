@@ -9,6 +9,7 @@ use GeekCo\CommerceJson\Commands\CreateCounterpartyCommand;
 use GeekCo\CommerceJson\Data\CounterpartyData;
 use GeekCo\CommerceJson\Data\ErrorResponseData;
 use GeekCo\CommerceJson\Exceptions\ForeignKeyViolationException;
+use GeekCo\CommerceJson\Models\Counterparty;
 use GeekCo\CommerceJson\Queries\GetCounterpartiesQuery;
 use GeekCo\CommerceJson\Queries\GetCounterpartyQuery;
 use Illuminate\Contracts\Bus\Dispatcher;
@@ -32,7 +33,10 @@ class CounterpartyController extends Controller
         );
         $counterparties = $this->queryBus->ask($query);
 
-        $items = CounterpartyData::collect($counterparties->items(), DataCollection::class);
+        $items = new DataCollection(CounterpartyData::class, array_map(
+            static fn (Counterparty $model) => CounterpartyData::fromModel($model),
+            $counterparties->items()->all()
+        ));
 
         return response()->json([
             'counterparties' => $items,
@@ -51,7 +55,7 @@ class CounterpartyController extends Controller
             $query = new GetCounterpartyQuery($id);
             $counterparty = $this->queryBus->ask($query);
 
-            return response()->json(CounterpartyData::from($counterparty));
+            return response()->json(CounterpartyData::fromModel($counterparty));
         } catch (ModelNotFoundException) {
             return response()->json(
                 ErrorResponseData::from(['error' => ['code' => 'NOT_FOUND', 'message' => 'Counterparty not found']]),
@@ -66,7 +70,7 @@ class CounterpartyController extends Controller
             $command = new CreateCounterpartyCommand(CounterpartyData::from($request->all()));
             $counterparty = $this->commandBus->dispatch($command);
 
-            return response()->json(CounterpartyData::from($counterparty), 201);
+            return response()->json(CounterpartyData::fromModel($counterparty), 201);
         } catch (QueryException $e) {
             $fe = new ForeignKeyViolationException($e);
 
