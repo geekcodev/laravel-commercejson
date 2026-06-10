@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace GeekCo\CommerceJson\Models;
 
+use Carbon\Carbon;
 use GeekCo\CommerceJson\Database\Factories\CounterpartyFactory;
 use GeekCo\CommerceJson\Enums\CounterpartyTypeEnum;
 use GeekCo\CommerceJson\Enums\CurrencyEnum;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -15,6 +17,52 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @property string $id
+ * @property string|null $external_id
+ * @property CounterpartyTypeEnum $type
+ * @property string $name
+ * @property string|null $short_name
+ * @property string|null $inn
+ * @property string|null $kpp
+ * @property string|null $ogrn
+ * @property string|null $okved
+ * @property string|null $okpo
+ * @property string|null $okopf
+ * @property string|null $okfs
+ * @property Carbon|null $registration_date
+ * @property string|null $legal_address_country
+ * @property string|null $legal_address_region
+ * @property string|null $legal_address_district
+ * @property string|null $legal_address_city
+ * @property string|null $legal_address_street
+ * @property string|null $legal_address_house
+ * @property string|null $legal_address_building
+ * @property string|null $legal_address_apartment
+ * @property string|null $legal_address_postal_code
+ * @property string|null $legal_address_full
+ * @property string|null $actual_address_country
+ * @property string|null $actual_address_region
+ * @property string|null $actual_address_district
+ * @property string|null $actual_address_city
+ * @property string|null $actual_address_street
+ * @property string|null $actual_address_house
+ * @property string|null $actual_address_building
+ * @property string|null $actual_address_apartment
+ * @property string|null $actual_address_postal_code
+ * @property string|null $actual_address_full
+ * @property string|null $price_type_id
+ * @property string|null $credit_limit_amount
+ * @property string|null $credit_limit_currency
+ * @property bool|null $is_active
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property Carbon|null $deleted_at
+ * @property Collection<Contact> $contacts
+ * @property Collection<BankAccount> $bank_accounts
+ * @property Collection<Representative> $representatives
+ * @property Collection<CustomAttribute> $custom_attributes
+ */
 class Counterparty extends Model
 {
     use HasFactory, HasUuids, SoftDeletes;
