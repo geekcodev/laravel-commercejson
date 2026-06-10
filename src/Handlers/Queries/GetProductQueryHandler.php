@@ -26,18 +26,7 @@ class GetProductQueryHandler implements QueryHandlerInterface
         $product = $this->repository->findOrFail($query->id)
             ->load(['images', 'propertyValues', 'variants.propertyValues', 'customAttributes', 'analogues', 'components']);
 
-        // Transform analogues from Collection<Product> to string[] (UUIDs per spec)
-        $product->setRelation('analogues', $product->analogues->pluck('id')->values()->toArray());
-
-        // Transform components from Collection<Product> to array of {product_id, quantity} per spec
-        $components = [];
-        foreach ($product->components as $component) {
-            $components[] = [
-                'product_id' => $component->id,
-                'quantity' => (float) $component->pivot->getAttribute('quantity'),
-            ];
-        }
-        $product->setRelation('components', $components);
+        $product->setRelationForApi();
 
         return $product;
     }

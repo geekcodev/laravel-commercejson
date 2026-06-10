@@ -20,8 +20,8 @@ class PropertyDefinitionData extends Data
     public function __construct(
         #[Required, StringType, Uuid]
         public string $id,
-        #[Required, StringType]
-        public string $name,
+        #[Required]
+        public LocalizedStringData|string $name,
         #[Required, Enum(PropertyTypeEnum::class)]
         public PropertyTypeEnum $type,
         #[Nullable, StringType]
