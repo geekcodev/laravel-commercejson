@@ -7,5 +7,6 @@ coverage/
 *.swo
 .DS_Store
 Thumbs.db
-.qwen/
+.qwen
 .idea
+.junie

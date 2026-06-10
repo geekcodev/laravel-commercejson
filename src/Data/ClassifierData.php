@@ -32,9 +32,9 @@ class ClassifierData extends Data
         public ?array $price_types = null,
         #[Nullable, ArrayType, DataCollectionOf(SignatoryData::class)]
         public ?array $signatories = null,
-        #[Nullable, StringType]
+        #[Nullable]
         public ?Carbon $updated_at = null,
-        #[Nullable, StringType]
+        #[Nullable]
         public ?Carbon $deleted_at = null,
     ) {}
 }

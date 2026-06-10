@@ -28,17 +28,19 @@ class CounterpartyController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = new GetCounterpartiesQuery(
-            perPage: (int) ($request->input('per_page', 15))
+            perPage: (int) ($request->input('limit', 15))
         );
         $counterparties = $this->queryBus->ask($query);
 
+        $items = CounterpartyData::collect($counterparties->items(), DataCollection::class);
+
         return response()->json([
-            'data' => CounterpartyData::collect($counterparties->items(), DataCollection::class),
-            'meta' => [
-                'current_page' => $counterparties->currentPage(),
-                'last_page' => $counterparties->lastPage(),
-                'per_page' => $counterparties->perPage(),
+            'counterparties' => $items,
+            'pagination' => [
+                'page' => $counterparties->currentPage(),
+                'limit' => $counterparties->perPage(),
                 'total' => $counterparties->total(),
+                'has_next' => $counterparties->currentPage() < $counterparties->lastPage(),
             ],
         ]);
     }

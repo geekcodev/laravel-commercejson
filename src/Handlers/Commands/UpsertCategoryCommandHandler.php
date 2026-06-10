@@ -23,9 +23,15 @@ class UpsertCategoryCommandHandler implements CommandHandlerInterface
         assert($command instanceof UpsertCategoryCommand);
 
         return DB::transaction(function () use ($command) {
+            $data = $command->categoryData->toArray();
+
+            if ($data['parent_id'] === $data['id']) {
+                $data['parent_id'] = null;
+            }
+
             return $this->repository->updateOrCreate(
                 ['id' => $command->categoryData->id],
-                $command->categoryData->toArray()
+                $data
             );
         });
     }

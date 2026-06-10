@@ -333,7 +333,9 @@ class OrderStatusMachine
 **Приоритет:** Средний
 
 **Проблема:** `POST /catalog/products`, `POST /offers`, `POST /counterparties` принимают **один** объект и возвращают
+
 201.
+
 Спецификация требует **массив** объектов и ответ 200 + `ImportResult`.
 
 **Затронутые файлы:**
@@ -426,7 +428,7 @@ $table->fullText(['name', 'short_description'], 'products_name_description_fullt
 - [ ] Переписать `POST /offers` на bulk (использовать `OfferImportData`)
 - [ ] Переписать `POST /counterparties` на bulk (создать `CounterpartyListData`)
 - [ ] Перевести все list-эндпоинты на spec-формат pagination (`{entity, pagination}` вместо `{data, meta}`)
-- [ ] Удалить мёртвый код: `CategoryController`, `OfferController::show()`, неиспользуемые команды/квери
+- [x] Удалить мёртвый код: `CategoryController`, `OfferController::show()`, неиспользуемые команды/квери
 
 ### Фаза 4 — Delta-sync и покрытие репозиториев
 

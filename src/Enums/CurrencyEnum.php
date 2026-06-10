@@ -33,7 +33,7 @@ enum CurrencyEnum: string implements JsonSerializable
     case BSD = 'BSD';
     case BTN = 'BTN';
     case BWP = 'BWP';
-    case BYR = 'BYR';
+    case BYN = 'BYN';
     case BZD = 'BZD';
     case CAD = 'CAD';
     case CDF = 'CDF';
@@ -70,7 +70,6 @@ enum CurrencyEnum: string implements JsonSerializable
     case GYD = 'GYD';
     case HKD = 'HKD';
     case HNL = 'HNL';
-    case HRK = 'HRK';
     case HTG = 'HTG';
     case HUF = 'HUF';
     case IDR = 'IDR';
@@ -104,7 +103,7 @@ enum CurrencyEnum: string implements JsonSerializable
     case MMK = 'MMK';
     case MNT = 'MNT';
     case MOP = 'MOP';
-    case MRO = 'MRO';
+    case MRU = 'MRU';
     case MUR = 'MUR';
     case MVR = 'MVR';
     case MWK = 'MWK';
@@ -141,7 +140,7 @@ enum CurrencyEnum: string implements JsonSerializable
     case SOS = 'SOS';
     case SRD = 'SRD';
     case SSP = 'SSP';
-    case STD = 'STD';
+    case STN = 'STN';
     case SVC = 'SVC';
     case SYP = 'SYP';
     case SZL = 'SZL';
@@ -161,7 +160,7 @@ enum CurrencyEnum: string implements JsonSerializable
     case UYI = 'UYI';
     case UYU = 'UYU';
     case UZS = 'UZS';
-    case VEF = 'VEF';
+    case VES = 'VES';
     case VND = 'VND';
     case VUV = 'VUV';
     case WST = 'WST';
@@ -203,7 +202,7 @@ enum CurrencyEnum: string implements JsonSerializable
         'BSD' => 'Bahamian Dollar',
         'BTN' => 'Bhutanese Ngultrum',
         'BWP' => 'Botswana Pula',
-        'BYR' => 'Belarusian Ruble',
+        'BYN' => 'Belarusian Ruble',
         'BZD' => 'Belize Dollar',
         'CAD' => 'Canadian Dollar',
         'CDF' => 'Congolese Franc',
@@ -240,7 +239,6 @@ enum CurrencyEnum: string implements JsonSerializable
         'GYD' => 'Guyanese Dollar',
         'HKD' => 'Hong Kong Dollar',
         'HNL' => 'Honduran Lempira',
-        'HRK' => 'Croatian Kuna',
         'HTG' => 'Haitian Gourde',
         'HUF' => 'Hungarian Forint',
         'IDR' => 'Indonesian Rupiah',
@@ -274,7 +272,7 @@ enum CurrencyEnum: string implements JsonSerializable
         'MMK' => 'Myanmar Kyat',
         'MNT' => 'Mongolian Tögrög',
         'MOP' => 'Macanese Pataca',
-        'MRO' => 'Mauritanian Ouguiya',
+        'MRU' => 'Mauritanian Ouguiya',
         'MUR' => 'Mauritian Rupee',
         'MVR' => 'Maldivian Rufiyaa',
         'MWK' => 'Malawian Kwacha',
@@ -311,7 +309,7 @@ enum CurrencyEnum: string implements JsonSerializable
         'SOS' => 'Somali Shilling',
         'SRD' => 'Surinamese Dollar',
         'SSP' => 'South Sudanese Pound',
-        'STD' => 'São Tomé and Príncipe Dobra',
+        'STN' => 'São Tomé and Príncipe Dobra',
         'SVC' => 'Salvadoran Colón',
         'SYP' => 'Syrian Pound',
         'SZL' => 'Swazi Lilangeni',
@@ -331,7 +329,8 @@ enum CurrencyEnum: string implements JsonSerializable
         'UYI' => 'Uruguayan Peso (URUIURUI)',
         'UYU' => 'Uruguayan Peso',
         'UZS' => 'Uzbekistani Som',
-        'VEF' => 'Venezuelan Bolívar',
+        'VES' => 'Venezuelan Bolívar',
+
         'VND' => 'Vietnamese Dong',
         'VUV' => 'Vanuatu Vatu',
         'WST' => 'Samoan Tala',
@@ -373,7 +372,7 @@ enum CurrencyEnum: string implements JsonSerializable
         'BSD' => 'Багамский доллар',
         'BTN' => 'Бутанский нгултрум',
         'BWP' => 'Ботсванская пула',
-        'BYR' => 'Белорусский рубль',
+        'BYN' => 'Белорусский рубль',
         'BZD' => 'Белизский доллар',
         'CAD' => 'Канадский доллар',
         'CDF' => 'Конголезский франк',
@@ -410,7 +409,6 @@ enum CurrencyEnum: string implements JsonSerializable
         'GYD' => 'Гайанский доллар',
         'HKD' => 'Гонконгский доллар',
         'HNL' => 'Гондурасская лемпира',
-        'HRK' => 'Хорватская куна',
         'HTG' => 'Гаитянский гурд',
         'HUF' => 'Венгерский форинт',
         'IDR' => 'Индонезийская рупия',
@@ -444,7 +442,7 @@ enum CurrencyEnum: string implements JsonSerializable
         'MMK' => 'Мьянманский кьят',
         'MNT' => 'Монгольский тугрик',
         'MOP' => 'Патака Макао',
-        'MRO' => 'Мавританская угия',
+        'MRU' => 'Мавританская угия',
         'MUR' => 'Маврикийская рупия',
         'MVR' => 'Мальдивская руфия',
         'MWK' => 'Малавийская квача',
@@ -481,7 +479,7 @@ enum CurrencyEnum: string implements JsonSerializable
         'SOS' => 'Сомалийский шиллинг',
         'SRD' => 'Суринамский доллар',
         'SSP' => 'Южносуданский фунт',
-        'STD' => 'Добра Сан-Томе и Принсипи',
+        'STN' => 'Добра Сан-Томе и Принсипи',
         'SVC' => 'Сальвадорский колон',
         'SYP' => 'Сирийский фунт',
         'SZL' => 'Свазилендский лилангени',
@@ -501,7 +499,7 @@ enum CurrencyEnum: string implements JsonSerializable
         'UYI' => 'Уругвайское песо (URUIURUI)',
         'UYU' => 'Уругвайское песо',
         'UZS' => 'Узбекский сум',
-        'VEF' => 'Венесуэльский боливар',
+        'VES' => 'Венесуэльский боливар',
         'VND' => 'Вьетнамский донг',
         'VUV' => 'Вануатский вату',
         'WST' => 'Самоанская тала',
@@ -543,7 +541,7 @@ enum CurrencyEnum: string implements JsonSerializable
         'BSD' => '044',
         'BTN' => '064',
         'BWP' => '072',
-        'BYR' => '974',
+        'BYN' => '933',
         'BZD' => '084',
         'CAD' => '124',
         'CDF' => '976',
@@ -580,7 +578,6 @@ enum CurrencyEnum: string implements JsonSerializable
         'GYD' => '328',
         'HKD' => '344',
         'HNL' => '340',
-        'HRK' => '191',
         'HTG' => '332',
         'HUF' => '348',
         'IDR' => '360',
@@ -614,7 +611,7 @@ enum CurrencyEnum: string implements JsonSerializable
         'MMK' => '104',
         'MNT' => '496',
         'MOP' => '446',
-        'MRO' => '478',
+        'MRU' => '929',
         'MUR' => '480',
         'MVR' => '462',
         'MWK' => '454',
@@ -651,7 +648,7 @@ enum CurrencyEnum: string implements JsonSerializable
         'SOS' => '706',
         'SRD' => '968',
         'SSP' => '728',
-        'STD' => '678',
+        'STN' => '930',
         'SVC' => '222',
         'SYP' => '760',
         'SZL' => '748',
@@ -671,7 +668,7 @@ enum CurrencyEnum: string implements JsonSerializable
         'UYI' => '940',
         'UYU' => '858',
         'UZS' => '860',
-        'VEF' => '937',
+        'VES' => '928',
         'VND' => '704',
         'VUV' => '548',
         'WST' => '882',
@@ -691,15 +688,15 @@ enum CurrencyEnum: string implements JsonSerializable
     public function getLocalizedName(string $locale = 'ru'): string
     {
         return match ($locale) {
-            'ru' => self::NAMES_RU[$this->value] ?? $this->name,
-            'en' => self::NAMES_EN[$this->value] ?? $this->name,
+            'ru' => self::NAMES_RU[$this->value] ?? $this->value,
+            'en' => self::NAMES_EN[$this->value] ?? $this->value,
             default => throw new InvalidArgumentException("Unsupported locale: {$locale}"),
         };
     }
 
     public function getNumericCode(): string
     {
-        return self::NUMERIC_CODES[$this->value] ?? '000';
+        return self::NUMERIC_CODES[$this->value];
     }
 
     public function jsonSerialize(): string

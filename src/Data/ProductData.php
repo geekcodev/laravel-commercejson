@@ -23,16 +23,16 @@ class ProductData extends Data
     public function __construct(
         #[Required, StringType, Uuid]
         public string $id,
-        #[Nullable, StringType]
-        public ?string $external_id,
         #[Required, StringType, Max(255)]
         public string $name,
-        #[Nullable, StringType]
-        public ?string $code,
-        #[Nullable, StringType, Max(14)]
-        public ?string $barcode,
         #[Required, StringType, Uuid]
         public string $category_id,
+        #[Nullable, StringType]
+        public ?string $external_id = null,
+        #[Nullable, StringType]
+        public ?string $code = null,
+        #[Nullable, StringType, Max(14)]
+        public ?string $barcode = null,
         #[Nullable, StringType]
         public ?string $description = null,
         #[Nullable, StringType, Max(500)]
@@ -55,7 +55,7 @@ class ProductData extends Data
         public ?ManufacturerData $manufacturer = null,
         #[Nullable, ArrayType, Distinct]
         public ?array $analogues = null,
-        #[Nullable, ArrayType]
+        #[Nullable, ArrayType, DataCollectionOf(ProductComponentData::class)]
         public ?array $components = null,
         #[Nullable, ArrayType, DataCollectionOf(CustomAttributeData::class)]
         public ?array $custom_attributes = null,
@@ -63,11 +63,11 @@ class ProductData extends Data
         public ?bool $is_active = null,
         #[Nullable]
         public ?SeoMetaData $seo = null,
-        #[Nullable, StringType]
+        #[Nullable]
         public ?Carbon $created_at = null,
-        #[Nullable, StringType]
+        #[Nullable]
         public ?Carbon $updated_at = null,
-        #[Nullable, StringType]
+        #[Nullable]
         public ?Carbon $deleted_at = null,
     ) {}
 }

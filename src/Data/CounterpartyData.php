@@ -22,53 +22,53 @@ class CounterpartyData extends Data
     public function __construct(
         #[Required, StringType, Uuid]
         public string $id,
-        #[Nullable, StringType]
-        public ?string $external_id,
         #[Required, Enum(CounterpartyTypeEnum::class)]
         public CounterpartyTypeEnum $type,
         #[Required, StringType]
         public string $name,
         #[Nullable, StringType]
-        public ?string $short_name,
+        public ?string $external_id = null,
         #[Nullable, StringType]
-        public ?string $inn,
+        public ?string $short_name = null,
+        #[Nullable, StringType]
+        public ?string $inn = null,
         #[Nullable, StringType, Regex('/^\d{9}$/')]
-        public ?string $kpp,
+        public ?string $kpp = null,
         #[Nullable, StringType]
-        public ?string $ogrn,
+        public ?string $ogrn = null,
         #[Nullable, StringType]
-        public ?string $okved,
+        public ?string $okved = null,
         #[Nullable, StringType]
-        public ?string $okpo,
+        public ?string $okpo = null,
         #[Nullable, StringType]
-        public ?string $okopf,
+        public ?string $okopf = null,
         #[Nullable, StringType]
-        public ?string $okfs,
+        public ?string $okfs = null,
         #[Nullable, StringType]
-        public ?Carbon $registration_date,
+        public ?Carbon $registration_date = null,
         #[Nullable]
-        public ?AddressData $legal_address,
+        public ?AddressData $legal_address = null,
         #[Nullable]
-        public ?AddressData $actual_address,
+        public ?AddressData $actual_address = null,
         #[Nullable, ArrayType, DataCollectionOf(ContactData::class)]
-        public ?array $contacts,
-        #[Nullable, ArrayType]
-        public ?array $representatives,
+        public ?array $contacts = null,
+        #[Nullable, ArrayType, DataCollectionOf(RepresentativeData::class)]
+        public ?array $representatives = null,
         #[Nullable, ArrayType, DataCollectionOf(BankAccountData::class)]
-        public ?array $bank_accounts,
+        public ?array $bank_accounts = null,
         #[Nullable, StringType, Uuid]
-        public ?string $price_type_id,
+        public ?string $price_type_id = null,
         #[Nullable]
-        public ?MoneyData $credit_limit,
+        public ?MoneyData $credit_limit = null,
         #[Nullable, ArrayType, DataCollectionOf(CustomAttributeData::class)]
-        public ?array $custom_attributes,
+        public ?array $custom_attributes = null,
         #[Nullable, BooleanType]
-        public ?bool $is_active,
-        #[Nullable, StringType]
-        public ?Carbon $created_at,
-        #[Nullable, StringType]
-        public ?Carbon $updated_at,
-        #[Nullable, StringType]
-        public ?Carbon $deleted_at,
+        public ?bool $is_active = null,
+        #[Nullable]
+        public ?Carbon $created_at = null,
+        #[Nullable]
+        public ?Carbon $updated_at = null,
+        #[Nullable]
+        public ?Carbon $deleted_at = null,
     ) {}
 }

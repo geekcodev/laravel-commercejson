@@ -28,8 +28,8 @@ describe('CounterpartyController', function () {
 
             $response->assertStatus(200)
                 ->assertJsonStructure([
-                    'data' => [['id', 'name', 'type']],
-                    'meta' => ['current_page', 'last_page', 'per_page', 'total'],
+                    'counterparties' => [['id', 'name', 'type']],
+                    'pagination' => ['page', 'limit', 'total', 'has_next'],
                 ]);
         });
     });

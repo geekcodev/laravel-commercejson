@@ -22,10 +22,10 @@ class PropertyDefinitionData extends Data
         public string $id,
         #[Required, StringType]
         public string $name,
-        #[Nullable, StringType]
-        public ?string $code,
         #[Required, Enum(PropertyTypeEnum::class)]
         public PropertyTypeEnum $type,
+        #[Nullable, StringType]
+        public ?string $code = null,
         #[Nullable, StringType]
         public ?string $unit = null,
         #[Nullable, BooleanType]

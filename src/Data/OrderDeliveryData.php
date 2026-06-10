@@ -27,9 +27,9 @@ class OrderDeliveryData extends Data
         public ?MoneyData $cost = null,
         #[Nullable, StringType]
         public ?string $tracking_number = null,
-        #[Nullable, StringType]
+        #[Nullable]
         public ?Carbon $shipped_at = null,
-        #[Nullable, StringType]
+        #[Nullable]
         public ?Carbon $estimated_date = null,
     ) {}
 }

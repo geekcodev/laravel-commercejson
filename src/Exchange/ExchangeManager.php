@@ -59,54 +59,41 @@ class ExchangeManager
     {
         event(new SyncStarted('full'));
 
-        $startTime = time();
-
         try {
             if ($useQueue) {
-                // Асинхронная синхронизация через очередь
                 SyncFullJob::dispatch();
             } else {
-                // Синхронная синхронизация
+                $startTime = time();
                 $this->syncClassifier();
                 $this->syncProducts();
                 $this->syncOffers();
                 $this->syncOrders();
+                $duration = time() - $startTime;
+                event(new SyncCompleted('full', $duration));
             }
-
-            $duration = time() - $startTime;
-            event(new SyncCompleted('full', $duration));
         } catch (\Exception $e) {
             event(new SyncFailed('full', $e));
             throw $e;
         }
     }
 
-    /**
-     * Инкрементальная синхронизация
-     *
-     * @param  \DateTime|null  $since  Дата последней синхронизации
-     */
     public function incrementalSync(?\DateTime $since = null, bool $useQueue = true): void
     {
         $since = $since ?? now()->subHour();
 
         event(new SyncStarted('incremental', $since));
 
-        $startTime = time();
-
         try {
             if ($useQueue) {
-                // Асинхронная синхронизация через очередь
                 SyncIncrementalJob::dispatch($since->format(DateTimeInterface::ATOM));
             } else {
-                // Синхронная синхронизация
+                $startTime = time();
                 $this->syncProducts($since);
                 $this->syncOffers($since);
                 $this->syncOrders($since);
+                $duration = time() - $startTime;
+                event(new SyncCompleted('incremental', $duration));
             }
-
-            $duration = time() - $startTime;
-            event(new SyncCompleted('incremental', $duration));
         } catch (\Exception $e) {
             event(new SyncFailed('incremental', $e));
             throw $e;

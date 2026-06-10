@@ -19,7 +19,7 @@ class HandshakeResponseData extends Data
         public string $version,
         #[Required, ArrayType, Min(1)]
         public array $supported_versions,
-        #[Required, StringType]
+        #[Required]
         public Carbon $server_time,
         #[Required]
         public CapabilitiesData $capabilities,

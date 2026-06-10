@@ -14,8 +14,8 @@ use Spatie\LaravelData\Data;
 class ContactData extends Data
 {
     public function __construct(
-        #[Required, StringType, Enum(ContactTypeEnum::class)]
-        public string $type,
+        #[Required, Enum(ContactTypeEnum::class)]
+        public ContactTypeEnum $type,
         #[Required, StringType]
         public string $value,
         #[Nullable, StringType]

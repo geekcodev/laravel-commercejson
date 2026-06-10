@@ -106,7 +106,7 @@ Write-операции используют встроенный Laravel Bus с 
 
 ```php
 Bus::map([
-    CreateProductCommand::class => CreateProductCommandHandler::class,
+    UpsertProductCommand::class => UpsertProductCommandHandler::class,
     // ...
 ]);
 ```
@@ -163,17 +163,17 @@ class ProductData extends Data
 
 ### Файлы DTO (49 в `src/Data/`)
 
-| Категория | Файлы                                                                                                                                                                           |
-|-----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Core      | `ClassifierData`, `CategoryData`, `PropertyDefinitionData`, `PriceTypeData`                                                                                                     |
-| Products  | `ProductData`, `ProductVariantData`, `ProductImageData`, `ProductListData`, `ProductImportData`                                                                                 |
-| Offers    | `OfferData`, `OfferImportData`, `OfferListData`, `OfferPriceData`, `StockData`                                                                                                  |
-| Orders    | `OrderData`, `OrderCreateData`, `OrderPatchData`, `OrderImportData`, `OrderListData`, `OrderItemData`, `OrderItemCreateData`, `OrderItemUpdateData`, `OrderBulkUpdateItemData`  |
-| Customers | `OrderCustomerData`, `OrderDeliveryData`, `OrderPaymentData`, `OrderTotalsData`, `CounterpartyData`, `CounterpartyListData`, `ContactData`, `BankAccountData`                   |
-| Warehouse | `WarehouseData`                                                                                                                                                                 |
-| Common    | `MoneyData`, `AddressData`, `SeoMetaData`, `DimensionsData`, `UnitData`, `ManufacturerData`, `SignatoryData`, `CustomAttributeData`, `LocalizedStringData`, `PropertyValueData` |
-| Handshake | `HandshakeResponseData`, `CapabilitiesData`                                                                                                                                     |
-| Response  | `PaginationData`, `ImportResultData`, `ImportErrorData`, `ErrorResponseData`                                                                                                    |
+| Категория | Файлы                                                                                                                                                                                                      |
+|-----------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Core      | `ClassifierData`, `CategoryData`, `PropertyDefinitionData`, `PriceTypeData`                                                                                                                                |
+| Products  | `ProductData`, `ProductVariantData`, `ProductImageData`, `ProductListData`, `ProductImportData`                                                                                                            |
+| Offers    | `OfferData`, `OfferImportData`, `OfferListData`, `OfferPriceData`, `StockData`                                                                                                                             |
+| Orders    | `OrderData`, `OrderCreateData`, `OrderImportData`, `OrderListData`, `OrderItemData`, `OrderItemCreateData`, `OrderItemUpdateData`, `OrderBulkUpdateItemData`, `OrderDeliveryTrackData`, `OrderItemTaxData` |
+| Customers | `OrderCustomerData`, `OrderDeliveryData`, `OrderPaymentData`, `OrderTotalsData`, `CounterpartyData`, `CounterpartyListData`, `ContactData`, `BankAccountData`                                              |
+| Warehouse | `WarehouseData`, `WarehouseImportData`                                                                                                                                                                     |
+| Common    | `MoneyData`, `AddressData`, `SeoMetaData`, `DimensionsData`, `UnitData`, `ManufacturerData`, `SignatoryData`, `CustomAttributeData`, `PropertyValueData`, `StatusHistoryEntryData`                         |
+| Handshake | `HandshakeResponseData`, `CapabilitiesData`                                                                                                                                                                |
+| Response  | `PaginationData`, `ImportResultData`, `ErrorResponseData`                                                                                                                                                  |
 
 ---
 
@@ -333,8 +333,9 @@ ExchangeManager → ProductImporter / OrderImporter / ClassifierImporter / Order
    заглушек, значения из конфига/запроса, типизация через enum, корректные расчёты). Если требуется заглушка — она явно
    документируется в коде с пояснением `// TODO` или `// stub`.
 
-2. **Формат пагинации** в ответе: `{data: [...], meta: {current_page, last_page, per_page, total}}`  
-   TODO: привести к spec — `{products: [...], pagination: {page, limit, total, has_next}}`
+2. **Формат пагинации** в ответе: `{entity: [...], pagination: {page, limit, total, has_next}}`  
+   Где `entity` — имя сущности во множественном числе (`products`, `orders`, `offers`, `counterparties`).  
+   Query-параметр — `limit` (внутри Query — `perPage`).
 
 3. **Soft delete** — `DELETE` проставляет `is_active=false` + `deleted_at`, не удаляет запись
 
@@ -349,30 +350,52 @@ ExchangeManager → ProductImporter / OrderImporter / ClassifierImporter / Order
 
 8. **Ответ с ошибкой** — `{error: {code, message, details?}}`
 
-9. **Идемпотентность** — поддерживается через `X-Idempotency-Key` (TODO: реализовать кеширование)
+9. **Идемпотентность** — поддерживается через `IdempotencyMiddleware` (X-Idempotency-Key + кеш с fingerprint md5(path:
+   body), TTL из конфига)
 
 ---
 
-## Известные проблемы (несоответствия spec и мёртвый код)
+## Безопасность (OWASP Top 10)
 
-| Проблема                    | Детали                                                                      |
-|-----------------------------|-----------------------------------------------------------------------------|
-| `CategoryController`        | Мёртвый — нет роутов; категории доступны только через `/catalog/classifier` |
-| `OfferController::show()`   | Мёртвый — нет роута `GET /offers/{id}`                                      |
-| `UpdateProductCommand`      | Зарегистрирован в `Bus::map()` но никогда не диспатчится                    |
-| `UpdateCounterpartyCommand` | То же                                                                       |
-| `DeleteOrderCommand`        | То же                                                                       |
-| `DeleteOfferCommand`        | То же                                                                       |
-| `GetOfferQuery`             | Зарегистрирован в QueryBus но не используется                               |
-| `GetCategoryQuery`          | То же                                                                       |
-| `GetCategoriesQuery`        | То же                                                                       |
+Пакет должен быть безопасным. Соблюдаем OWASP Top 10 на уровне кода:
+
+| #   | Категория OWASP               | Требования к коду                                                                                                                                                            |
+|-----|-------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| A01 | **Broken Access Control**     | Все эндпоинты (кроме `/handshake`) за middleware аутентификации; проверка прав через Policy/Gate перед операциями                                                            |
+| A02 | **Cryptographic Failures**    | UUIDv4 вместо автоинкремента; HTTPS-only (config `commercejson.force_https`); никаких секретов в коде/миграциях/логах                                                        |
+| A03 | **Injection**                 | Все входные данные проходят валидацию Request + Spatie Data; запрещены сырые `DB::raw()`, `whereRaw()`, `orderByRaw()` с пользовательским вводом; Eloquent через репозитории |
+| A04 | **Insecure Design**           | CQRS разделяет read/write; Command/Query — строго типизированные DTO; rate limiting на роутах                                                                                |
+| A05 | **Security Misconfiguration** | CORS — из конфига, не `*`; отключён `APP_DEBUG` в production; middleware pipeline явно задан в роутах                                                                        |
+| A06 | **Vulnerable Components**     | `composer audit` — обязателен перед релизом; версии зависимостей зафиксированы в `composer.json`                                                                             |
+| A07 | **Authentication Failures**   | API-ключ/token из конфига, сравнение через `hash_equals()`, не через `==`; логирование неудачных попыток                                                                     |
+| A08 | **Integrity Failures**        | Все входящие данные от ERP валидируются через Spatie Data (типы, форматы, required); CI/CD подписывает релизные теги                                                         |
+| A09 | **Logging & Monitoring**      | Все ошибки аутентификации и валидации логируются через `Log::channel('commercejson')`; запрещено логирование sensitive data (пароли, токены)                                 |
+| A10 | **SSRF**                      | HTTP-клиенты (Guzzle) имеют таймауты и белый список URL из конфига; запрещён динамический URL из пользовательского ввода                                                     |
+
+### Дополнительные правила
+
+- **Mass Assignment:** все `create()`/`update()` в репозиториях через `$fillable` модели, не через `$guarded=[]`
+- **XSS:** любые данные от ERP перед выводом проходят `e()` или `strip_tags()`; API возвращает JSON, не HTML
+- **CSRF:** API-роуты в `api.php`, не в `web.php` — CSRF-защита не применяется, вместо неё аутентификация через Bearer
+  token
+- **Идемпотентность:** `IdempotencyMiddleware` кеширует ответы по `X-Idempotency-Key` + fingerprint запроса (TTL из
+  конфига), возвращает 201/200 при повторном запросе
+- **Input validation:** запрещён `$request->all()` напрямую в контроллерах — только через FormRequest или DTO
+- **Secrets:** никаких ключей в миграциях, seed-файлах или комментариях; всё через `config/commercejson.php` + `.env`
+
+---
+
+## Известные проблемы (мёртвый код на диске)
+
+Мёртвый код отсутствует — все неиспользуемые файлы удалены. Если в будущем появятся,
+они будут задокументированы ниже.
 
 ---
 
 ## Тестирование
 
 ```bash
-docker compose exec app vendor/bin/pest           # Запуск всех тестов (Pest v3.8, 39 тестов, 186 assertions)
+docker compose exec app vendor/bin/pest           # Запуск всех тестов (Pest v3.8, 49 тестов, 230 assertions)
 docker compose exec app vendor/bin/pest --parallel# Параллельный запуск
 docker compose exec app composer analyse          # PHPStan статический анализ
 docker compose exec app composer format           # Laravel Pint code style
@@ -458,6 +481,27 @@ docker compose exec app composer format           # Laravel Pint code style
 - Убран мёртвый код из контроллера: `DocumentTypeEnum` import, `UpsertOrderCommand` import
 - PHPStan clean (0 errors), 39 тестов (186 assertions)
 
+### Сессия 5 — DTO реордер, per_page→limit, rate limiting, тесты middleware
+
+- **25 PHPStan deprecated-warnings:** исправлены во всех ~12 DTO-файлах — required параметры вынесены перед optional
+- **`per_page` → `limit`:** query-параметр в ProductController, OrderController, OfferController, CounterpartyController
+- **Rate limiting:** config `api_routes.rate_limit`/`rate_limit_decay`, `throttle` middleware на auth-роутах (OWASP A04)
+- **Dead code из Bus::map() и QueryBus:** удалены 11 мёртвых Command-маппингов и 2 Query-регистрации
+- **IdempotencyMiddleware тесты:** 6 тестов (caching, разные ключи, GET без кеша, 5xx без кеша, разные body, без
+  заголовка)
+- **Rate limit тесты:** 4 теста (within limit, 429, headers, GET без лимита)
+- **AGENTS.md:** обновлены секции пагинации, идемпотентности, известных проблем, кол-ва тестов
+- 49 тестов (230 assertions), PHPStan 0 errors, Pint clean
+
+### Сессия 6 — Удаление мёртвого кода (31 файл)
+
+- Удалены: `CategoryController`, `OfferController::show()`
+- Удалены 11 мёртвых Command-классов и 11 CommandHandler-классов (Create/Update/Delete дубликаты Upsert)
+- Удалены 2 мёртвых Query-класса и 2 QueryHandler-класса (GetOfferQuery, GetCategoryQuery)
+- Удалены 3 мёртвых DTO: `LocalizedStringData`, `OrderPatchData`, `ImportErrorData`
+- AGENTS.md: известные проблемы пусты (мёртвого кода нет)
+- 49 тестов (230 assertions), PHPStan 0 errors, Pint clean
+
 ---
 
 ## Ключевые файлы
@@ -469,7 +513,7 @@ docker compose exec app composer format           # Laravel Pint code style
 | `src/CommerceJsonServiceProvider.php`                     | Service provider с Bus::map() и QueryBus                         |
 | `src/config/commercejson.php`                             | Конфигурация пакета                                              |
 | `src/Http/Controllers/`                                   | 7 контроллеров + HandshakeController                             |
-| `src/Data/`                                               | 49 DTO (Spatie Laravel Data v4)                                  |
+| `src/Data/`                                               | 46 DTO (Spatie Laravel Data v4)                                  |
 | `src/Models/`                                             | 23 Eloquent-модели                                               |
 | `src/Repositories/`                                       | RepositoryInterface + 8 реализаций                               |
 | `src/Exchange/`                                           | Координация синхронизации (импортёры, экспортёры, jobs, команды) |
