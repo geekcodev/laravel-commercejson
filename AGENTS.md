@@ -395,10 +395,12 @@ ExchangeManager → ProductImporter / OrderImporter / ClassifierImporter / Order
 ## Тестирование
 
 ```bash
-docker compose exec app vendor/bin/pest           # Запуск всех тестов (Pest v3.8, 49 тестов, 230 assertions)
-docker compose exec app vendor/bin/pest --parallel# Параллельный запуск
-docker compose exec app composer analyse          # PHPStan статический анализ
-docker compose exec app composer format           # Laravel Pint code style
+docker compose exec app vendor/bin/pest                              # Запуск всех тестов (Pest v3.8, 49 тестов, 230 assertions)
+docker compose exec app vendor/bin/pest --parallel                   # Параллельный запуск
+docker compose exec app vendor/bin/phpstan analyse                   # PHPStan (локально)
+docker compose exec app vendor/bin/phpstan analyse --error-format=github  # PHPStan (как в CI — обязателен перед push)
+docker compose exec app vendor/bin/pint                              # Laravel Pint code style (исправит)
+docker compose exec app vendor/bin/pint --test                       # Pint только проверить
 ```
 
 > PHP запускается внутри Docker-контейнера: `docker compose exec app <command>`
