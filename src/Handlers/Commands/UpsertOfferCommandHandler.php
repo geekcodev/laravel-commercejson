@@ -56,8 +56,12 @@ class UpsertOfferCommandHandler implements CommandHandlerInterface
         });
     }
 
-    private function syncPrices(string $offerId, array $pricesData): void
+    private function syncPrices(string $offerId, ?array $pricesData): void
     {
+        if ($pricesData === null) {
+            return;
+        }
+
         foreach ($pricesData as $priceData) {
             assert($priceData instanceof OfferPriceData);
 
