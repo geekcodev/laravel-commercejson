@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use GeekCo\CommerceJson\Enums\DocumentTypeEnum;
+
 describe('Rate limiting on write routes', function () {
     it('allows requests within the default limit', function () {
         $commandBus = mockCommandBus();
@@ -11,7 +13,7 @@ describe('Rate limiting on write routes', function () {
             ->andReturn($data);
 
         $payload = [
-            'document_type' => 'order',
+            'document_type' => DocumentTypeEnum::Order->value,
             'items' => [['product_id' => test()->createTestUuid(), 'quantity' => 1]],
         ];
 
@@ -29,7 +31,7 @@ describe('Rate limiting on write routes', function () {
             ->andReturn($data);
 
         $payload = [
-            'document_type' => 'order',
+            'document_type' => DocumentTypeEnum::Order->value,
             'items' => [['product_id' => test()->createTestUuid(), 'quantity' => 1]],
         ];
 
@@ -50,7 +52,7 @@ describe('Rate limiting on write routes', function () {
             ->andReturn(test()->createOrderData());
 
         $payload = [
-            'document_type' => 'order',
+            'document_type' => DocumentTypeEnum::Order->value,
             'items' => [['product_id' => test()->createTestUuid(), 'quantity' => 1]],
         ];
 

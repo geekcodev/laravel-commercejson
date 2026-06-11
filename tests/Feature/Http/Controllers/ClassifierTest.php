@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use GeekCo\CommerceJson\Enums\CurrencyEnum;
+use GeekCo\CommerceJson\Enums\PropertyTypeEnum;
 
 describe('ClassifierController', function () {
     describe('GET /catalog/classifier', function () {
@@ -66,7 +67,7 @@ describe('ClassifierController', function () {
                     [
                         'id' => $propertyId,
                         'name' => 'Color',
-                        'type' => 'string',
+                        'type' => PropertyTypeEnum::String->value,
                     ],
                 ],
                 'price_types' => [

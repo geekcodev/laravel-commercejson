@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use GeekCo\CommerceJson\Commands\CreateOrderCommand;
 use GeekCo\CommerceJson\Enums\CurrencyEnum;
+use GeekCo\CommerceJson\Enums\DocumentTypeEnum;
+use GeekCo\CommerceJson\Enums\OrderStatusEnum;
 use GeekCo\CommerceJson\Models\Order;
 use GeekCo\CommerceJson\Queries\GetOrderQuery;
 use GeekCo\CommerceJson\Queries\GetOrdersQuery;
@@ -60,7 +62,7 @@ describe('OrderController', function () {
                 ->andReturn($orderData);
 
             $response = $this->postJson('/api/commercejson/orders', [
-                'document_type' => 'order',
+                'document_type' => DocumentTypeEnum::Order->value,
                 'items' => [
                     [
                         'product_id' => $productId,
@@ -99,12 +101,12 @@ describe('OrderController', function () {
             $order = Order::factory()->make([
                 'id' => $orderId,
                 'number' => 'ORD-001',
-                'status' => 'new',
+                'status' => OrderStatusEnum::New->value,
             ]);
 
             $updatedOrderData = test()->createOrderData([
                 'id' => $orderId,
-                'status' => 'confirmed',
+                'status' => OrderStatusEnum::Confirmed->value,
             ]);
 
             $commandBus->shouldReceive('dispatch')
@@ -113,7 +115,7 @@ describe('OrderController', function () {
 
             $response = $this->patchJson("/api/commercejson/orders/{$orderId}", [
                 'id' => $orderId,
-                'status' => 'confirmed',
+                'status' => OrderStatusEnum::Confirmed->value,
                 'items' => [
                     [
                         'id' => test()->createTestUuid(),
@@ -132,7 +134,7 @@ describe('OrderController', function () {
             $response->assertStatus(200)
                 ->assertJson([
                     'id' => $orderId,
-                    'status' => 'confirmed',
+                    'status' => OrderStatusEnum::Confirmed->value,
                 ]);
         });
 
@@ -151,7 +153,7 @@ describe('OrderController', function () {
 
             $response = $this->patchJson("/api/commercejson/orders/{$orderId}", [
                 'id' => $orderId,
-                'status' => 'confirmed',
+                'status' => OrderStatusEnum::Confirmed->value,
                 'items' => [
                     [
                         'id' => test()->createTestUuid(),
@@ -187,7 +189,7 @@ describe('OrderController', function () {
                     [
                         'id' => test()->createTestUuid(),
                         'number' => 'ORD-001',
-                        'status' => 'new',
+                        'status' => OrderStatusEnum::New->value,
                         'items' => [
                             [
                                 'id' => test()->createTestUuid(),
@@ -205,7 +207,7 @@ describe('OrderController', function () {
                     [
                         'id' => test()->createTestUuid(),
                         'number' => 'ORD-002',
-                        'status' => 'new',
+                        'status' => OrderStatusEnum::New->value,
                         'items' => [
                             [
                                 'id' => test()->createTestUuid(),
@@ -243,7 +245,7 @@ describe('OrderController', function () {
                     [
                         'id' => '3fa85f64-5717-4562-b3fc-2c963f66afa6',
                         'external_id' => 'string',
-                        'status' => 'new',
+                        'status' => OrderStatusEnum::New->value,
                         'comment' => 'string',
                         'delivery' => [
                             'tracking_number' => 'string',
@@ -293,7 +295,7 @@ describe('OrderController', function () {
                     [
                         'id' => test()->createTestUuid(),
                         'number' => 'ORD-001',
-                        'status' => 'new',
+                        'status' => OrderStatusEnum::New->value,
                         'items' => [
                             [
                                 'id' => test()->createTestUuid(),

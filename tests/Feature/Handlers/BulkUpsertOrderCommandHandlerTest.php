@@ -35,7 +35,7 @@ describe('BulkUpsertOrderCommandHandler', function () {
 
         expect($result)->toBeInstanceOf(Order::class);
         expect($result->id)->toBe($orderId);
-        expect($result->status->value)->toBe('new');
+        expect($result->status->value)->toBe(OrderStatusEnum::New->value);
         expect($result->comment)->toBe('Bulk import');
 
         test()->assertDatabaseHas('orders', [
@@ -91,7 +91,7 @@ describe('BulkUpsertOrderCommandHandler', function () {
 
         $result = $handler->handle($command);
 
-        expect($result->status->value)->toBe('confirmed');
+        expect($result->status->value)->toBe(OrderStatusEnum::Confirmed->value);
         expect($result->comment)->toBe('Updated');
     });
 
@@ -144,7 +144,7 @@ describe('BulkUpsertOrderCommandHandler', function () {
 
         $result = $handler->handle($command);
 
-        expect($result->status->value)->toBe('confirmed');
+        expect($result->status->value)->toBe(OrderStatusEnum::Confirmed->value);
         test()->assertDatabaseHas('order_items', ['id' => $itemId]);
     });
 });
