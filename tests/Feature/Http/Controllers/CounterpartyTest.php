@@ -5,6 +5,8 @@ declare(strict_types=1);
 use GeekCo\CommerceJson\Models\Counterparty;
 use GeekCo\CommerceJson\Queries\GetCounterpartiesQuery;
 use GeekCo\CommerceJson\Queries\GetCounterpartyQuery;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\QueryException;
 
 describe('CounterpartyController', function () {
     describe('GET /counterparties', function () {
@@ -67,6 +69,34 @@ describe('CounterpartyController', function () {
                     'name' => 'Test Company',
                 ]);
         });
+
+        it('returns 422 on foreign key violation', function () {
+            $commandBus = mockCommandBus();
+
+            $commandBus->shouldReceive('dispatch')
+                ->once()
+                ->andThrow(new QueryException(
+                    'mysql',
+                    'INSERT INTO counterparties (...) VALUES (...)',
+                    [],
+                    new Exception('SQLSTATE[23000]: Integrity constraint violation: 1452 Cannot add or update a child row')
+                ));
+
+            $response = $this->postJson('/api/commercejson/counterparties', [
+                'id' => test()->createTestUuid(),
+                'name' => 'Test',
+                'type' => 'legal_entity',
+                'price_type_id' => test()->createTestUuid(),
+            ]);
+
+            $response->assertStatus(422)
+                ->assertJsonStructure([
+                    'error' => ['code', 'message'],
+                ])
+                ->assertJson([
+                    'error' => ['code' => 'FOREIGN_KEY_VIOLATION'],
+                ]);
+        });
     });
 
     describe('GET /counterparties/{id}', function () {
@@ -90,6 +120,23 @@ describe('CounterpartyController', function () {
                 ->assertJson([
                     'id' => $id,
                     'name' => 'Test Company',
+                ]);
+        });
+
+        it('returns 404 when counterparty not found', function () {
+            $queryBus = mockQueryBus();
+            $id = test()->createTestUuid();
+
+            $queryBus->shouldReceive('ask')
+                ->once()
+                ->with(Mockery::type(GetCounterpartyQuery::class))
+                ->andThrow(new ModelNotFoundException);
+
+            $response = $this->getJson("/api/commercejson/counterparties/{$id}");
+
+            $response->assertStatus(404)
+                ->assertJson([
+                    'error' => ['code' => 'NOT_FOUND', 'message' => 'Counterparty not found'],
                 ]);
         });
     });
