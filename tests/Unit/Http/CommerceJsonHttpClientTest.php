@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace GeekCo\CommerceJson\Tests\Unit\Http;
 
+use GeekCo\CommerceJson\Enums\OrderStatusEnum;
 use GeekCo\CommerceJson\Http\Client\CommerceJsonHttpClient;
 use GeekCo\CommerceJson\Http\Client\Dto\Response\ResponseDto;
 use GeekCo\CommerceJson\Http\Client\Exceptions\AuthenticationException;
@@ -140,14 +141,14 @@ class CommerceJsonHttpClientTest extends TestCase
     public function test_patch_request_updates_resource(): void
     {
         $orderId = $this->createTestUuid();
-        $mockResponse = ['id' => $orderId, 'status' => 'confirmed'];
+        $mockResponse = ['id' => $orderId, 'status' => OrderStatusEnum::Confirmed->value];
 
         $this->mockHandler->append(new Response(200, [], json_encode($mockResponse)));
 
-        $response = $this->http->patch("/orders/{$orderId}", ['status' => 'confirmed']);
+        $response = $this->http->patch("/orders/{$orderId}", ['status' => OrderStatusEnum::Confirmed->value]);
 
         $this->assertEquals(200, $response->statusCode);
-        $this->assertEquals('confirmed', $response->data['status']);
+        $this->assertEquals(OrderStatusEnum::Confirmed->value, $response->data['status']);
     }
 
     public function test_delete_request(): void

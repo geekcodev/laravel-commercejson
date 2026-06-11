@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use GeekCo\CommerceJson\Commands\CreateOrderCommand;
+use GeekCo\CommerceJson\Enums\DocumentTypeEnum;
+use GeekCo\CommerceJson\Enums\OrderStatusEnum;
 
 describe('IdempotencyMiddleware', function () {
     it('caches response by X-Idempotency-Key and returns cached on repeat', function () {
@@ -17,7 +19,7 @@ describe('IdempotencyMiddleware', function () {
         $productId = test()->createTestUuid();
 
         $payload = [
-            'document_type' => 'order',
+            'document_type' => DocumentTypeEnum::Order->value,
             'items' => [
                 [
                     'product_id' => $productId,
@@ -45,8 +47,8 @@ describe('IdempotencyMiddleware', function () {
 
     it('does not interfere with different idempotency keys', function () {
         $commandBus = mockCommandBus();
-        $data1 = test()->createOrderData(['status' => 'new']);
-        $data2 = test()->createOrderData(['status' => 'confirmed']);
+        $data1 = test()->createOrderData(['status' => OrderStatusEnum::New->value]);
+        $data2 = test()->createOrderData(['status' => OrderStatusEnum::Confirmed->value]);
 
         $commandBus->shouldReceive('dispatch')
             ->twice()
@@ -54,7 +56,7 @@ describe('IdempotencyMiddleware', function () {
 
         $productId = test()->createTestUuid();
         $payload = [
-            'document_type' => 'order',
+            'document_type' => DocumentTypeEnum::Order->value,
             'items' => [
                 ['product_id' => $productId, 'quantity' => 1],
             ],
@@ -109,7 +111,7 @@ describe('IdempotencyMiddleware', function () {
 
         $response1 = $this->withHeaders(['X-Idempotency-Key' => $idempotencyKey])
             ->postJson('/api/commercejson/orders', [
-                'document_type' => 'order',
+                'document_type' => DocumentTypeEnum::Order->value,
                 'items' => [['product_id' => $productId, 'quantity' => 1]],
             ]);
         $response1->assertStatus(201);
@@ -119,16 +121,16 @@ describe('IdempotencyMiddleware', function () {
         // and the handler will be called again. Not a 409, just normal operation.
         $commandBus->shouldReceive('dispatch')
             ->once()
-            ->andReturn(test()->createOrderData(['status' => 'confirmed']));
+            ->andReturn(test()->createOrderData(['status' => OrderStatusEnum::Confirmed->value]));
 
         $response2 = $this->withHeaders(['X-Idempotency-Key' => $idempotencyKey])
             ->postJson('/api/commercejson/orders', [
-                'document_type' => 'order',
+                'document_type' => DocumentTypeEnum::Order->value,
                 'items' => [['product_id' => $productId, 'quantity' => 2]],
             ]);
 
         $response2->assertStatus(201);
-        expect($response2->json('status'))->toEqual('confirmed');
+        expect($response2->json('status'))->toEqual(OrderStatusEnum::Confirmed->value);
     });
 
     it('does not cache error responses (5xx)', function () {
@@ -141,7 +143,7 @@ describe('IdempotencyMiddleware', function () {
             ->andThrow(new RuntimeException('Internal error'));
 
         $payload = [
-            'document_type' => 'order',
+            'document_type' => DocumentTypeEnum::Order->value,
             'items' => [['product_id' => $productId, 'quantity' => 1]],
         ];
 
@@ -158,7 +160,7 @@ describe('IdempotencyMiddleware', function () {
     it('works without X-Idempotency-Key header (no caching)', function () {
         $commandBus = mockCommandBus();
         $data1 = test()->createOrderData();
-        $data2 = test()->createOrderData(['status' => 'confirmed']);
+        $data2 = test()->createOrderData(['status' => OrderStatusEnum::Confirmed->value]);
 
         $commandBus->shouldReceive('dispatch')
             ->twice()
@@ -166,7 +168,7 @@ describe('IdempotencyMiddleware', function () {
 
         $productId = test()->createTestUuid();
         $payload = [
-            'document_type' => 'order',
+            'document_type' => DocumentTypeEnum::Order->value,
             'items' => [['product_id' => $productId, 'quantity' => 1]],
         ];
 
@@ -177,6 +179,6 @@ describe('IdempotencyMiddleware', function () {
         $response2 = $this->postJson('/api/commercejson/orders', $payload);
         $response2->assertStatus(201);
 
-        expect($response2->json('status'))->toEqual('confirmed');
+        expect($response2->json('status'))->toEqual(OrderStatusEnum::Confirmed->value);
     });
 });

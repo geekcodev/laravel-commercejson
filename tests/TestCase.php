@@ -16,6 +16,7 @@ use GeekCo\CommerceJson\Data\WarehouseData;
 use GeekCo\CommerceJson\Database\Seeders\PriceTypeSeeder;
 use GeekCo\CommerceJson\Database\Seeders\WarehouseSeeder;
 use GeekCo\CommerceJson\Enums\CurrencyEnum;
+use GeekCo\CommerceJson\Enums\OrderStatusEnum;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Support\Str;
 use Orchestra\Testbench\TestCase as BaseTestCase;
@@ -206,7 +207,7 @@ abstract class TestCase extends BaseTestCase
         return OrderData::factory()->from([
             'id' => $attributes['id'] ?? $this->createTestUuid(),
             'number' => $attributes['number'] ?? 'ORD-001',
-            'status' => $attributes['status'] ?? 'new',
+            'status' => $attributes['status'] ?? OrderStatusEnum::New->value,
             'items' => $attributes['items'] ?? [
                 [
                     'id' => $this->createTestUuid(),

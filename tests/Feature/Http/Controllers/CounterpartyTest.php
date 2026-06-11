@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use GeekCo\CommerceJson\Enums\CounterpartyTypeEnum;
 use GeekCo\CommerceJson\Models\Counterparty;
 use GeekCo\CommerceJson\Queries\GetCounterpartiesQuery;
 use GeekCo\CommerceJson\Queries\GetCounterpartyQuery;
@@ -17,7 +18,7 @@ describe('CounterpartyController', function () {
                 Counterparty::factory()->make([
                     'id' => test()->createTestUuid(),
                     'name' => 'Test Company',
-                    'type' => 'legal_entity',
+                    'type' => CounterpartyTypeEnum::LegalEntity->value,
                     'inn' => '1234567890',
                 ]),
             ]));
@@ -48,7 +49,7 @@ describe('CounterpartyController', function () {
             $model = Counterparty::factory()->make([
                 'id' => $id,
                 'name' => 'Test Company',
-                'type' => 'legal_entity',
+                'type' => CounterpartyTypeEnum::LegalEntity->value,
                 'inn' => '1234567890',
             ]);
 
@@ -59,7 +60,7 @@ describe('CounterpartyController', function () {
             $response = $this->postJson('/api/commercejson/counterparties', [
                 'id' => $id,
                 'name' => 'Test Company',
-                'type' => 'legal_entity',
+                'type' => CounterpartyTypeEnum::LegalEntity->value,
                 'inn' => '1234567890',
             ]);
 
@@ -85,7 +86,7 @@ describe('CounterpartyController', function () {
             $response = $this->postJson('/api/commercejson/counterparties', [
                 'id' => test()->createTestUuid(),
                 'name' => 'Test',
-                'type' => 'legal_entity',
+                'type' => CounterpartyTypeEnum::LegalEntity->value,
                 'price_type_id' => test()->createTestUuid(),
             ]);
 
@@ -106,7 +107,7 @@ describe('CounterpartyController', function () {
             $model = Counterparty::factory()->make([
                 'id' => $id,
                 'name' => 'Test Company',
-                'type' => 'legal_entity',
+                'type' => CounterpartyTypeEnum::LegalEntity->value,
             ]);
 
             $queryBus->shouldReceive('ask')

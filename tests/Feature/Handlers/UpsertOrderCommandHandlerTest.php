@@ -6,6 +6,7 @@ use GeekCo\CommerceJson\Commands\UpsertOrderCommand;
 use GeekCo\CommerceJson\Data\OrderData;
 use GeekCo\CommerceJson\Data\OrderDeliveryTrackData;
 use GeekCo\CommerceJson\Enums\CurrencyEnum;
+use GeekCo\CommerceJson\Enums\DocumentTypeEnum;
 use GeekCo\CommerceJson\Enums\OrderStatusEnum;
 use GeekCo\CommerceJson\Handlers\Commands\UpsertOrderCommandHandler;
 use GeekCo\CommerceJson\Models\Order;
@@ -18,7 +19,7 @@ describe('UpsertOrderCommandHandler', function () {
         $orderData = OrderData::from([
             'id' => $orderId,
             'status' => OrderStatusEnum::New,
-            'document_type' => 'order',
+            'document_type' => DocumentTypeEnum::Order->value,
             'items' => [
                 [
                     'id' => test()->createTestUuid(),
@@ -42,11 +43,11 @@ describe('UpsertOrderCommandHandler', function () {
 
         expect($result)->toBeInstanceOf(Order::class);
         expect($result->id)->toBe($orderId);
-        expect($result->status->value)->toBe('new');
+        expect($result->status->value)->toBe(OrderStatusEnum::New->value);
 
         test()->assertDatabaseHas('orders', [
             'id' => $orderId,
-            'status' => 'new',
+            'status' => OrderStatusEnum::New->value,
             'number' => 'ORD-TEST-001',
         ]);
     });
@@ -61,7 +62,7 @@ describe('UpsertOrderCommandHandler', function () {
         $orderData = OrderData::from([
             'id' => $order->id,
             'status' => OrderStatusEnum::Confirmed,
-            'document_type' => 'order',
+            'document_type' => DocumentTypeEnum::Order->value,
             'number' => 'ORD-SHOULD-NOT-CHANGE',
             'items' => [
                 [
@@ -83,7 +84,7 @@ describe('UpsertOrderCommandHandler', function () {
 
         $result = $handler->handle(new UpsertOrderCommand($orderData));
 
-        expect($result->status->value)->toBe('confirmed');
+        expect($result->status->value)->toBe(OrderStatusEnum::Confirmed->value);
         expect($result->number)->toBe($originalNumber);
     });
 
@@ -93,7 +94,7 @@ describe('UpsertOrderCommandHandler', function () {
         $orderData = OrderData::from([
             'id' => $orderId,
             'status' => OrderStatusEnum::New,
-            'document_type' => 'order',
+            'document_type' => DocumentTypeEnum::Order->value,
             'items' => [
                 [
                     'id' => test()->createTestUuid(),

@@ -2,8 +2,10 @@
 
 declare(strict_types=1);
 
+use GeekCo\CommerceJson\Enums\CounterpartyTypeEnum;
 use GeekCo\CommerceJson\Enums\CurrencyEnum;
 use GeekCo\CommerceJson\Enums\OrderStatusEnum;
+use GeekCo\CommerceJson\Enums\PropertyTypeEnum;
 use GeekCo\CommerceJson\Models\Category;
 use GeekCo\CommerceJson\Models\Counterparty;
 use GeekCo\CommerceJson\Models\Offer;
@@ -116,11 +118,11 @@ describe('OrderRepository', function () {
 
 describe('CounterpartyRepository', function () {
     it('finds counterparties by type', function () {
-        Counterparty::factory(2)->create(['type' => 'legal_entity']);
-        Counterparty::factory()->create(['type' => 'individual']);
+        Counterparty::factory(2)->create(['type' => CounterpartyTypeEnum::LegalEntity->value]);
+        Counterparty::factory()->create(['type' => CounterpartyTypeEnum::Individual->value]);
 
         $repo = new CounterpartyRepository(new Counterparty);
-        $found = $repo->findByType('legal_entity');
+        $found = $repo->findByType(CounterpartyTypeEnum::LegalEntity->value);
 
         expect($found)->toHaveCount(2);
     });
@@ -210,7 +212,7 @@ describe('PropertyDefinitionRepository', function () {
         $created = $repo->create([
             'id' => test()->createTestUuid(),
             'name' => 'Color',
-            'type' => 'string',
+            'type' => PropertyTypeEnum::String->value,
         ]);
 
         $found = $repo->find($created->id);
