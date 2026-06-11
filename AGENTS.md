@@ -161,7 +161,7 @@ class ProductData extends Data
 - Модель → DTO: `ProductData::from($model)`
 - Коллекция → DTO collection: `ProductData::collect($collection, DataCollection::class)`
 
-### Файлы DTO (49 в `src/Data/`)
+### Файлы DTO (46 в `src/Data/`)
 
 | Категория | Файлы                                                                                                                                                                                                      |
 |-----------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -395,7 +395,7 @@ ExchangeManager → ProductImporter / OrderImporter / ClassifierImporter / Order
 ## Тестирование
 
 ```bash
-docker compose exec app vendor/bin/pest                              # Запуск всех тестов (Pest v3.8, 49 тестов, 230 assertions)
+docker compose exec app vendor/bin/pest                              # Запуск всех тестов (Pest v3.8, 119 тестов, 869 assertions)
 docker compose exec app vendor/bin/pest --parallel                   # Параллельный запуск
 docker compose exec app vendor/bin/phpstan analyse                   # PHPStan (локально)
 docker compose exec app vendor/bin/phpstan analyse --error-format=github  # PHPStan (как в CI — обязателен перед push)
@@ -519,18 +519,56 @@ docker compose exec app vendor/bin/pint --test                       # Pint то
 - **Исправлены** `OfferPrice::$fillable` и `Stock::$fillable` — добавлено `'id'` (не проходил mass
   assignment)
 - **Новые тесты (75):**
-  - `TrimmedEnumCastTest` (5) — обрезка пробелов/tabs/newlines/null
-  - `CounterpartyDataTest` (10) — `fromModel`: адреса, кредитный лимит, relations, auto‑discovery
-  - `CounterpartyController` (2) — 404 GET, 422 POST FK violation
-  - `CreateCounterpartyCommandHandlerTest` (1) — unit с mock репозитория
-  - `UpsertProductCommandHandlerTest` (3) — create/update/flat attributes (integration)
-  - `UpsertOrderCommandHandlerTest` (3) — create/update без перезаписи номера/delivery tracking
-  - `BulkUpsertOrderCommandHandlerTest` (5) — create/update/опциональные items/replace items
-  - `RepositoryTest` (18) — custom методы, базовый CRUD, soft delete, eager pagination (10 репозиториев)
-  - `OkeiEnumTest` (11) — fromCode/tryFromCode/isValidCode/getters/локализация/JSON/uniqueness
-  - `CurrencyEnumTest` (8) — values/числовые коды/локализация/JSON/all cases valid
-  - `OrderController` PATCH (1) — 422 FK violation
+    - `TrimmedEnumCastTest` (5) — обрезка пробелов/tabs/newlines/null
+    - `CounterpartyDataTest` (10) — `fromModel`: адреса, кредитный лимит, relations, auto‑discovery
+    - `CounterpartyController` (2) — 404 GET, 422 POST FK violation
+    - `CreateCounterpartyCommandHandlerTest` (1) — unit с mock репозитория
+    - `UpsertProductCommandHandlerTest` (3) — create/update/flat attributes (integration)
+    - `UpsertOrderCommandHandlerTest` (3) — create/update без перезаписи номера/delivery tracking
+    - `BulkUpsertOrderCommandHandlerTest` (5) — create/update/опциональные items/replace items
+    - `RepositoryTest` (18) — custom методы, базовый CRUD, soft delete, eager pagination (10 репозиториев)
+    - `OkeiEnumTest` (11) — fromCode/tryFromCode/isValidCode/getters/локализация/JSON/uniqueness
+    - `CurrencyEnumTest` (8) — values/числовые коды/локализация/JSON/all cases valid
+    - `OrderController` PATCH (1) — 422 FK violation
 - **119 тестов (868 assertions), PHPStan 0 errors, Pint clean**
+
+### Сессия 8 — Enum ISO-обновление, DTO реордер Carbon-fix, handler-рефакторинг, IdempotencyMiddleware
+
+- **CurrencyEnum:** обновлены устаревшие коды ISO 4217 (BYR→BYN, MRO→MRU, STD→STN, VEF→VES), удалён HRK
+- **DocumentTypeEnum/CurrencyEnum:** fallback `$this->name` → `$this->value` в `getLocalizedName()`
+- **DTO реордер:** required-поля вынесены перед optional во всех DTO (best practice)
+- **Carbon-поля:** убран `#[StringType]` со всех `?Carbon $field` (конфликт с DateTimeInterfaceCast)
+- **Новые DTO:** `LinkedDocumentData`, `ProductComponentData`, `RepresentativeData`, `WarehouseImportData`
+- **Типизация enum в DTO:** `ContactData::$type` → `ContactTypeEnum`, `OrderCreateData::$document_type` →
+  `DocumentTypeEnum`, `PropertyDefinitionData::$name` → `LocalizedStringData|string`
+- **DataCollectionOf:** добавлен к `linked_documents`, `components`, `representatives`, `errors`, `prices`, `stocks`
+- **Handler-рефакторинг:**
+    - `UpsertOfferCommandHandler` — синхронизирует prices/stocks через репозитории (ранее не сохранялись)
+    - `CreateOrderCommandHandler` — бизнес-логика перенесена из контроллера (генерация номера, totals, id)
+    - `DeleteProductCommandHandler`/`UpdateOrderCommandHandler` — `findOrFail` по строковому id вместо инъекции модели
+    - `UpsertProductCommandHandler` — компоненты типизированы как `ProductComponentData`
+    - `UpsertCategoryCommandHandler` — защита от самоссылающегося parent_id
+    - Имена свойств хендлеров приведены к `camelCase` по AGENTS.md (`$orderRepository` etc.)
+- **Repository pattern enforcement:** `Stock::updateOrCreate()` → `StockRepository`, `OfferPrice::updateOrCreate()` →
+  `OfferPriceRepository`
+- **Новые репозитории:** `OfferPriceRepository`, `StockRepository` (+ регистрация в ServiceProvider)
+- **`OfferRepository::paginate()`** — eager load `prices`, `stocks`
+- **`IdempotencyMiddleware`** — полностью реализован и подключен ко всем POST/PATCH/DELETE роутам
+- **Rate limiting:** `throttle` middleware на auth-роутах (config `rate_limit`/`rate_limit_decay`)
+- **Pagination format:** все list-эндпоинты переведены на `{entity, pagination: {page, limit, total, has_next}}` +
+  query-параметр `limit`
+- **ForeignKeyViolationException:** добавлена поддержка SQLite (regex `CONSTRAINT \`...\`` + код `23000`)
+- **`Product::setRelationForApi()`** — форматирование `analogues`/`components` для API-вывода
+- **`Counterparty`:** добавлен `@property` PHPDoc (PHPStan 0 errors)
+- **`OfferPrice`:** добавлены `$appends` + accessors `price`, `price_with_discount`, `unit` + `@property` PHPDoc
+- **`SyncFullJob`/`SyncIncrementalJob`:** удалены дублирующие события SyncStarted/SyncCompleted (теперь только в
+  ExchangeManager)
+- **`ExchangeManager`:** события только для синхронного режима (не для очереди)
+- **Конфиг:** добавлены `api_routes.rate_limit`/`rate_limit_decay`, `idempotency.ttl`/`store`
+- **`composer.json`:** `larastan/larastan ^3.10`, `phpstan/phpstan ^2.2`, исправлена индентация
+- **`phpstan.neon`:** добавлен `vendor/larastan/larastan/extension.neon`
+- **Обновлён `CommerceJsonHttpClientTest`:** хардкодные строки статусов → `OrderStatusEnum`
+- **119 тестов (869 assertions), Pint clean, PHPStan clean (0 errors)**
 
 ---
 
@@ -542,10 +580,10 @@ docker compose exec app vendor/bin/pint --test                       # Pint то
 | `src/routes/api.php`                                      | Определения роутов                                               |
 | `src/CommerceJsonServiceProvider.php`                     | Service provider с Bus::map() и QueryBus                         |
 | `src/config/commercejson.php`                             | Конфигурация пакета                                              |
-| `src/Http/Controllers/`                                   | 7 контроллеров + HandshakeController                             |
+| `src/Http/Controllers/`                                   | 6 контроллеров + HandshakeController                             |
 | `src/Data/`                                               | 46 DTO (Spatie Laravel Data v4)                                  |
 | `src/Models/`                                             | 23 Eloquent-модели                                               |
-| `src/Repositories/`                                       | RepositoryInterface + 8 реализаций                               |
+| `src/Repositories/`                                       | RepositoryInterface + 10 реализаций                              |
 | `src/Exchange/`                                           | Координация синхронизации (импортёры, экспортёры, jobs, команды) |
 | `tests/TestCase.php`                                      | Testbench bootstrap                                              |
 | `tests/Pest.php`                                          | Глобальные хелперы и конфигурация                                |
