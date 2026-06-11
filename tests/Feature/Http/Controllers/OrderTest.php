@@ -7,6 +7,7 @@ use GeekCo\CommerceJson\Enums\CurrencyEnum;
 use GeekCo\CommerceJson\Models\Order;
 use GeekCo\CommerceJson\Queries\GetOrderQuery;
 use GeekCo\CommerceJson\Queries\GetOrdersQuery;
+use Illuminate\Database\QueryException;
 
 describe('OrderController', function () {
     describe('GET /orders', function () {
@@ -132,6 +133,43 @@ describe('OrderController', function () {
                 ->assertJson([
                     'id' => $orderId,
                     'status' => 'confirmed',
+                ]);
+        });
+
+        it('returns 422 on foreign key violation', function () {
+            $commandBus = mockCommandBus();
+            $orderId = test()->createTestUuid();
+
+            $commandBus->shouldReceive('dispatch')
+                ->once()
+                ->andThrow(new QueryException(
+                    'mysql',
+                    'UPDATE orders SET ...',
+                    [],
+                    new Exception('SQLSTATE[23000]: Integrity constraint violation')
+                ));
+
+            $response = $this->patchJson("/api/commercejson/orders/{$orderId}", [
+                'id' => $orderId,
+                'status' => 'confirmed',
+                'items' => [
+                    [
+                        'id' => test()->createTestUuid(),
+                        'product_id' => test()->createTestUuid(),
+                        'quantity' => 1,
+                        'price' => ['amount' => '100.00', 'currency' => CurrencyEnum::RUB->value],
+                        'total' => ['amount' => '100.00', 'currency' => CurrencyEnum::RUB->value],
+                    ],
+                ],
+                'totals' => [
+                    'subtotal' => ['amount' => '100.00', 'currency' => CurrencyEnum::RUB->value],
+                    'total' => ['amount' => '100.00', 'currency' => CurrencyEnum::RUB->value],
+                ],
+            ]);
+
+            $response->assertStatus(422)
+                ->assertJsonStructure([
+                    'error' => ['code', 'message'],
                 ]);
         });
     });

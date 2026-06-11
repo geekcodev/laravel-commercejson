@@ -44,6 +44,7 @@ class OfferPrice extends Model
     ];
 
     protected $fillable = [
+        'id',
         'offer_id',
         'price_type_id',
         'price_amount',

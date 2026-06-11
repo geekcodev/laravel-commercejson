@@ -504,6 +504,34 @@ docker compose exec app vendor/bin/pint --test                       # Pint то
 - AGENTS.md: известные проблемы пусты (мёртвого кода нет)
 - 49 тестов (230 assertions), PHPStan 0 errors, Pint clean
 
+### Сессия 7 — Массовое расширение тестов (75 новых тестов)
+
+- **`CounterpartyData`:** реализован метод `fromModel(Counterparty $model): static` — маппинг плоских
+  скалярных полей, сборка `AddressData`/`MoneyData` из денормализованных колонок, загрузка relations
+  через `DataCollection`
+- **TrimmedEnumCast:** исправлена сигнатура `castValue()` — `mixed $property` → `DataProperty $property`,
+  return type `BackedEnum|Uncastable`
+- **Удалён** мёртвый хелпер `createCounterpartyData()` из `tests/TestCase.php`
+- **Контроллер `CounterpartyController`:** переписан на `CounterpartyData::collect()` / `::from()`
+  (Spatie Data v4 auto‑discover `fromModel`); добавлен `collect(...)->all()` для нормализации `items()`
+- **Добавлен** `#[WithCast(TrimmedEnumCast::class, OkeiEnum::class)]` в `UnitData::code`
+- **Добавлен** `@property` PHPDoc в модель `Counterparty` — PHPStan 0 errors
+- **Исправлены** `OfferPrice::$fillable` и `Stock::$fillable` — добавлено `'id'` (не проходил mass
+  assignment)
+- **Новые тесты (75):**
+  - `TrimmedEnumCastTest` (5) — обрезка пробелов/tabs/newlines/null
+  - `CounterpartyDataTest` (10) — `fromModel`: адреса, кредитный лимит, relations, auto‑discovery
+  - `CounterpartyController` (2) — 404 GET, 422 POST FK violation
+  - `CreateCounterpartyCommandHandlerTest` (1) — unit с mock репозитория
+  - `UpsertProductCommandHandlerTest` (3) — create/update/flat attributes (integration)
+  - `UpsertOrderCommandHandlerTest` (3) — create/update без перезаписи номера/delivery tracking
+  - `BulkUpsertOrderCommandHandlerTest` (5) — create/update/опциональные items/replace items
+  - `RepositoryTest` (18) — custom методы, базовый CRUD, soft delete, eager pagination (10 репозиториев)
+  - `OkeiEnumTest` (11) — fromCode/tryFromCode/isValidCode/getters/локализация/JSON/uniqueness
+  - `CurrencyEnumTest` (8) — values/числовые коды/локализация/JSON/all cases valid
+  - `OrderController` PATCH (1) — 422 FK violation
+- **119 тестов (868 assertions), PHPStan 0 errors, Pint clean**
+
 ---
 
 ## Ключевые файлы
