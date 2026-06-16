@@ -17,4 +17,12 @@ class OrderRepository extends BaseRepository
     {
         return $this->model->where('status', $status)->get()->toArray();
     }
+
+    public function findByExternalId(string $externalId): ?Order
+    {
+        /** @var Order|null $order */
+        $order = $this->model->where('external_id', $externalId)->first();
+
+        return $order;
+    }
 }

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use GeekCo\CommerceJson\Commands\UpsertCounterpartyCommand;
 use GeekCo\CommerceJson\Enums\CounterpartyTypeEnum;
 use GeekCo\CommerceJson\Models\Counterparty;
 use GeekCo\CommerceJson\Queries\GetCounterpartiesQuery;
@@ -43,35 +44,38 @@ describe('CounterpartyController', function () {
     });
 
     describe('POST /counterparties', function () {
-        it('creates a counterparty and returns 201', function () {
+        it('creates counterparties via batch upsert and returns ImportResult', function () {
             $commandBus = mockCommandBus();
             $id = test()->createTestUuid();
-            $model = Counterparty::factory()->make([
-                'id' => $id,
-                'name' => 'Test Company',
-                'type' => CounterpartyTypeEnum::LegalEntity->value,
-                'inn' => '1234567890',
-            ]);
 
             $commandBus->shouldReceive('dispatch')
                 ->once()
-                ->andReturn($model);
+                ->with(Mockery::type(UpsertCounterpartyCommand::class))
+                ->andReturn(null);
 
             $response = $this->postJson('/api/commercejson/counterparties', [
-                'id' => $id,
-                'name' => 'Test Company',
-                'type' => CounterpartyTypeEnum::LegalEntity->value,
-                'inn' => '1234567890',
+                'counterparties' => [
+                    [
+                        'id' => $id,
+                        'name' => 'Test Company',
+                        'type' => CounterpartyTypeEnum::LegalEntity->value,
+                        'inn' => '1234567890',
+                    ],
+                ],
             ]);
 
-            $response->assertStatus(201)
+            $response->assertStatus(200)
+                ->assertJsonStructure([
+                    'success', 'processed', 'errors',
+                ])
                 ->assertJson([
-                    'id' => $id,
-                    'name' => 'Test Company',
+                    'success' => true,
+                    'processed' => 1,
+                    'errors' => [],
                 ]);
         });
 
-        it('returns 422 on foreign key violation', function () {
+        it('returns errors on foreign key violation', function () {
             $commandBus = mockCommandBus();
 
             $commandBus->shouldReceive('dispatch')
@@ -84,18 +88,23 @@ describe('CounterpartyController', function () {
                 ));
 
             $response = $this->postJson('/api/commercejson/counterparties', [
-                'id' => test()->createTestUuid(),
-                'name' => 'Test',
-                'type' => CounterpartyTypeEnum::LegalEntity->value,
-                'price_type_id' => test()->createTestUuid(),
+                'counterparties' => [
+                    [
+                        'id' => test()->createTestUuid(),
+                        'name' => 'Test',
+                        'type' => CounterpartyTypeEnum::LegalEntity->value,
+                        'price_type_id' => test()->createTestUuid(),
+                    ],
+                ],
             ]);
 
-            $response->assertStatus(422)
-                ->assertJsonStructure([
-                    'error' => ['code', 'message'],
-                ])
+            $response->assertStatus(200)
                 ->assertJson([
-                    'error' => ['code' => 'FOREIGN_KEY_VIOLATION'],
+                    'success' => false,
+                    'processed' => 0,
+                ])
+                ->assertJsonStructure([
+                    'success', 'processed', 'errors' => [['code', 'message']],
                 ]);
         });
     });

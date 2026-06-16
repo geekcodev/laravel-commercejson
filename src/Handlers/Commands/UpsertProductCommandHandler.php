@@ -32,10 +32,17 @@ class UpsertProductCommandHandler implements CommandHandlerInterface
         $data = $command->productData;
 
         return DB::transaction(function () use ($data) {
-            $product = $this->repository->updateOrCreate(
-                ['id' => $data->id],
-                $this->buildFlatAttributes($data)
-            );
+            $product = $this->repository->find($data->id);
+
+            if (! $product && $data->external_id !== null) {
+                $product = $this->repository->findByExternalId($data->external_id);
+            }
+
+            if ($product) {
+                $product->update($this->buildFlatAttributes($data));
+            } else {
+                $product = $this->repository->create($this->buildFlatAttributes($data));
+            }
 
             assert($product instanceof Product);
 

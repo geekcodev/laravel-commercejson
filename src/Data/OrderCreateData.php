@@ -7,6 +7,7 @@ namespace GeekCo\CommerceJson\Data;
 use GeekCo\CommerceJson\Enums\CurrencyEnum;
 use GeekCo\CommerceJson\Enums\DocumentTypeEnum;
 use GeekCo\CommerceJson\Enums\PartyRoleEnum;
+use Illuminate\Validation\Validator;
 use Spatie\LaravelData\Attributes\DataCollectionOf;
 use Spatie\LaravelData\Attributes\Validation\ArrayType;
 use Spatie\LaravelData\Attributes\Validation\Enum;
@@ -50,4 +51,19 @@ class OrderCreateData extends Data
         #[Nullable, ArrayType, DataCollectionOf(SignatoryData::class)]
         public ?array $signatories = null,
     ) {}
+
+    public static function withValidator(Validator $validator): void
+    {
+        $data = $validator->getData();
+
+        $docType = $data['document_type'] ?? null;
+        if ($docType === 'order' || (is_object($docType) && method_exists($docType, 'value') && $docType->value === 'order')) {
+            if (empty($data['delivery'] ?? null)) {
+                $validator->errors()->add('delivery', 'Delivery is required for document_type=order');
+            }
+            if (empty($data['payment'] ?? null)) {
+                $validator->errors()->add('payment', 'Payment is required for document_type=order');
+            }
+        }
+    }
 }

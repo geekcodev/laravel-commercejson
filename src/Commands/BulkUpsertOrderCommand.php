@@ -10,7 +10,7 @@ use GeekCo\CommerceJson\Enums\OrderStatusEnum;
 class BulkUpsertOrderCommand extends Command
 {
     public function __construct(
-        public string $id,
+        public ?string $id = null,
         public ?string $external_id = null,
         public ?OrderStatusEnum $status = null,
         public ?string $comment = null,

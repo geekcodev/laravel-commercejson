@@ -12,9 +12,11 @@ use GeekCo\CommerceJson\Data\ImportResultData;
 use GeekCo\CommerceJson\Data\OfferData;
 use GeekCo\CommerceJson\Data\OfferImportData;
 use GeekCo\CommerceJson\Data\PriceTypeData;
+use GeekCo\CommerceJson\Data\WarehouseData;
 use GeekCo\CommerceJson\Exceptions\ForeignKeyViolationException;
 use GeekCo\CommerceJson\Queries\GetOffersQuery;
 use GeekCo\CommerceJson\Queries\GetPriceTypesQuery;
+use GeekCo\CommerceJson\Queries\GetWarehousesQuery;
 use Illuminate\Contracts\Bus\Dispatcher;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
@@ -31,13 +33,17 @@ class OfferController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = new GetOffersQuery(
-            perPage: (int) ($request->input('limit', 15))
+            perPage: (int) ($request->input('limit', 15)),
+            price_type_id: $request->input('price_type_id'),
+            warehouse_id: $request->input('warehouse_id'),
+            updated_after: $request->input('updated_after'),
+            include_deleted: $request->boolean('include_deleted', false),
         );
         $offers = $this->queryBus->ask($query);
 
         $items = OfferData::collect($offers->items(), DataCollection::class);
 
-        return response()->json([
+        $response = [
             'offers' => $items,
             'pagination' => [
                 'page' => $offers->currentPage(),
@@ -45,7 +51,20 @@ class OfferController extends Controller
                 'total' => $offers->total(),
                 'has_next' => $offers->currentPage() < $offers->lastPage(),
             ],
-        ]);
+        ];
+
+        if ($offers->currentPage() === 1) {
+            $response['price_types'] = PriceTypeData::collect(
+                $this->queryBus->ask(new GetPriceTypesQuery),
+                DataCollection::class
+            );
+            $response['warehouses'] = WarehouseData::collect(
+                $this->queryBus->ask(new GetWarehousesQuery),
+                DataCollection::class
+            );
+        }
+
+        return response()->json($response);
     }
 
     public function store(Request $request): JsonResponse

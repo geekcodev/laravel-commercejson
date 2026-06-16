@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace GeekCo\CommerceJson\Repositories;
 
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 
@@ -57,5 +58,10 @@ abstract class BaseRepository implements RepositoryInterface
     public function updateOrCreate(array $attributes, array $values = []): Model
     {
         return $this->model->updateOrCreate($attributes, $values);
+    }
+
+    public function newQuery(): Builder
+    {
+        return $this->model->newQuery();
     }
 }

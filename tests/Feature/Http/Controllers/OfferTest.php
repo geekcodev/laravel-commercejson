@@ -5,6 +5,7 @@ declare(strict_types=1);
 use GeekCo\CommerceJson\Commands\UpsertOfferCommand;
 use GeekCo\CommerceJson\Queries\GetOffersQuery;
 use GeekCo\CommerceJson\Queries\GetPriceTypesQuery;
+use GeekCo\CommerceJson\Queries\GetWarehousesQuery;
 
 describe('OfferController', function () {
     describe('GET /offers', function () {
@@ -22,8 +23,21 @@ describe('OfferController', function () {
 
             $queryBus->shouldReceive('ask')
                 ->once()
+                ->ordered()
                 ->with(Mockery::type(GetOffersQuery::class))
                 ->andReturn($mockResult);
+
+            $queryBus->shouldReceive('ask')
+                ->once()
+                ->ordered()
+                ->with(Mockery::type(GetPriceTypesQuery::class))
+                ->andReturn(collect([test()->createPriceTypeData()]));
+
+            $queryBus->shouldReceive('ask')
+                ->once()
+                ->ordered()
+                ->with(Mockery::type(GetWarehousesQuery::class))
+                ->andReturn(collect([test()->createWarehouseData()]));
 
             $response = $this->getJson('/api/commercejson/offers');
 
@@ -31,6 +45,8 @@ describe('OfferController', function () {
                 ->assertJsonStructure([
                     'offers' => [['product_id', 'prices']],
                     'pagination' => ['page', 'limit', 'total', 'has_next'],
+                    'price_types',
+                    'warehouses',
                 ]);
         });
     });

@@ -6,6 +6,7 @@ namespace GeekCo\CommerceJson\Data;
 
 use Carbon\Carbon;
 use GeekCo\CommerceJson\Enums\DeliveryMethodEnum;
+use Illuminate\Validation\Validator;
 use Spatie\LaravelData\Attributes\Validation\Enum;
 use Spatie\LaravelData\Attributes\Validation\Nullable;
 use Spatie\LaravelData\Attributes\Validation\Required;
@@ -32,4 +33,20 @@ class OrderDeliveryData extends Data
         #[Nullable]
         public ?Carbon $estimated_date = null,
     ) {}
+
+    public static function withValidator(Validator $validator): void
+    {
+        $data = $validator->getData();
+
+        $type = $data['type'] ?? null;
+        if (is_object($type) && method_exists($type, 'value')) {
+            $type = $type->value;
+        }
+
+        $requiresAddress = in_array($type, ['courier', 'post', 'transport_company'], true);
+
+        if ($requiresAddress && empty($data['address'] ?? null)) {
+            $validator->errors()->add('address', 'Address is required for delivery type '.($type ?? 'unknown'));
+        }
+    }
 }

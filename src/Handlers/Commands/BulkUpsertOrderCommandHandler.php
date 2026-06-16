@@ -30,6 +30,10 @@ class BulkUpsertOrderCommandHandler implements CommandHandlerInterface
         return DB::transaction(function () use ($command) {
             $existing = $this->orderRepository->find($command->id);
 
+            if (! $existing instanceof Order && $command->external_id !== null) {
+                $existing = $this->orderRepository->findByExternalId($command->external_id);
+            }
+
             if ($existing instanceof Order) {
                 return $this->updateExisting($existing, $command);
             }
@@ -41,7 +45,7 @@ class BulkUpsertOrderCommandHandler implements CommandHandlerInterface
     private function createNew(BulkUpsertOrderCommand $command): Order
     {
         $order = $this->orderRepository->create([
-            'id' => $command->id,
+            'id' => $command->id ?? (string) Str::uuid(),
             'number' => 'ORD-'.date('Ymd').'-'.Str::upper(Str::random(6)),
             'external_id' => $command->external_id,
             'status' => $command->status ?? OrderStatusEnum::New,

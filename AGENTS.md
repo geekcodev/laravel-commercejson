@@ -161,19 +161,19 @@ class ProductData extends Data
 - Модель → DTO: `ProductData::from($model)`
 - Коллекция → DTO collection: `ProductData::collect($collection, DataCollection::class)`
 
-### Файлы DTO (46 в `src/Data/`)
+### Файлы DTO (48 в `src/Data/`)
 
-| Категория | Файлы                                                                                                                                                                                                      |
-|-----------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Core      | `ClassifierData`, `CategoryData`, `PropertyDefinitionData`, `PriceTypeData`                                                                                                                                |
-| Products  | `ProductData`, `ProductVariantData`, `ProductImageData`, `ProductListData`, `ProductImportData`                                                                                                            |
-| Offers    | `OfferData`, `OfferImportData`, `OfferListData`, `OfferPriceData`, `StockData`                                                                                                                             |
-| Orders    | `OrderData`, `OrderCreateData`, `OrderImportData`, `OrderListData`, `OrderItemData`, `OrderItemCreateData`, `OrderItemUpdateData`, `OrderBulkUpdateItemData`, `OrderDeliveryTrackData`, `OrderItemTaxData` |
-| Customers | `OrderCustomerData`, `OrderDeliveryData`, `OrderPaymentData`, `OrderTotalsData`, `CounterpartyData`, `CounterpartyListData`, `ContactData`, `BankAccountData`                                              |
-| Warehouse | `WarehouseData`, `WarehouseImportData`                                                                                                                                                                     |
-| Common    | `MoneyData`, `AddressData`, `SeoMetaData`, `DimensionsData`, `UnitData`, `ManufacturerData`, `SignatoryData`, `CustomAttributeData`, `PropertyValueData`, `StatusHistoryEntryData`                         |
-| Handshake | `HandshakeResponseData`, `CapabilitiesData`                                                                                                                                                                |
-| Response  | `PaginationData`, `ImportResultData`, `ErrorResponseData`                                                                                                                                                  |
+| Категория | Файлы                                                                                                                                                                                                                                                 |
+|-----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Core      | `ClassifierData`, `CategoryData`, `PropertyDefinitionData`, `PriceTypeData`                                                                                                                                                                           |
+| Products  | `ProductData`, `ProductVariantData`, `ProductImageData`, `ProductListData`, `ProductImportData`                                                                                                                                                       |
+| Offers    | `OfferData`, `OfferImportData`, `OfferListData`, `OfferPriceData`, `StockData`                                                                                                                                                                        |
+| Orders    | `OrderData`, `OrderCreateData`, `OrderImportData`, `OrderListData`, `OrderItemData`, `OrderItemCreateData`, `OrderItemUpdateData`, `OrderBulkUpdateItemData`, `OrderDeliveryTrackData`, `OrderItemTaxData`, `OrderPatchData`, `OrderPatchPaymentData` |
+| Customers | `OrderCustomerData`, `OrderDeliveryData`, `OrderPaymentData`, `OrderTotalsData`, `CounterpartyData`, `CounterpartyListData`, `ContactData`, `BankAccountData`                                                                                         |
+| Warehouse | `WarehouseData`, `WarehouseImportData`                                                                                                                                                                                                                |
+| Common    | `MoneyData`, `AddressData`, `SeoMetaData`, `DimensionsData`, `UnitData`, `ManufacturerData`, `SignatoryData`, `CustomAttributeData`, `PropertyValueData`, `StatusHistoryEntryData`                                                                    |
+| Handshake | `HandshakeResponseData`, `CapabilitiesData`                                                                                                                                                                                                           |
+| Response  | `PaginationData`, `ImportResultData`, `ErrorResponseData`                                                                                                                                                                                             |
 
 ---
 
@@ -236,16 +236,16 @@ class ProductData extends Data
 
 Тонкий слой: валидация Request → создание Command/Query → отправка в Bus → Response.
 
-| Controller                   | Index                              | Show          | Store                             | Update | Destroy     | Bulk               |
-|------------------------------|------------------------------------|---------------|-----------------------------------|--------|-------------|--------------------|
-| `ClassifierController`       | `ClassifierData` через репозитории | —             | `ImportResultData` (batch upsert) | —      | —           | —                  |
-| `ProductController`          | пагинированный список              | `ProductData` | `ProductData` (201)               | —      | soft-delete | —                  |
-| `OfferController`            | пагинированный список              | —             | `OfferData` (201)                 | —      | —           | —                  |
-| `OfferController@priceTypes` | `{price_types: [...]}`             | —             | —                                 | —      | —           | —                  |
-| `OrderController`            | пагинированный список              | `OrderData`   | `OrderData` (201)                 | PATCH  | —           | `ImportResultData` |
-| `CounterpartyController`     | пагинированный список              | одна запись   | 201                               | —      | —           | —                  |
-| `WarehouseController`        | `WarehouseData[]`                  | —             | `ImportResultData`                | —      | —           | —                  |
-| `HandshakeController`        | `HandshakeResponse` (без auth)     | —             | —                                 | —      | —           | —                  |
+| Controller                   | Index                                                          | Show          | Store                             | Update | Destroy     | Bulk               |
+|------------------------------|----------------------------------------------------------------|---------------|-----------------------------------|--------|-------------|--------------------|
+| `ClassifierController`       | `ClassifierData` через репозитории                             | —             | `ImportResultData` (batch upsert) | —      | —           | —                  |
+| `ProductController`          | пагинированный список                                          | `ProductData` | `ProductData` (201)               | —      | soft-delete | —                  |
+| `OfferController`            | пагинированный список (+ `price_types`/`warehouses` на 1 стр.) | —             | `ImportResultData` (200)          | —      | —           | —                  |
+| `OfferController@priceTypes` | `{price_types: [...]}`                                         | —             | —                                 | —      | —           | —                  |
+| `OrderController`            | пагинированный список                                          | `OrderData`   | `OrderData` (201)                 | PATCH  | —           | `ImportResultData` |
+| `CounterpartyController`     | пагинированный список                                          | одна запись   | `ImportResultData` (batch upsert) | —      | —           | —                  |
+| `WarehouseController`        | `WarehouseData[]`                                              | —             | `ImportResultData`                | —      | —           | —                  |
+| `HandshakeController`        | `HandshakeResponse` (без auth)                                 | —             | —                                 | —      | —           | —                  |
 
 ---
 
@@ -269,10 +269,11 @@ interface RepositoryInterface
 
 `BaseRepository` — абстрактная реализация через Eloquent. Специализированные:
 
-- `ProductRepository` (+ `findByCategory()`, `findMany()`)
+- `ProductRepository` (+ `findByCategory()`, `findMany()`, `findByExternalId()`)
 - `CategoryRepository` (+ `findByParent()`)
 - `WarehouseRepository` (+ `allWithTrashed()`)
-- `PriceTypeRepository`, `PropertyDefinitionRepository`, `OfferRepository`, `OrderRepository`, `CounterpartyRepository`
+- `PriceTypeRepository`, `PropertyDefinitionRepository`, `OfferRepository`, `OrderRepository` (+ `findByExternalId()`),
+  `CounterpartyRepository`, `OfferPriceRepository`, `StockRepository`
 
 ---
 
@@ -395,7 +396,7 @@ ExchangeManager → ProductImporter / OrderImporter / ClassifierImporter / Order
 ## Тестирование
 
 ```bash
-docker compose exec app vendor/bin/pest                              # Запуск всех тестов (Pest v3.8, 119 тестов, 869 assertions)
+docker compose exec app vendor/bin/pest                              # Запуск всех тестов (Pest v3.8, 119 тестов, 879 assertions)
 docker compose exec app vendor/bin/pest --parallel                   # Параллельный запуск
 docker compose exec app vendor/bin/phpstan analyse                   # PHPStan (локально)
 docker compose exec app vendor/bin/phpstan analyse --error-format=github  # PHPStan (как в CI — обязателен перед push)
@@ -570,6 +571,33 @@ docker compose exec app vendor/bin/pint --test                       # Pint то
 - **Обновлён `CommerceJsonHttpClientTest`:** хардкодные строки статусов → `OrderStatusEnum`
 - **119 тестов (869 assertions), Pint clean, PHPStan clean (0 errors)**
 
+### Сессия 9 — spec-синхронизация: фильтры, условная валидация, external_id upsert, PATCH Order
+
+- **Upsert по external_id:** `BulkUpsertOrderCommandHandler` и `UpsertProductCommandHandler` ищут по
+  `external_id` если `id` не найден; `BulkUpsertOrderCommand.id` → `?string`; `OrderRepository`/`ProductRepository`
+  добавлены `findByExternalId()`
+- **PATCH /orders/{id}:** Новые `OrderPatchData`, `OrderPatchPaymentData`, `PatchOrderCommand`,
+  `PatchOrderCommandHandler` — частичное обновление статуса, payment, delivery, items (syncItems).
+  `UpdateOrderCommand` удалён из `Bus::map()`
+- **CounterpartyController:** `store()` переписан на пакетный upsert через `UpsertCounterpartyCommand`,
+  возвращает `ImportResult` (200). `CreateCounterpartyCommand` удалён из `Bus::map()`
+- **GET-фильтры из spec:** Во все Query добавлены `updated_after`, `include_deleted`, `category_id`,
+  `is_active`, `price_type_id`, `warehouse_id`, `status`, `document_type`, `type`. Хендлеры применяют
+  через `newQuery()` + `where`
+- **OfferList price_types/warehouses:** `OfferController::index()` возвращает справочники на первой странице
+- **Условная валидация (if/then/anyOf):**
+    - `OrderItemUpdateData` — `withValidator()`: обязателен `id`+`quantity` или `product_id`+`quantity`
+    - `OrderCreateData` — `withValidator()`: `delivery`/`payment` обязательны для `document_type=order`
+    - `OrderDeliveryData` — `withValidator()`: `address` обязателен для courier/post/transport_company
+- **OfferData.prices:** сделан required (non-nullable)
+- **BaseRepository.newQuery():** публичный метод для хендлеров с фильтрацией
+- **Warehouse controller:** `ImportError` включает `id`
+- **HandshakeController:** использует `HandshakeResponseData` DTO
+- **Новые DTO:** `OrderPatchData`, `OrderPatchPaymentData` (итого 48 DTO)
+- **phpstan.neon:** добавлены игноры для `withTrashed()` и nullsafe на левой стороне `??`
+- **Pint:** исправлены 8 style issues (unused imports, braces, strict_types)
+- **119 тестов (879 assertions), PHPStan 0 errors, Pint clean**
+
 ---
 
 ## Ключевые файлы
@@ -581,7 +609,7 @@ docker compose exec app vendor/bin/pint --test                       # Pint то
 | `src/CommerceJsonServiceProvider.php`                     | Service provider с Bus::map() и QueryBus                         |
 | `src/config/commercejson.php`                             | Конфигурация пакета                                              |
 | `src/Http/Controllers/`                                   | 6 контроллеров + HandshakeController                             |
-| `src/Data/`                                               | 46 DTO (Spatie Laravel Data v4)                                  |
+| `src/Data/`                                               | 48 DTO (Spatie Laravel Data v4)                                  |
 | `src/Models/`                                             | 23 Eloquent-модели                                               |
 | `src/Repositories/`                                       | RepositoryInterface + 10 реализаций                              |
 | `src/Exchange/`                                           | Координация синхронизации (импортёры, экспортёры, jobs, команды) |
@@ -589,3 +617,7 @@ docker compose exec app vendor/bin/pint --test                       # Pint то
 | `tests/Pest.php`                                          | Глобальные хелперы и конфигурация                                |
 | `src/Commands/BulkUpsertOrderCommand.php`                 | Bulk-команда для `POST /orders/bulk` (не зависит от `OrderData`) |
 | `src/Handlers/Commands/BulkUpsertOrderCommandHandler.php` | Handler с раздельными create/update путями и опциональными items |
+| `src/Commands/PatchOrderCommand.php`                      | Команда для `PATCH /orders/{id}` (частичное обновление)          |
+| `src/Handlers/Commands/PatchOrderCommandHandler.php`      | Handler с partial update + syncItems                             |
+| `src/Data/OrderPatchData.php`                             | DTO для PATCH /orders/{id}                                       |
+| `src/Data/OrderPatchPaymentData.php`                      | DTO payment для PATCH                                            |

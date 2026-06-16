@@ -61,6 +61,10 @@ parameters:
         - '#Strict comparison using === between.*StreamInterface and null will always evaluate to false#'
         # ResponseDto return type widen
         - '#should return.*ResponseDto<array> but returns.*ResponseDto<array\|object\|null>#'
+        # SoftDeletes withTrashed() on Builder — trait adds mixin that PHPStan doesn't resolve
+        - '#Call to an undefined method.*Builder::withTrashed\(\)#'
+        # Nullsafe on left side of ?? — price is nullable, ?? handles null, PHPStan over-optimizes
+        - '#Using nullsafe \(property access\|method call\) ".*" on left side of \?\? is unnecessary#'
         # RedirectResponse dynamic methods from request() helper
         - '#Call to an undefined method Illuminate\\Http\\RedirectResponse::header\(\)#'
         # Eloquent relation access via property returns Collection, but PHPStan sees array

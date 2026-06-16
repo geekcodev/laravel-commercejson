@@ -21,6 +21,24 @@ class GetOffersQueryHandler implements QueryHandlerInterface
     {
         assert($query instanceof GetOffersQuery);
 
-        return $this->repository->paginate($query->perPage);
+        $qb = $this->repository->newQuery();
+
+        if ($query->price_type_id !== null) {
+            $qb->whereHas('prices', fn ($q) => $q->where('price_type_id', $query->price_type_id));
+        }
+
+        if ($query->warehouse_id !== null) {
+            $qb->whereHas('stocks', fn ($q) => $q->where('warehouse_id', $query->warehouse_id));
+        }
+
+        if ($query->updated_after !== null) {
+            $qb->where('updated_at', '>', $query->updated_after);
+        }
+
+        if ($query->include_deleted) {
+            $qb->withTrashed();
+        }
+
+        return $qb->with(['prices', 'stocks'])->paginate($query->perPage);
     }
 }

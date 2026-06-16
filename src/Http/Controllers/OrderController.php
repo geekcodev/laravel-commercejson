@@ -7,12 +7,13 @@ namespace GeekCo\CommerceJson\Http\Controllers;
 use GeekCo\CommerceJson\Bus\QueryBusInterface;
 use GeekCo\CommerceJson\Commands\BulkUpsertOrderCommand;
 use GeekCo\CommerceJson\Commands\CreateOrderCommand;
-use GeekCo\CommerceJson\Commands\UpdateOrderCommand;
+use GeekCo\CommerceJson\Commands\PatchOrderCommand;
 use GeekCo\CommerceJson\Data\ErrorResponseData;
 use GeekCo\CommerceJson\Data\ImportResultData;
 use GeekCo\CommerceJson\Data\OrderCreateData;
 use GeekCo\CommerceJson\Data\OrderData;
 use GeekCo\CommerceJson\Data\OrderImportData;
+use GeekCo\CommerceJson\Data\OrderPatchData;
 use GeekCo\CommerceJson\Enums\CurrencyEnum;
 use GeekCo\CommerceJson\Exceptions\ForeignKeyViolationException;
 use GeekCo\CommerceJson\Queries\GetOrderQuery;
@@ -36,7 +37,11 @@ class OrderController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = new GetOrdersQuery(
-            perPage: (int) ($request->input('limit', 15))
+            perPage: (int) ($request->input('limit', 15)),
+            status: $request->input('status'),
+            document_type: $request->input('document_type'),
+            updated_after: $request->input('updated_after'),
+            include_deleted: $request->boolean('include_deleted', false),
         );
         $orders = $this->queryBus->ask($query);
 
@@ -98,10 +103,15 @@ class OrderController extends Controller
     public function update(Request $request, string $id): JsonResponse
     {
         try {
-            $command = new UpdateOrderCommand($id, OrderData::from($request->all()));
-            $order = $this->commandBus->dispatch($command);
+            $patch = OrderPatchData::from($request->all());
+            $order = $this->commandBus->dispatch(new PatchOrderCommand($id, $patch));
 
             return response()->json(OrderData::from($order));
+        } catch (ModelNotFoundException) {
+            return response()->json(
+                ErrorResponseData::from(['error' => ['code' => 'NOT_FOUND', 'message' => 'Order not found']]),
+                404
+            );
         } catch (QueryException $e) {
             $fe = new ForeignKeyViolationException($e);
 
@@ -138,7 +148,7 @@ class OrderController extends Controller
                 }
 
                 $this->commandBus->dispatch(new BulkUpsertOrderCommand(
-                    id: $bulkItem->id ?? (string) Str::uuid(),
+                    id: $bulkItem->id,
                     external_id: $bulkItem->external_id,
                     status: $bulkItem->status,
                     comment: $bulkItem->comment,

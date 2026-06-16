@@ -24,6 +24,14 @@ class ProductRepository extends BaseRepository
         return $products;
     }
 
+    public function findByExternalId(string $externalId): ?Product
+    {
+        /** @var Product|null $product */
+        $product = $this->model->where('external_id', $externalId)->first();
+
+        return $product;
+    }
+
     public function findByCategory(string $categoryId): array
     {
         return $this->model->where('category_id', $categoryId)->get()->toArray();
