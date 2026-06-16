@@ -360,18 +360,18 @@ ExchangeManager → ProductImporter / OrderImporter / ClassifierImporter / Order
 
 Пакет должен быть безопасным. Соблюдаем OWASP Top 10 на уровне кода:
 
-| #   | Категория OWASP               | Требования к коду                                                                                                                                                            |
-|-----|-------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| A01 | **Broken Access Control**     | Все эндпоинты (кроме `/handshake`) за middleware аутентификации; проверка прав через Policy/Gate перед операциями                                                            |
-| A02 | **Cryptographic Failures**    | UUIDv4 вместо автоинкремента; HTTPS-only (config `commercejson.force_https`); никаких секретов в коде/миграциях/логах                                                        |
-| A03 | **Injection**                 | Все входные данные проходят валидацию Request + Spatie Data; запрещены сырые `DB::raw()`, `whereRaw()`, `orderByRaw()` с пользовательским вводом; Eloquent через репозитории |
-| A04 | **Insecure Design**           | CQRS разделяет read/write; Command/Query — строго типизированные DTO; rate limiting на роутах                                                                                |
-| A05 | **Security Misconfiguration** | CORS — из конфига, не `*`; отключён `APP_DEBUG` в production; middleware pipeline явно задан в роутах                                                                        |
-| A06 | **Vulnerable Components**     | `composer audit` — обязателен перед релизом; версии зависимостей зафиксированы в `composer.json`                                                                             |
-| A07 | **Authentication Failures**   | API-ключ/token из конфига, сравнение через `hash_equals()`, не через `==`; логирование неудачных попыток                                                                     |
-| A08 | **Integrity Failures**        | Все входящие данные от ERP валидируются через Spatie Data (типы, форматы, required); CI/CD подписывает релизные теги                                                         |
-| A09 | **Logging & Monitoring**      | Все ошибки аутентификации и валидации логируются через `Log::channel('commercejson')`; запрещено логирование sensitive data (пароли, токены)                                 |
-| A10 | **SSRF**                      | HTTP-клиенты (Guzzle) имеют таймауты и белый список URL из конфига; запрещён динамический URL из пользовательского ввода                                                     |
+| #   | Категория OWASP               | Требования к коду                                                                                                                                                                                                                                                   |
+|-----|-------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| A01 | **Broken Access Control**     | Все эндпоинты (кроме `/handshake`) за middleware аутентификации; проверка прав через Policy/Gate перед операциями                                                                                                                                                   |
+| A02 | **Cryptographic Failures**    | UUIDv4 вместо автоинкремента; HTTPS-only (config `commercejson.force_https`); никаких секретов в коде/миграциях/логах                                                                                                                                               |
+| A03 | **Injection**                 | Все входные данные проходят валидацию Request + Spatie Data; запрещены сырые `DB::raw()`, `whereRaw()`, `orderByRaw()` с пользовательским вводом; Eloquent через репозитории                                                                                        |
+| A04 | **Insecure Design**           | CQRS разделяет read/write; Command/Query — строго типизированные DTO; rate limiting на роутах                                                                                                                                                                       |
+| A05 | **Security Misconfiguration** | CORS — из конфига, не `*`; отключён `APP_DEBUG` в production; middleware pipeline явно задан в роутах                                                                                                                                                               |
+| A06 | **Vulnerable Components**     | `composer audit` — обязателен перед релизом; версии зависимостей зафиксированы в `composer.json`                                                                                                                                                                    |
+| A07 | **Authentication Failures**   | API-ключ/token из конфига, сравнение через `hash_equals()`, не через `==`; логирование неудачных попыток                                                                                                                                                            |
+| A08 | **Integrity Failures**        | Все входящие данные от ERP валидируются через Spatie Data (типы, форматы, required); CI/CD подписывает релизные теги                                                                                                                                                |
+| A09 | **Logging & Monitoring**      | Все ошибки аутентификации и валидации логируются через `Log::channel('commercejson')`; все API-запросы логируются через `LogApiRequestsMiddleware` в канал `commercejson-api` (с маскировкой sensitive data); запрещено логирование sensitive data (пароли, токены) |
+| A10 | **SSRF**                      | HTTP-клиенты (Guzzle) имеют таймауты и белый список URL из конфига; запрещён динамический URL из пользовательского ввода                                                                                                                                            |
 
 ### Дополнительные правила
 
@@ -596,7 +596,23 @@ docker compose exec app vendor/bin/pint --test                       # Pint то
 - **Новые DTO:** `OrderPatchData`, `OrderPatchPaymentData` (итого 48 DTO)
 - **phpstan.neon:** добавлены игноры для `withTrashed()` и nullsafe на левой стороне `??`
 - **Pint:** исправлены 8 style issues (unused imports, braces, strict_types)
-- **119 тестов (879 assertions), PHPStan 0 errors, Pint clean**
+- **127 тестов (900 assertions), PHPStan 0 errors, Pint clean**
+
+### Сессия 10 — LogApiRequestsMiddleware (логирование всех API-запросов)
+
+- **`LogApiRequestsMiddleware`** — новый middleware для логирования всех входящих API-запросов:
+    - Логирует метод, URL, IP, User-Agent, тело запроса (с маскировкой sensitive данных: `password`, `token`, `secret`,
+      `auth_token`, `access_token`, `api_key`)
+    - Логирует статус ответа и длительность (ms) с разными уровнями (info/success, warning/4xx, error/5xx)
+    - Канал логирования — `commercejson-api` (с fallback на `commercejson` → `stack`)
+    - Исключение путей по конфигу (`exclude_paths`, по умолчанию `handshake`)
+    - Опциональное логирование тела ответа (отключено по умолчанию)
+- **Config:** добавлена секция `api_logging` (enabled, channel, fallback_channel, log_request_body, log_response_body,
+  exclude_paths) с примером конфигурации канала в комментариях
+- **Routes:** middleware `commercejson.log` подключен на все роуты пакета (включая `/handshake`)
+- **Тесты (8):** проверка GET/POST логов, включения URL/status/duration, маскировки sensitive данных, уровня warning для
+  4xx, отключения логирования, исключения путей
+- **127 тестов (900 assertions), PHPStan 0 errors, Pint clean**
 
 ---
 
@@ -621,3 +637,4 @@ docker compose exec app vendor/bin/pint --test                       # Pint то
 | `src/Handlers/Commands/PatchOrderCommandHandler.php`      | Handler с partial update + syncItems                             |
 | `src/Data/OrderPatchData.php`                             | DTO для PATCH /orders/{id}                                       |
 | `src/Data/OrderPatchPaymentData.php`                      | DTO payment для PATCH                                            |
+| `src/Http/Middleware/LogApiRequestsMiddleware.php`        | Middleware для логирования всех API-запросов                     |

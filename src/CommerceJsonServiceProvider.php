@@ -62,6 +62,7 @@ use GeekCo\CommerceJson\Http\Client\CommerceJsonHttpClient;
 use GeekCo\CommerceJson\Http\Client\ExponentialBackoffStrategy;
 use GeekCo\CommerceJson\Http\Client\HttpClientInterface;
 use GeekCo\CommerceJson\Http\Middleware\IdempotencyMiddleware;
+use GeekCo\CommerceJson\Http\Middleware\LogApiRequestsMiddleware;
 use GeekCo\CommerceJson\Models\Category;
 use GeekCo\CommerceJson\Models\Counterparty;
 use GeekCo\CommerceJson\Models\Offer;
@@ -286,6 +287,11 @@ class CommerceJsonServiceProvider extends ServiceProvider
         $this->app['router']->aliasMiddleware(
             'commercejson.idempotency',
             IdempotencyMiddleware::class
+        );
+
+        $this->app['router']->aliasMiddleware(
+            'commercejson.log',
+            LogApiRequestsMiddleware::class
         );
 
         // Загрузка маршрутов

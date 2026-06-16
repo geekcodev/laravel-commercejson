@@ -129,6 +129,17 @@ abstract class TestCase extends BaseTestCase
         $app['config']->set('commercejson.auth.type', 'bearer');
         $app['config']->set('commercejson.timeout', 30);
         $app['config']->set('commercejson.logging.enabled', false);
+        $app['config']->set('commercejson.api_logging.enabled', true);
+        $app['config']->set('commercejson.api_logging.channel', 'commercejson-api');
+        $app['config']->set('commercejson.api_logging.log_request_body', true);
+        $app['config']->set('commercejson.api_logging.log_response_body', false);
+        $app['config']->set('commercejson.api_logging.exclude_paths', []);
+
+        $app['config']->set('logging.channels.commercejson-api', [
+            'driver' => 'single',
+            'path' => storage_path('logs/commercejson-api.log'),
+            'level' => 'debug',
+        ]);
     }
 
     protected function loadSeeders(array $seeders = []): void
