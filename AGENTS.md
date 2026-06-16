@@ -161,19 +161,19 @@ class ProductData extends Data
 - Модель → DTO: `ProductData::from($model)`
 - Коллекция → DTO collection: `ProductData::collect($collection, DataCollection::class)`
 
-### Файлы DTO (46 в `src/Data/`)
+### Файлы DTO (48 в `src/Data/`)
 
-| Категория | Файлы                                                                                                                                                                                                      |
-|-----------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Core      | `ClassifierData`, `CategoryData`, `PropertyDefinitionData`, `PriceTypeData`                                                                                                                                |
-| Products  | `ProductData`, `ProductVariantData`, `ProductImageData`, `ProductListData`, `ProductImportData`                                                                                                            |
-| Offers    | `OfferData`, `OfferImportData`, `OfferListData`, `OfferPriceData`, `StockData`                                                                                                                             |
-| Orders    | `OrderData`, `OrderCreateData`, `OrderImportData`, `OrderListData`, `OrderItemData`, `OrderItemCreateData`, `OrderItemUpdateData`, `OrderBulkUpdateItemData`, `OrderDeliveryTrackData`, `OrderItemTaxData` |
-| Customers | `OrderCustomerData`, `OrderDeliveryData`, `OrderPaymentData`, `OrderTotalsData`, `CounterpartyData`, `CounterpartyListData`, `ContactData`, `BankAccountData`                                              |
-| Warehouse | `WarehouseData`, `WarehouseImportData`                                                                                                                                                                     |
-| Common    | `MoneyData`, `AddressData`, `SeoMetaData`, `DimensionsData`, `UnitData`, `ManufacturerData`, `SignatoryData`, `CustomAttributeData`, `PropertyValueData`, `StatusHistoryEntryData`                         |
-| Handshake | `HandshakeResponseData`, `CapabilitiesData`                                                                                                                                                                |
-| Response  | `PaginationData`, `ImportResultData`, `ErrorResponseData`                                                                                                                                                  |
+| Категория | Файлы                                                                                                                                                                                                                                                 |
+|-----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Core      | `ClassifierData`, `CategoryData`, `PropertyDefinitionData`, `PriceTypeData`                                                                                                                                                                           |
+| Products  | `ProductData`, `ProductVariantData`, `ProductImageData`, `ProductListData`, `ProductImportData`                                                                                                                                                       |
+| Offers    | `OfferData`, `OfferImportData`, `OfferListData`, `OfferPriceData`, `StockData`                                                                                                                                                                        |
+| Orders    | `OrderData`, `OrderCreateData`, `OrderImportData`, `OrderListData`, `OrderItemData`, `OrderItemCreateData`, `OrderItemUpdateData`, `OrderBulkUpdateItemData`, `OrderDeliveryTrackData`, `OrderItemTaxData`, `OrderPatchData`, `OrderPatchPaymentData` |
+| Customers | `OrderCustomerData`, `OrderDeliveryData`, `OrderPaymentData`, `OrderTotalsData`, `CounterpartyData`, `CounterpartyListData`, `ContactData`, `BankAccountData`                                                                                         |
+| Warehouse | `WarehouseData`, `WarehouseImportData`                                                                                                                                                                                                                |
+| Common    | `MoneyData`, `AddressData`, `SeoMetaData`, `DimensionsData`, `UnitData`, `ManufacturerData`, `SignatoryData`, `CustomAttributeData`, `PropertyValueData`, `StatusHistoryEntryData`                                                                    |
+| Handshake | `HandshakeResponseData`, `CapabilitiesData`                                                                                                                                                                                                           |
+| Response  | `PaginationData`, `ImportResultData`, `ErrorResponseData`                                                                                                                                                                                             |
 
 ---
 
@@ -236,16 +236,16 @@ class ProductData extends Data
 
 Тонкий слой: валидация Request → создание Command/Query → отправка в Bus → Response.
 
-| Controller                   | Index                              | Show          | Store                             | Update | Destroy     | Bulk               |
-|------------------------------|------------------------------------|---------------|-----------------------------------|--------|-------------|--------------------|
-| `ClassifierController`       | `ClassifierData` через репозитории | —             | `ImportResultData` (batch upsert) | —      | —           | —                  |
-| `ProductController`          | пагинированный список              | `ProductData` | `ProductData` (201)               | —      | soft-delete | —                  |
-| `OfferController`            | пагинированный список              | —             | `OfferData` (201)                 | —      | —           | —                  |
-| `OfferController@priceTypes` | `{price_types: [...]}`             | —             | —                                 | —      | —           | —                  |
-| `OrderController`            | пагинированный список              | `OrderData`   | `OrderData` (201)                 | PATCH  | —           | `ImportResultData` |
-| `CounterpartyController`     | пагинированный список              | одна запись   | 201                               | —      | —           | —                  |
-| `WarehouseController`        | `WarehouseData[]`                  | —             | `ImportResultData`                | —      | —           | —                  |
-| `HandshakeController`        | `HandshakeResponse` (без auth)     | —             | —                                 | —      | —           | —                  |
+| Controller                   | Index                                                          | Show          | Store                             | Update | Destroy     | Bulk               |
+|------------------------------|----------------------------------------------------------------|---------------|-----------------------------------|--------|-------------|--------------------|
+| `ClassifierController`       | `ClassifierData` через репозитории                             | —             | `ImportResultData` (batch upsert) | —      | —           | —                  |
+| `ProductController`          | пагинированный список                                          | `ProductData` | `ProductData` (201)               | —      | soft-delete | —                  |
+| `OfferController`            | пагинированный список (+ `price_types`/`warehouses` на 1 стр.) | —             | `ImportResultData` (200)          | —      | —           | —                  |
+| `OfferController@priceTypes` | `{price_types: [...]}`                                         | —             | —                                 | —      | —           | —                  |
+| `OrderController`            | пагинированный список                                          | `OrderData`   | `OrderData` (201)                 | PATCH  | —           | `ImportResultData` |
+| `CounterpartyController`     | пагинированный список                                          | одна запись   | `ImportResultData` (batch upsert) | —      | —           | —                  |
+| `WarehouseController`        | `WarehouseData[]`                                              | —             | `ImportResultData`                | —      | —           | —                  |
+| `HandshakeController`        | `HandshakeResponse` (без auth)                                 | —             | —                                 | —      | —           | —                  |
 
 ---
 
@@ -269,10 +269,11 @@ interface RepositoryInterface
 
 `BaseRepository` — абстрактная реализация через Eloquent. Специализированные:
 
-- `ProductRepository` (+ `findByCategory()`, `findMany()`)
+- `ProductRepository` (+ `findByCategory()`, `findMany()`, `findByExternalId()`)
 - `CategoryRepository` (+ `findByParent()`)
 - `WarehouseRepository` (+ `allWithTrashed()`)
-- `PriceTypeRepository`, `PropertyDefinitionRepository`, `OfferRepository`, `OrderRepository`, `CounterpartyRepository`
+- `PriceTypeRepository`, `PropertyDefinitionRepository`, `OfferRepository`, `OrderRepository` (+ `findByExternalId()`),
+  `CounterpartyRepository`, `OfferPriceRepository`, `StockRepository`
 
 ---
 
@@ -359,18 +360,18 @@ ExchangeManager → ProductImporter / OrderImporter / ClassifierImporter / Order
 
 Пакет должен быть безопасным. Соблюдаем OWASP Top 10 на уровне кода:
 
-| #   | Категория OWASP               | Требования к коду                                                                                                                                                            |
-|-----|-------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| A01 | **Broken Access Control**     | Все эндпоинты (кроме `/handshake`) за middleware аутентификации; проверка прав через Policy/Gate перед операциями                                                            |
-| A02 | **Cryptographic Failures**    | UUIDv4 вместо автоинкремента; HTTPS-only (config `commercejson.force_https`); никаких секретов в коде/миграциях/логах                                                        |
-| A03 | **Injection**                 | Все входные данные проходят валидацию Request + Spatie Data; запрещены сырые `DB::raw()`, `whereRaw()`, `orderByRaw()` с пользовательским вводом; Eloquent через репозитории |
-| A04 | **Insecure Design**           | CQRS разделяет read/write; Command/Query — строго типизированные DTO; rate limiting на роутах                                                                                |
-| A05 | **Security Misconfiguration** | CORS — из конфига, не `*`; отключён `APP_DEBUG` в production; middleware pipeline явно задан в роутах                                                                        |
-| A06 | **Vulnerable Components**     | `composer audit` — обязателен перед релизом; версии зависимостей зафиксированы в `composer.json`                                                                             |
-| A07 | **Authentication Failures**   | API-ключ/token из конфига, сравнение через `hash_equals()`, не через `==`; логирование неудачных попыток                                                                     |
-| A08 | **Integrity Failures**        | Все входящие данные от ERP валидируются через Spatie Data (типы, форматы, required); CI/CD подписывает релизные теги                                                         |
-| A09 | **Logging & Monitoring**      | Все ошибки аутентификации и валидации логируются через `Log::channel('commercejson')`; запрещено логирование sensitive data (пароли, токены)                                 |
-| A10 | **SSRF**                      | HTTP-клиенты (Guzzle) имеют таймауты и белый список URL из конфига; запрещён динамический URL из пользовательского ввода                                                     |
+| #   | Категория OWASP               | Требования к коду                                                                                                                                                                                                                                                   |
+|-----|-------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| A01 | **Broken Access Control**     | Все эндпоинты (кроме `/handshake`) за middleware аутентификации; проверка прав через Policy/Gate перед операциями                                                                                                                                                   |
+| A02 | **Cryptographic Failures**    | UUIDv4 вместо автоинкремента; HTTPS-only (config `commercejson.force_https`); никаких секретов в коде/миграциях/логах                                                                                                                                               |
+| A03 | **Injection**                 | Все входные данные проходят валидацию Request + Spatie Data; запрещены сырые `DB::raw()`, `whereRaw()`, `orderByRaw()` с пользовательским вводом; Eloquent через репозитории                                                                                        |
+| A04 | **Insecure Design**           | CQRS разделяет read/write; Command/Query — строго типизированные DTO; rate limiting на роутах                                                                                                                                                                       |
+| A05 | **Security Misconfiguration** | CORS — из конфига, не `*`; отключён `APP_DEBUG` в production; middleware pipeline явно задан в роутах                                                                                                                                                               |
+| A06 | **Vulnerable Components**     | `composer audit` — обязателен перед релизом; версии зависимостей зафиксированы в `composer.json`                                                                                                                                                                    |
+| A07 | **Authentication Failures**   | API-ключ/token из конфига, сравнение через `hash_equals()`, не через `==`; логирование неудачных попыток                                                                                                                                                            |
+| A08 | **Integrity Failures**        | Все входящие данные от ERP валидируются через Spatie Data (типы, форматы, required); CI/CD подписывает релизные теги                                                                                                                                                |
+| A09 | **Logging & Monitoring**      | Все ошибки аутентификации и валидации логируются через `Log::channel('commercejson')`; все API-запросы логируются через `LogApiRequestsMiddleware` в канал `commercejson-api` (с маскировкой sensitive data); запрещено логирование sensitive data (пароли, токены) |
+| A10 | **SSRF**                      | HTTP-клиенты (Guzzle) имеют таймауты и белый список URL из конфига; запрещён динамический URL из пользовательского ввода                                                                                                                                            |
 
 ### Дополнительные правила
 
@@ -395,7 +396,7 @@ ExchangeManager → ProductImporter / OrderImporter / ClassifierImporter / Order
 ## Тестирование
 
 ```bash
-docker compose exec app vendor/bin/pest                              # Запуск всех тестов (Pest v3.8, 119 тестов, 869 assertions)
+docker compose exec app vendor/bin/pest                              # Запуск всех тестов (Pest v3.8, 119 тестов, 879 assertions)
 docker compose exec app vendor/bin/pest --parallel                   # Параллельный запуск
 docker compose exec app vendor/bin/phpstan analyse                   # PHPStan (локально)
 docker compose exec app vendor/bin/phpstan analyse --error-format=github  # PHPStan (как в CI — обязателен перед push)
@@ -570,6 +571,49 @@ docker compose exec app vendor/bin/pint --test                       # Pint то
 - **Обновлён `CommerceJsonHttpClientTest`:** хардкодные строки статусов → `OrderStatusEnum`
 - **119 тестов (869 assertions), Pint clean, PHPStan clean (0 errors)**
 
+### Сессия 9 — spec-синхронизация: фильтры, условная валидация, external_id upsert, PATCH Order
+
+- **Upsert по external_id:** `BulkUpsertOrderCommandHandler` и `UpsertProductCommandHandler` ищут по
+  `external_id` если `id` не найден; `BulkUpsertOrderCommand.id` → `?string`; `OrderRepository`/`ProductRepository`
+  добавлены `findByExternalId()`
+- **PATCH /orders/{id}:** Новые `OrderPatchData`, `OrderPatchPaymentData`, `PatchOrderCommand`,
+  `PatchOrderCommandHandler` — частичное обновление статуса, payment, delivery, items (syncItems).
+  `UpdateOrderCommand` удалён из `Bus::map()`
+- **CounterpartyController:** `store()` переписан на пакетный upsert через `UpsertCounterpartyCommand`,
+  возвращает `ImportResult` (200). `CreateCounterpartyCommand` удалён из `Bus::map()`
+- **GET-фильтры из spec:** Во все Query добавлены `updated_after`, `include_deleted`, `category_id`,
+  `is_active`, `price_type_id`, `warehouse_id`, `status`, `document_type`, `type`. Хендлеры применяют
+  через `newQuery()` + `where`
+- **OfferList price_types/warehouses:** `OfferController::index()` возвращает справочники на первой странице
+- **Условная валидация (if/then/anyOf):**
+    - `OrderItemUpdateData` — `withValidator()`: обязателен `id`+`quantity` или `product_id`+`quantity`
+    - `OrderCreateData` — `withValidator()`: `delivery`/`payment` обязательны для `document_type=order`
+    - `OrderDeliveryData` — `withValidator()`: `address` обязателен для courier/post/transport_company
+- **OfferData.prices:** сделан required (non-nullable)
+- **BaseRepository.newQuery():** публичный метод для хендлеров с фильтрацией
+- **Warehouse controller:** `ImportError` включает `id`
+- **HandshakeController:** использует `HandshakeResponseData` DTO
+- **Новые DTO:** `OrderPatchData`, `OrderPatchPaymentData` (итого 48 DTO)
+- **phpstan.neon:** добавлены игноры для `withTrashed()` и nullsafe на левой стороне `??`
+- **Pint:** исправлены 8 style issues (unused imports, braces, strict_types)
+- **127 тестов (900 assertions), PHPStan 0 errors, Pint clean**
+
+### Сессия 10 — LogApiRequestsMiddleware (логирование всех API-запросов)
+
+- **`LogApiRequestsMiddleware`** — новый middleware для логирования всех входящих API-запросов:
+    - Логирует метод, URL, IP, User-Agent, тело запроса (с маскировкой sensitive данных: `password`, `token`, `secret`,
+      `auth_token`, `access_token`, `api_key`)
+    - Логирует статус ответа и длительность (ms) с разными уровнями (info/success, warning/4xx, error/5xx)
+    - Канал логирования — `commercejson-api` (с fallback на `commercejson` → `stack`)
+    - Исключение путей по конфигу (`exclude_paths`, по умолчанию `handshake`)
+    - Опциональное логирование тела ответа (отключено по умолчанию)
+- **Config:** добавлена секция `api_logging` (enabled, channel, fallback_channel, log_request_body, log_response_body,
+  exclude_paths) с примером конфигурации канала в комментариях
+- **Routes:** middleware `commercejson.log` подключен на все роуты пакета (включая `/handshake`)
+- **Тесты (8):** проверка GET/POST логов, включения URL/status/duration, маскировки sensitive данных, уровня warning для
+  4xx, отключения логирования, исключения путей
+- **127 тестов (900 assertions), PHPStan 0 errors, Pint clean**
+
 ---
 
 ## Ключевые файлы
@@ -581,7 +625,7 @@ docker compose exec app vendor/bin/pint --test                       # Pint то
 | `src/CommerceJsonServiceProvider.php`                     | Service provider с Bus::map() и QueryBus                         |
 | `src/config/commercejson.php`                             | Конфигурация пакета                                              |
 | `src/Http/Controllers/`                                   | 6 контроллеров + HandshakeController                             |
-| `src/Data/`                                               | 46 DTO (Spatie Laravel Data v4)                                  |
+| `src/Data/`                                               | 48 DTO (Spatie Laravel Data v4)                                  |
 | `src/Models/`                                             | 23 Eloquent-модели                                               |
 | `src/Repositories/`                                       | RepositoryInterface + 10 реализаций                              |
 | `src/Exchange/`                                           | Координация синхронизации (импортёры, экспортёры, jobs, команды) |
@@ -589,3 +633,8 @@ docker compose exec app vendor/bin/pint --test                       # Pint то
 | `tests/Pest.php`                                          | Глобальные хелперы и конфигурация                                |
 | `src/Commands/BulkUpsertOrderCommand.php`                 | Bulk-команда для `POST /orders/bulk` (не зависит от `OrderData`) |
 | `src/Handlers/Commands/BulkUpsertOrderCommandHandler.php` | Handler с раздельными create/update путями и опциональными items |
+| `src/Commands/PatchOrderCommand.php`                      | Команда для `PATCH /orders/{id}` (частичное обновление)          |
+| `src/Handlers/Commands/PatchOrderCommandHandler.php`      | Handler с partial update + syncItems                             |
+| `src/Data/OrderPatchData.php`                             | DTO для PATCH /orders/{id}                                       |
+| `src/Data/OrderPatchPaymentData.php`                      | DTO payment для PATCH                                            |
+| `src/Http/Middleware/LogApiRequestsMiddleware.php`        | Middleware для логирования всех API-запросов                     |

@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace GeekCo\CommerceJson\Http\Controllers;
 
 use GeekCo\CommerceJson\Bus\QueryBusInterface;
-use GeekCo\CommerceJson\Commands\CreateCounterpartyCommand;
+use GeekCo\CommerceJson\Commands\UpsertCounterpartyCommand;
 use GeekCo\CommerceJson\Data\CounterpartyData;
 use GeekCo\CommerceJson\Data\ErrorResponseData;
+use GeekCo\CommerceJson\Data\ImportResultData;
 use GeekCo\CommerceJson\Exceptions\ForeignKeyViolationException;
 use GeekCo\CommerceJson\Queries\GetCounterpartiesQuery;
 use GeekCo\CommerceJson\Queries\GetCounterpartyQuery;
@@ -28,7 +29,10 @@ class CounterpartyController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = new GetCounterpartiesQuery(
-            perPage: (int) ($request->input('limit', 15))
+            perPage: (int) ($request->input('limit', 15)),
+            type: $request->input('type'),
+            updated_after: $request->input('updated_after'),
+            include_deleted: $request->boolean('include_deleted', false),
         );
         $counterparties = $this->queryBus->ask($query);
 
@@ -60,18 +64,40 @@ class CounterpartyController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        try {
-            $command = new CreateCounterpartyCommand(CounterpartyData::from($request->all()));
-            $counterparty = $this->commandBus->dispatch($command);
+        $data = $request->all();
 
-            return response()->json(CounterpartyData::from($counterparty), 201);
-        } catch (QueryException $e) {
-            $fe = new ForeignKeyViolationException($e);
+        $counterparties = $data['counterparties'] ?? [$data];
 
-            return response()->json(
-                ErrorResponseData::from(['error' => ['code' => $fe->errorCode, 'message' => $fe->getMessage()]]),
-                422
-            );
+        $processed = 0;
+        $errors = [];
+
+        foreach ($counterparties as $counterpartyData) {
+            try {
+                $this->commandBus->dispatch(
+                    new UpsertCounterpartyCommand(CounterpartyData::from($counterpartyData))
+                );
+                $processed++;
+            } catch (QueryException $e) {
+                $fe = new ForeignKeyViolationException($e);
+                $errors[] = [
+                    'id' => $counterpartyData['id'] ?? null,
+                    'code' => $fe->errorCode,
+                    'message' => $fe->getMessage(),
+                ];
+            } catch (\Exception $e) {
+                $errors[] = [
+                    'id' => $counterpartyData['id'] ?? null,
+                    'code' => 'INTERNAL_ERROR',
+                    'message' => $e->getMessage(),
+                ];
+            }
         }
+
+        return response()->json(ImportResultData::from([
+            'success' => empty($errors),
+            'processed' => $processed,
+            'errors' => $errors,
+            'warnings' => [],
+        ]));
     }
 }

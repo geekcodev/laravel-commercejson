@@ -21,6 +21,20 @@ class GetCounterpartiesQueryHandler implements QueryHandlerInterface
     {
         assert($query instanceof GetCounterpartiesQuery);
 
-        return $this->repository->paginate($query->perPage);
+        $qb = $this->repository->newQuery();
+
+        if ($query->type !== null) {
+            $qb->where('type', $query->type);
+        }
+
+        if ($query->updated_after !== null) {
+            $qb->where('updated_at', '>', $query->updated_after);
+        }
+
+        if ($query->include_deleted) {
+            $qb->withTrashed();
+        }
+
+        return $qb->paginate($query->perPage);
     }
 }

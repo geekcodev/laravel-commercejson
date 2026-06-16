@@ -31,7 +31,11 @@ class ProductController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = new GetProductsQuery(
-            perPage: (int) ($request->input('limit', 15))
+            perPage: (int) ($request->input('limit', 15)),
+            category_id: $request->input('category_id'),
+            is_active: $request->has('is_active') ? $request->boolean('is_active') : null,
+            updated_after: $request->input('updated_after'),
+            include_deleted: $request->boolean('include_deleted', false),
         );
         $products = $this->queryBus->ask($query);
 

@@ -24,8 +24,29 @@ class GetProductsQueryHandler implements QueryHandlerInterface
     {
         assert($query instanceof GetProductsQuery);
 
+        $qb = $this->repository->newQuery();
+
+        if ($query->category_id !== null) {
+            $qb->where('category_id', $query->category_id);
+        }
+
+        if ($query->is_active !== null) {
+            $qb->where('is_active', $query->is_active);
+        }
+
+        if ($query->updated_after !== null) {
+            $qb->where('updated_at', '>', $query->updated_after);
+        }
+
+        if ($query->include_deleted) {
+            $qb->withTrashed();
+        }
+
         /** @var LengthAwarePaginator $paginator */
-        $paginator = $this->repository->paginate($query->perPage);
+        $paginator = $qb->with([
+            'images', 'propertyValues', 'variants.propertyValues',
+            'customAttributes', 'analogues', 'components',
+        ])->paginate($query->perPage);
 
         /** @var Collection<int, Product> $collection */
         $collection = $paginator->getCollection();

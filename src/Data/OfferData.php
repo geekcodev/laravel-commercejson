@@ -19,10 +19,10 @@ class OfferData extends Data
     public function __construct(
         #[Required, StringType, Uuid]
         public string $product_id,
+        #[Required, ArrayType, DataCollectionOf(OfferPriceData::class)]
+        public array $prices,
         #[Nullable, StringType, Uuid]
         public ?string $variant_id = null,
-        #[Nullable, ArrayType, DataCollectionOf(OfferPriceData::class)]
-        public ?array $prices = null,
         #[Nullable, ArrayType, Distinct, DataCollectionOf(StockData::class)]
         public ?array $stocks = null,
         #[Nullable]

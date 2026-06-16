@@ -7,10 +7,9 @@ namespace GeekCo\CommerceJson;
 use GeekCo\CommerceJson\Bus\QueryBus;
 use GeekCo\CommerceJson\Bus\QueryBusInterface;
 use GeekCo\CommerceJson\Commands\BulkUpsertOrderCommand;
-use GeekCo\CommerceJson\Commands\CreateCounterpartyCommand;
 use GeekCo\CommerceJson\Commands\CreateOrderCommand;
 use GeekCo\CommerceJson\Commands\DeleteProductCommand;
-use GeekCo\CommerceJson\Commands\UpdateOrderCommand;
+use GeekCo\CommerceJson\Commands\PatchOrderCommand;
 use GeekCo\CommerceJson\Commands\UpsertCategoryCommand;
 use GeekCo\CommerceJson\Commands\UpsertCounterpartyCommand;
 use GeekCo\CommerceJson\Commands\UpsertOfferCommand;
@@ -35,10 +34,9 @@ use GeekCo\CommerceJson\Exchange\Import\OrderImporter;
 use GeekCo\CommerceJson\Exchange\Import\ProductImporter;
 use GeekCo\CommerceJson\Facades\CommerceJson;
 use GeekCo\CommerceJson\Handlers\Commands\BulkUpsertOrderCommandHandler;
-use GeekCo\CommerceJson\Handlers\Commands\CreateCounterpartyCommandHandler;
 use GeekCo\CommerceJson\Handlers\Commands\CreateOrderCommandHandler;
 use GeekCo\CommerceJson\Handlers\Commands\DeleteProductCommandHandler;
-use GeekCo\CommerceJson\Handlers\Commands\UpdateOrderCommandHandler;
+use GeekCo\CommerceJson\Handlers\Commands\PatchOrderCommandHandler;
 use GeekCo\CommerceJson\Handlers\Commands\UpsertCategoryCommandHandler;
 use GeekCo\CommerceJson\Handlers\Commands\UpsertCounterpartyCommandHandler;
 use GeekCo\CommerceJson\Handlers\Commands\UpsertOfferCommandHandler;
@@ -64,6 +62,7 @@ use GeekCo\CommerceJson\Http\Client\CommerceJsonHttpClient;
 use GeekCo\CommerceJson\Http\Client\ExponentialBackoffStrategy;
 use GeekCo\CommerceJson\Http\Client\HttpClientInterface;
 use GeekCo\CommerceJson\Http\Middleware\IdempotencyMiddleware;
+use GeekCo\CommerceJson\Http\Middleware\LogApiRequestsMiddleware;
 use GeekCo\CommerceJson\Models\Category;
 use GeekCo\CommerceJson\Models\Counterparty;
 use GeekCo\CommerceJson\Models\Offer;
@@ -259,8 +258,7 @@ class CommerceJsonServiceProvider extends ServiceProvider
         Bus::map([
             DeleteProductCommand::class => DeleteProductCommandHandler::class,
             CreateOrderCommand::class => CreateOrderCommandHandler::class,
-            UpdateOrderCommand::class => UpdateOrderCommandHandler::class,
-            CreateCounterpartyCommand::class => CreateCounterpartyCommandHandler::class,
+            PatchOrderCommand::class => PatchOrderCommandHandler::class,
             UpsertProductCommand::class => UpsertProductCommandHandler::class,
             UpsertOfferCommand::class => UpsertOfferCommandHandler::class,
             BulkUpsertOrderCommand::class => BulkUpsertOrderCommandHandler::class,
@@ -289,6 +287,11 @@ class CommerceJsonServiceProvider extends ServiceProvider
         $this->app['router']->aliasMiddleware(
             'commercejson.idempotency',
             IdempotencyMiddleware::class
+        );
+
+        $this->app['router']->aliasMiddleware(
+            'commercejson.log',
+            LogApiRequestsMiddleware::class
         );
 
         // Загрузка маршрутов

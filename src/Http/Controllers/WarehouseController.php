@@ -48,7 +48,7 @@ class WarehouseController extends Controller
                 $processed++;
             } catch (QueryException $e) {
                 $fe = new ForeignKeyViolationException($e);
-                $errors[] = ['code' => $fe->errorCode, 'message' => $fe->getMessage()];
+                $errors[] = ['id' => $warehouseItem->id, 'code' => $fe->errorCode, 'message' => $fe->getMessage()];
             } catch (\Exception $e) {
                 $errors[] = ['code' => 'INTERNAL_ERROR', 'message' => $e->getMessage()];
             }

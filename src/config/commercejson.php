@@ -172,6 +172,47 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | API Request Logging
+    |--------------------------------------------------------------------------
+    |
+    | Настройки логирования входящих API-запросов (от 1С/ERP к сайту).
+    | Логи пишутся в канал 'commercejson-api' (должен быть определён
+    | в config/logging.php приложения).
+    |
+    | Пример канала для config/logging.php:
+    | 'commercejson-api' => [
+    |     'driver' => 'daily',
+    |     'path' => storage_path('logs/commercejson-api.log'),
+    |     'level' => env('LOG_LEVEL', 'debug'),
+    |     'days' => 14,
+    | ],
+    |
+    */
+
+    'api_logging' => [
+        'enabled' => env('COMMERCEJSON_API_LOGGING', true),
+
+        // Канал логирования: 'commercejson-api', 'commercejson', 'stack', etc.
+        'channel' => env('COMMERCEJSON_API_LOG_CHANNEL', 'commercejson-api'),
+
+        // Запасной канал, если основной не определён
+        'fallback_channel' => 'commercejson',
+
+        // Логировать тело запроса
+        'log_request_body' => env('COMMERCEJSON_API_LOG_REQUEST_BODY', true),
+
+        // Логировать тело ответа (осторожно — большие ответы)
+        'log_response_body' => env('COMMERCEJSON_API_LOG_RESPONSE_BODY', false),
+
+        // Максимальная длина тела не-JSON ответа (символов)
+        'log_response_body_max_length' => env('COMMERCEJSON_API_LOG_RESPONSE_BODY_MAX_LENGTH', 1000),
+
+        // Пути, исключённые из логирования (префиксы URL)
+        'exclude_paths' => ['handshake'],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Events & Notifications
     |--------------------------------------------------------------------------
     |

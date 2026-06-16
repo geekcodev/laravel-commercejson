@@ -21,6 +21,24 @@ class GetOrdersQueryHandler implements QueryHandlerInterface
     {
         assert($query instanceof GetOrdersQuery);
 
-        return $this->repository->paginate($query->perPage);
+        $qb = $this->repository->newQuery();
+
+        if ($query->status !== null) {
+            $qb->where('status', $query->status);
+        }
+
+        if ($query->document_type !== null) {
+            $qb->where('document_type', $query->document_type);
+        }
+
+        if ($query->updated_after !== null) {
+            $qb->where('updated_at', '>', $query->updated_after);
+        }
+
+        if ($query->include_deleted) {
+            $qb->withTrashed();
+        }
+
+        return $qb->paginate($query->perPage);
     }
 }
