@@ -15,21 +15,21 @@ class TrimmedEnumCastTest extends TestCase
         $data = UnitData::from(['code' => ' 796 ']);
 
         $this->assertInstanceOf(OkeiEnum::class, $data->code);
-        $this->assertSame(OkeiEnum::UNIT_PIECE, $data->code);
+        $this->assertSame(OkeiEnum::PIECE, $data->code);
     }
 
     public function test_works_without_whitespace(): void
     {
         $data = UnitData::from(['code' => '796']);
 
-        $this->assertSame(OkeiEnum::UNIT_PIECE, $data->code);
+        $this->assertSame(OkeiEnum::PIECE, $data->code);
     }
 
     public function test_trims_tabs_and_newlines(): void
     {
         $data = UnitData::from(['code' => "\t796\n"]);
 
-        $this->assertSame(OkeiEnum::UNIT_PIECE, $data->code);
+        $this->assertSame(OkeiEnum::PIECE, $data->code);
     }
 
     public function test_passes_nulls_through(): void
@@ -48,7 +48,7 @@ class TrimmedEnumCastTest extends TestCase
             'international' => 'KG',
         ]);
 
-        $this->assertSame(OkeiEnum::UNIT_KILOGRAM, $data->code);
+        $this->assertSame(OkeiEnum::KILOGRAM, $data->code);
         $this->assertSame('kg', $data->short_name);
         $this->assertSame('Kilogram', $data->full_name);
         $this->assertSame('KG', $data->international);
