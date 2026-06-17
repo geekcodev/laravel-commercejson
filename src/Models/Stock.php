@@ -5,13 +5,14 @@ declare(strict_types=1);
 namespace GeekCo\CommerceJson\Models;
 
 use GeekCo\CommerceJson\Database\Factories\StockFactory;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Stock extends Model
 {
-    use HasFactory;
+    use HasFactory, HasUuids;
 
     protected static function newFactory(): StockFactory
     {
