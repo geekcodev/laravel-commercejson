@@ -7,6 +7,7 @@ use GeekCo\CommerceJson\Enums\CurrencyEnum;
 use GeekCo\CommerceJson\Enums\DocumentTypeEnum;
 use GeekCo\CommerceJson\Enums\OrderStatusEnum;
 use GeekCo\CommerceJson\Models\Order;
+use GeekCo\CommerceJson\Models\OrderItem;
 use GeekCo\CommerceJson\Queries\GetOrderQuery;
 use GeekCo\CommerceJson\Queries\GetOrdersQuery;
 use Illuminate\Database\QueryException;
@@ -15,10 +16,13 @@ describe('OrderController', function () {
     describe('GET /orders', function () {
         it('returns paginated orders list', function () {
             $queryBus = mockQueryBus();
+
+            $order = Order::factory()->make();
+            $orderItem = OrderItem::factory()->make(['order_id' => $order->id]);
+            $order->setRelation('items', collect([$orderItem]));
+
             $mockResult = Mockery::mock(stdClass::class);
-            $mockResult->shouldReceive('items')->andReturn(collect([
-                test()->createOrderData(),
-            ]));
+            $mockResult->shouldReceive('items')->andReturn(collect([$order]));
             $mockResult->shouldReceive('currentPage')->andReturn(1);
             $mockResult->shouldReceive('lastPage')->andReturn(1);
             $mockResult->shouldReceive('perPage')->andReturn(15);
@@ -44,22 +48,19 @@ describe('OrderController', function () {
             $commandBus = mockCommandBus();
             $productId = test()->createTestUuid();
 
-            $orderData = test()->createOrderData([
-                'items' => [
-                    [
-                        'id' => test()->createTestUuid(),
-                        'product_id' => $productId,
-                        'quantity' => 1,
-                        'price' => ['amount' => '100.00', 'currency' => CurrencyEnum::RUB->value],
-                        'total' => ['amount' => '100.00', 'currency' => CurrencyEnum::RUB->value],
-                    ],
-                ],
+            $order = Order::factory()->make();
+            $orderItem = OrderItem::factory()->make([
+                'order_id' => $order->id,
+                'product_id' => $productId,
+                'price_amount' => 100.00,
+                'total_amount' => 100.00,
             ]);
+            $order->setRelation('items', collect([$orderItem]));
 
             $commandBus->shouldReceive('dispatch')
                 ->once()
                 ->with(Mockery::type(CreateOrderCommand::class))
-                ->andReturn($orderData);
+                ->andReturn($order);
 
             $response = $this->postJson('/api/commercejson/orders', [
                 'document_type' => DocumentTypeEnum::Order->value,
@@ -80,17 +81,19 @@ describe('OrderController', function () {
         it('returns a single order', function () {
             $queryBus = mockQueryBus();
 
-            $orderData = test()->createOrderData();
+            $order = Order::factory()->make();
+            $orderItem = OrderItem::factory()->make(['order_id' => $order->id]);
+            $order->setRelation('items', collect([$orderItem]));
 
             $queryBus->shouldReceive('ask')
                 ->once()
                 ->with(Mockery::type(GetOrderQuery::class))
-                ->andReturn($orderData);
+                ->andReturn($order);
 
-            $response = $this->getJson('/api/commercejson/orders/'.$orderData->id);
+            $response = $this->getJson('/api/commercejson/orders/'.$order->id);
 
             $response->assertStatus(200)
-                ->assertJson(['id' => $orderData->id]);
+                ->assertJson(['id' => $order->id]);
         });
     });
 
@@ -98,20 +101,17 @@ describe('OrderController', function () {
         it('updates an order', function () {
             $commandBus = mockCommandBus();
             $orderId = test()->createTestUuid();
-            $order = Order::factory()->make([
-                'id' => $orderId,
-                'number' => 'ORD-001',
-                'status' => OrderStatusEnum::New->value,
-            ]);
 
-            $updatedOrderData = test()->createOrderData([
+            $order = Order::factory()->make([
                 'id' => $orderId,
                 'status' => OrderStatusEnum::Confirmed->value,
             ]);
+            $orderItem = OrderItem::factory()->make(['order_id' => $order->id]);
+            $order->setRelation('items', collect([$orderItem]));
 
             $commandBus->shouldReceive('dispatch')
                 ->once()
-                ->andReturn($updatedOrderData);
+                ->andReturn($order);
 
             $response = $this->patchJson("/api/commercejson/orders/{$orderId}", [
                 'id' => $orderId,

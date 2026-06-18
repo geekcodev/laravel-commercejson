@@ -4,14 +4,41 @@ declare(strict_types=1);
 
 namespace GeekCo\CommerceJson\Models;
 
+use Carbon\Carbon;
 use GeekCo\CommerceJson\Database\Factories\OrderItemFactory;
 use GeekCo\CommerceJson\Enums\CurrencyEnum;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property string $id
+ * @property string $order_id
+ * @property string $product_id
+ * @property string|null $variant_id
+ * @property string|null $product_name
+ * @property string|null $product_code
+ * @property string $quantity
+ * @property string|null $unit_code
+ * @property string|null $unit_short_name
+ * @property string|null $unit_full_name
+ * @property string|null $unit_international
+ * @property string $price_amount
+ * @property CurrencyEnum $price_currency
+ * @property string|null $discount_amount
+ * @property CurrencyEnum|null $discount_currency
+ * @property string $total_amount
+ * @property CurrencyEnum $total_currency
+ * @property string|null $country_of_origin
+ * @property string|null $customs_declaration_number
+ * @property string|null $tax_rate
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property Collection<OrderItemTax> $taxes
+ */
 class OrderItem extends Model
 {
     use HasFactory, HasUuids;

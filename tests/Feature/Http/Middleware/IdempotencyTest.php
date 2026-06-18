@@ -5,16 +5,21 @@ declare(strict_types=1);
 use GeekCo\CommerceJson\Commands\CreateOrderCommand;
 use GeekCo\CommerceJson\Enums\DocumentTypeEnum;
 use GeekCo\CommerceJson\Enums\OrderStatusEnum;
+use GeekCo\CommerceJson\Models\Order;
+use GeekCo\CommerceJson\Models\OrderItem;
 
 describe('IdempotencyMiddleware', function () {
     it('caches response by X-Idempotency-Key and returns cached on repeat', function () {
         $commandBus = mockCommandBus();
-        $orderData = test()->createOrderData();
+
+        $order = Order::factory()->make();
+        $orderItem = OrderItem::factory()->make(['order_id' => $order->id]);
+        $order->setRelation('items', collect([$orderItem]));
 
         $commandBus->shouldReceive('dispatch')
             ->once()
             ->with(Mockery::type(CreateOrderCommand::class))
-            ->andReturn($orderData);
+            ->andReturn($order);
 
         $productId = test()->createTestUuid();
 
@@ -34,25 +39,31 @@ describe('IdempotencyMiddleware', function () {
             ->postJson('/api/commercejson/orders', $payload);
 
         $response1->assertStatus(201);
-        $response1->assertJson(['id' => $orderData->id]);
+        $response1->assertJson(['id' => $order->id]);
 
         // Repeat with same key — dispatch should NOT be called (cached)
         $response2 = $this->withHeaders(['X-Idempotency-Key' => $idempotencyKey])
             ->postJson('/api/commercejson/orders', $payload);
 
         $response2->assertStatus(201);
-        $response2->assertJson(['id' => $orderData->id]);
+        $response2->assertJson(['id' => $order->id]);
         expect($response2->json())->toEqual($response1->json());
     });
 
     it('does not interfere with different idempotency keys', function () {
         $commandBus = mockCommandBus();
-        $data1 = test()->createOrderData(['status' => OrderStatusEnum::New->value]);
-        $data2 = test()->createOrderData(['status' => OrderStatusEnum::Confirmed->value]);
+
+        $order1 = Order::factory()->make(['status' => OrderStatusEnum::New->value]);
+        $orderItem1 = OrderItem::factory()->make(['order_id' => $order1->id]);
+        $order1->setRelation('items', collect([$orderItem1]));
+
+        $order2 = Order::factory()->make(['status' => OrderStatusEnum::Confirmed->value]);
+        $orderItem2 = OrderItem::factory()->make(['order_id' => $order2->id]);
+        $order2->setRelation('items', collect([$orderItem2]));
 
         $commandBus->shouldReceive('dispatch')
             ->twice()
-            ->andReturn($data1, $data2);
+            ->andReturn($order1, $order2);
 
         $productId = test()->createTestUuid();
         $payload = [
@@ -101,10 +112,14 @@ describe('IdempotencyMiddleware', function () {
 
     it('processes different body with same key as separate request', function () {
         $commandBus = mockCommandBus();
-        $data = test()->createOrderData();
+
+        $order = Order::factory()->make();
+        $orderItem = OrderItem::factory()->make(['order_id' => $order->id]);
+        $order->setRelation('items', collect([$orderItem]));
+
         $commandBus->shouldReceive('dispatch')
             ->once()
-            ->andReturn($data);
+            ->andReturn($order);
 
         $productId = test()->createTestUuid();
         $idempotencyKey = 'conflict-key-'.bin2hex(random_bytes(4));
@@ -119,9 +134,13 @@ describe('IdempotencyMiddleware', function () {
         // Same key, different body — fingerprint won't match, so it's a new request
         // The middleware will process it normally (no cache hit because fingerprint differs)
         // and the handler will be called again. Not a 409, just normal operation.
+        $order2 = Order::factory()->make(['status' => OrderStatusEnum::Confirmed->value]);
+        $orderItem2 = OrderItem::factory()->make(['order_id' => $order2->id]);
+        $order2->setRelation('items', collect([$orderItem2]));
+
         $commandBus->shouldReceive('dispatch')
             ->once()
-            ->andReturn(test()->createOrderData(['status' => OrderStatusEnum::Confirmed->value]));
+            ->andReturn($order2);
 
         $response2 = $this->withHeaders(['X-Idempotency-Key' => $idempotencyKey])
             ->postJson('/api/commercejson/orders', [
@@ -159,12 +178,18 @@ describe('IdempotencyMiddleware', function () {
 
     it('works without X-Idempotency-Key header (no caching)', function () {
         $commandBus = mockCommandBus();
-        $data1 = test()->createOrderData();
-        $data2 = test()->createOrderData(['status' => OrderStatusEnum::Confirmed->value]);
+
+        $order1 = Order::factory()->make();
+        $orderItem1 = OrderItem::factory()->make(['order_id' => $order1->id]);
+        $order1->setRelation('items', collect([$orderItem1]));
+
+        $order2 = Order::factory()->make(['status' => OrderStatusEnum::Confirmed->value]);
+        $orderItem2 = OrderItem::factory()->make(['order_id' => $order2->id]);
+        $order2->setRelation('items', collect([$orderItem2]));
 
         $commandBus->shouldReceive('dispatch')
             ->twice()
-            ->andReturn($data1, $data2);
+            ->andReturn($order1, $order2);
 
         $productId = test()->createTestUuid();
         $payload = [

@@ -16,6 +16,7 @@ use GeekCo\CommerceJson\Data\OrderImportData;
 use GeekCo\CommerceJson\Data\OrderPatchData;
 use GeekCo\CommerceJson\Enums\CurrencyEnum;
 use GeekCo\CommerceJson\Exceptions\ForeignKeyViolationException;
+use GeekCo\CommerceJson\Models\Order;
 use GeekCo\CommerceJson\Queries\GetOrderQuery;
 use GeekCo\CommerceJson\Queries\GetOrdersQuery;
 use Illuminate\Contracts\Bus\Dispatcher;
@@ -24,7 +25,6 @@ use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-use Spatie\LaravelData\DataCollection;
 use Spatie\LaravelData\Exceptions\CannotCastEnum;
 
 class OrderController extends Controller
@@ -45,7 +45,10 @@ class OrderController extends Controller
         );
         $orders = $this->queryBus->ask($query);
 
-        $items = OrderData::collect($orders->items(), DataCollection::class);
+        $items = array_map(
+            fn (Order $order) => OrderData::fromModel($order),
+            $orders->items()->all()
+        );
 
         return response()->json([
             'orders' => $items,
@@ -64,7 +67,7 @@ class OrderController extends Controller
             $query = new GetOrderQuery($id);
             $order = $this->queryBus->ask($query);
 
-            return response()->json(OrderData::from($order));
+            return response()->json(OrderData::fromModel($order));
         } catch (ModelNotFoundException) {
             return response()->json(
                 ErrorResponseData::from(['error' => ['code' => 'NOT_FOUND', 'message' => 'Order not found']]),
@@ -79,7 +82,7 @@ class OrderController extends Controller
             $createData = OrderCreateData::from($request->all());
             $order = $this->commandBus->dispatch(new CreateOrderCommand($createData));
 
-            return response()->json(OrderData::from($order), 201);
+            return response()->json(OrderData::fromModel($order->load('items')), 201);
         } catch (CannotCastEnum $e) {
             return response()->json(
                 ErrorResponseData::from([
@@ -106,7 +109,7 @@ class OrderController extends Controller
             $patch = OrderPatchData::from($request->all());
             $order = $this->commandBus->dispatch(new PatchOrderCommand($id, $patch));
 
-            return response()->json(OrderData::from($order));
+            return response()->json(OrderData::fromModel($order));
         } catch (ModelNotFoundException) {
             return response()->json(
                 ErrorResponseData::from(['error' => ['code' => 'NOT_FOUND', 'message' => 'Order not found']]),
