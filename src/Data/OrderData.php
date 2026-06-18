@@ -11,6 +11,7 @@ use GeekCo\CommerceJson\Enums\OrderStatusEnum;
 use GeekCo\CommerceJson\Enums\PartyRoleEnum;
 use GeekCo\CommerceJson\Models\Order;
 use GeekCo\CommerceJson\Models\OrderItem;
+use Illuminate\Database\Eloquent\Collection;
 use Spatie\LaravelData\Attributes\DataCollectionOf;
 use Spatie\LaravelData\Attributes\Validation\ArrayType;
 use Spatie\LaravelData\Attributes\Validation\Enum;
@@ -96,6 +97,7 @@ class OrderData extends Data
             'deleted_at' => $model->deleted_at,
         ];
 
+        /** @var Collection<int, OrderItem> $items */
         $items = $model->relationLoaded('items')
             ? $model->items
             : $model->items()->get();
