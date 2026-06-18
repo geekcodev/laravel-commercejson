@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace GeekCo\CommerceJson\Models;
 
+use Carbon\Carbon;
 use GeekCo\CommerceJson\Database\Factories\OrderFactory;
 use GeekCo\CommerceJson\Enums\CurrencyEnum;
 use GeekCo\CommerceJson\Enums\DocumentTypeEnum;
@@ -11,7 +12,6 @@ use GeekCo\CommerceJson\Enums\OrderStatusEnum;
 use GeekCo\CommerceJson\Enums\PartyRoleEnum;
 use GeekCo\CommerceJson\Enums\PaymentMethodEnum;
 use GeekCo\CommerceJson\Enums\PaymentStatusEnum;
-use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

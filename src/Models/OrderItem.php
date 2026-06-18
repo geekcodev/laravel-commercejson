@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace GeekCo\CommerceJson\Models;
 
-use GeekCo\CommerceJson\Database\Factories\OrderItemFactory;
 use Carbon\Carbon;
+use GeekCo\CommerceJson\Database\Factories\OrderItemFactory;
 use GeekCo\CommerceJson\Enums\CurrencyEnum;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
