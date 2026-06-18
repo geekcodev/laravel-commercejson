@@ -21,6 +21,8 @@ class GetOrderQueryHandler implements QueryHandlerInterface
     {
         assert($query instanceof GetOrderQuery);
 
-        return $this->repository->findOrFail($query->id);
+        return $this->repository->newQuery()
+            ->with('items')
+            ->findOrFail($query->id);
     }
 }

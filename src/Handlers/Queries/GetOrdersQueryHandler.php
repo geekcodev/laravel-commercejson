@@ -21,7 +21,7 @@ class GetOrdersQueryHandler implements QueryHandlerInterface
     {
         assert($query instanceof GetOrdersQuery);
 
-        $qb = $this->repository->newQuery();
+        $qb = $this->repository->newQuery()->with('items');
 
         if ($query->status !== null) {
             $qb->where('status', $query->status);
