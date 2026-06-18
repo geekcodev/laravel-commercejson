@@ -47,7 +47,7 @@ class OrderController extends Controller
 
         $items = array_map(
             fn (Order $order) => OrderData::fromModel($order),
-            $orders->items()->all()
+            collect($orders->items())->all()
         );
 
         return response()->json([
