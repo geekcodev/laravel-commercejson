@@ -8,20 +8,17 @@ use GeekCo\CommerceJson\Queries\GetOrdersQuery;
 use GeekCo\CommerceJson\Queries\QueryInterface;
 use GeekCo\CommerceJson\Repositories\OrderRepository;
 
-class GetOrdersQueryHandler implements QueryHandlerInterface
+readonly class GetOrdersQueryHandler implements QueryHandlerInterface
 {
-    private OrderRepository $repository;
-
-    public function __construct(OrderRepository $repository)
-    {
-        $this->repository = $repository;
-    }
+    public function __construct(
+        private OrderRepository $orderRepository,
+    ) {}
 
     public function handle(QueryInterface $query): mixed
     {
         assert($query instanceof GetOrdersQuery);
 
-        $qb = $this->repository->newQuery()->with('items');
+        $qb = $this->orderRepository->newQuery()->with('items');
 
         if ($query->status !== null) {
             $qb->where('status', $query->status);

@@ -6,10 +6,12 @@ namespace GeekCo\CommerceJson\Handlers\Commands;
 
 use GeekCo\CommerceJson\Commands\CommandInterface;
 use GeekCo\CommerceJson\Commands\PatchOrderCommand;
+use GeekCo\CommerceJson\Enums\CurrencyEnum;
 use GeekCo\CommerceJson\Models\Order;
 use GeekCo\CommerceJson\Repositories\OrderRepository;
 use GeekCo\CommerceJson\Repositories\ProductRepository;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class PatchOrderCommandHandler implements CommandHandlerInterface
@@ -40,7 +42,7 @@ class PatchOrderCommandHandler implements CommandHandlerInterface
                     'payment_status' => $p->status,
                     'payment_amount' => $p->amount?->amount,
                     'payment_currency' => $p->amount?->currency,
-                    'paid_at' => $p->paid_at,
+                    'payment_paid_at' => $p->paid_at,
                     'payment_transaction_id' => $p->transaction_id,
                 ], fn ($v) => $v !== null));
             }
@@ -70,7 +72,8 @@ class PatchOrderCommandHandler implements CommandHandlerInterface
 
     private function syncItems(Order $order, array $items): void
     {
-        $currency = 'RUB';
+        $defaultCurrency = CurrencyEnum::tryFrom(config('commercejson.default_currency')) ?? CurrencyEnum::RUB;
+        $currency = null;
         $totalSum = 0;
 
         $productIds = array_unique(array_filter(array_map(
@@ -82,7 +85,18 @@ class PatchOrderCommandHandler implements CommandHandlerInterface
             : collect();
 
         foreach ($items as $item) {
-            $itemCurrency = $item->price !== null ? $item->price->currency->value : 'RUB';
+            $itemCurrency = $item->price !== null ? $item->price->currency->value : $defaultCurrency->value;
+
+            if ($currency === null) {
+                $currency = $itemCurrency;
+            } elseif ($currency !== $itemCurrency) {
+                Log::warning('Mixed currencies in order items — using first currency', [
+                    'order_id' => $order->id,
+                    'first_currency' => $currency,
+                    'mixed_currency' => $itemCurrency,
+                ]);
+            }
+
             $priceAmount = $item->price !== null ? $item->price->amount : '0';
             $quantity = (float) ($item->quantity ?? 1);
             $lineTotal = number_format((float) $priceAmount * $quantity, 2, '.', '');
@@ -107,15 +121,13 @@ class PatchOrderCommandHandler implements CommandHandlerInterface
                 'total_amount' => $lineTotal,
                 'total_currency' => $itemCurrency,
             ]);
-
-            $currency = $itemCurrency;
         }
 
         $order->update([
             'totals_subtotal_amount' => number_format($totalSum, 2, '.', ''),
-            'totals_subtotal_currency' => $currency,
+            'totals_subtotal_currency' => $currency ?? $defaultCurrency->value,
             'totals_total_amount' => number_format($totalSum, 2, '.', ''),
-            'totals_total_currency' => $currency,
+            'totals_total_currency' => $currency ?? $defaultCurrency->value,
         ]);
     }
 }

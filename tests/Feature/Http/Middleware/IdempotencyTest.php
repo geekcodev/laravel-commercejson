@@ -87,7 +87,7 @@ describe('IdempotencyMiddleware', function () {
     it('does not cache GET requests', function () {
         $queryBus = mockQueryBus();
         $mockResult = Mockery::mock(stdClass::class);
-        $mockResult->shouldReceive('items')->andReturn(collect([]));
+        $mockResult->shouldReceive('items')->andReturn([]);
         $mockResult->shouldReceive('currentPage')->andReturn(1);
         $mockResult->shouldReceive('lastPage')->andReturn(1);
         $mockResult->shouldReceive('perPage')->andReturn(15);

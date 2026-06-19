@@ -27,6 +27,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string|null $unit_short_name
  * @property string|null $unit_full_name
  * @property string|null $unit_international
+ * @property-read Collection<int, Offer> $offers
  * @property-read Collection<int, Product> $analogues
  * @property-read Collection<int, Product> $components
  * @property-read Pivot|null $pivot

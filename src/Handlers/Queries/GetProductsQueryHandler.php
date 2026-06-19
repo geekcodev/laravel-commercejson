@@ -11,20 +11,17 @@ use GeekCo\CommerceJson\Repositories\ProductRepository;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
-class GetProductsQueryHandler implements QueryHandlerInterface
+readonly class GetProductsQueryHandler implements QueryHandlerInterface
 {
-    private ProductRepository $repository;
-
-    public function __construct(ProductRepository $repository)
-    {
-        $this->repository = $repository;
-    }
+    public function __construct(
+        private ProductRepository $productRepository,
+    ) {}
 
     public function handle(QueryInterface $query): mixed
     {
         assert($query instanceof GetProductsQuery);
 
-        $qb = $this->repository->newQuery();
+        $qb = $this->productRepository->newQuery();
 
         if ($query->category_id !== null) {
             $qb->where('category_id', $query->category_id);

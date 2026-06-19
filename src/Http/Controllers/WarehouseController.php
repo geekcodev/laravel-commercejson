@@ -50,7 +50,7 @@ class WarehouseController extends Controller
                 $fe = new ForeignKeyViolationException($e);
                 $errors[] = ['id' => $warehouseItem->id, 'code' => $fe->errorCode, 'message' => $fe->getMessage()];
             } catch (\Exception $e) {
-                $errors[] = ['code' => 'INTERNAL_ERROR', 'message' => $e->getMessage()];
+                $errors[] = ['id' => $warehouseItem->id, 'code' => 'INTERNAL_ERROR', 'message' => $e->getMessage()];
             }
         }
 

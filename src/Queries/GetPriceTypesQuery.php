@@ -6,5 +6,7 @@ namespace GeekCo\CommerceJson\Queries;
 
 class GetPriceTypesQuery extends Query
 {
-    public function __construct() {}
+    public function __construct(
+        public ?string $updated_after = null,
+    ) {}
 }

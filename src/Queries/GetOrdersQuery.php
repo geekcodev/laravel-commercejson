@@ -11,6 +11,6 @@ class GetOrdersQuery extends Query
         public ?string $status = null,
         public ?string $document_type = null,
         public ?string $updated_after = null,
-        public ?bool $include_deleted = false,
+        public bool $include_deleted = false,
     ) {}
 }
