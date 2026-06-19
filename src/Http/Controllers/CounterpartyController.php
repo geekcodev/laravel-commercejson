@@ -7,6 +7,7 @@ namespace GeekCo\CommerceJson\Http\Controllers;
 use GeekCo\CommerceJson\Bus\QueryBusInterface;
 use GeekCo\CommerceJson\Commands\UpsertCounterpartyCommand;
 use GeekCo\CommerceJson\Data\CounterpartyData;
+use GeekCo\CommerceJson\Data\CounterpartyImportData;
 use GeekCo\CommerceJson\Data\ErrorResponseData;
 use GeekCo\CommerceJson\Data\ImportResultData;
 use GeekCo\CommerceJson\Exceptions\ForeignKeyViolationException;
@@ -29,7 +30,7 @@ class CounterpartyController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = new GetCounterpartiesQuery(
-            perPage: (int) ($request->input('limit', 15)),
+            perPage: max(1, min(1000, (int) ($request->input('limit', 100)))),
             type: $request->input('type'),
             updated_after: $request->input('updated_after'),
             include_deleted: $request->boolean('include_deleted', false),
@@ -64,29 +65,26 @@ class CounterpartyController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $data = $request->all();
-
-        $counterparties = $data['counterparties'] ?? [$data];
-
+        $import = CounterpartyImportData::from($request->all());
         $processed = 0;
         $errors = [];
 
-        foreach ($counterparties as $counterpartyData) {
+        foreach ($import->counterparties as $counterpartyData) {
             try {
                 $this->commandBus->dispatch(
-                    new UpsertCounterpartyCommand(CounterpartyData::from($counterpartyData))
+                    new UpsertCounterpartyCommand($counterpartyData)
                 );
                 $processed++;
             } catch (QueryException $e) {
                 $fe = new ForeignKeyViolationException($e);
                 $errors[] = [
-                    'id' => $counterpartyData['id'] ?? null,
+                    'id' => $counterpartyData->id,
                     'code' => $fe->errorCode,
                     'message' => $fe->getMessage(),
                 ];
             } catch (\Exception $e) {
                 $errors[] = [
-                    'id' => $counterpartyData['id'] ?? null,
+                    'id' => $counterpartyData->id,
                     'code' => 'INTERNAL_ERROR',
                     'message' => $e->getMessage(),
                 ];

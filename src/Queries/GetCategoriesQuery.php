@@ -7,6 +7,6 @@ namespace GeekCo\CommerceJson\Queries;
 class GetCategoriesQuery extends Query
 {
     public function __construct(
-        public int $perPage = 15
+        public ?string $updated_after = null,
     ) {}
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace GeekCo\CommerceJson\Data;
 
 use GeekCo\CommerceJson\Enums\OrderStatusEnum;
+use Illuminate\Validation\Validator;
 use Spatie\LaravelData\Attributes\DataCollectionOf;
 use Spatie\LaravelData\Attributes\Validation\ArrayType;
 use Spatie\LaravelData\Attributes\Validation\Enum;
@@ -32,4 +33,17 @@ class OrderBulkUpdateItemData extends Data
         #[Nullable, ArrayType, DataCollectionOf(CustomAttributeData::class)]
         public ?array $custom_attributes = null,
     ) {}
+
+    public static function withValidator(Validator $validator): void
+    {
+        $data = $validator->getData();
+
+        $hasId = ! empty($data['id'] ?? null);
+        $hasExternalId = ! empty($data['external_id'] ?? null);
+
+        if (! $hasId && ! $hasExternalId) {
+            $validator->errors()->add('id', 'Either id or external_id is required');
+            $validator->errors()->add('external_id', 'Either id or external_id is required');
+        }
+    }
 }

@@ -8,20 +8,17 @@ use GeekCo\CommerceJson\Queries\GetOffersQuery;
 use GeekCo\CommerceJson\Queries\QueryInterface;
 use GeekCo\CommerceJson\Repositories\OfferRepository;
 
-class GetOffersQueryHandler implements QueryHandlerInterface
+readonly class GetOffersQueryHandler implements QueryHandlerInterface
 {
-    private OfferRepository $repository;
-
-    public function __construct(OfferRepository $repository)
-    {
-        $this->repository = $repository;
-    }
+    public function __construct(
+        private OfferRepository $offerRepository,
+    ) {}
 
     public function handle(QueryInterface $query): mixed
     {
         assert($query instanceof GetOffersQuery);
 
-        $qb = $this->repository->newQuery();
+        $qb = $this->offerRepository->newQuery();
 
         if ($query->price_type_id !== null) {
             $qb->whereHas('prices', fn ($q) => $q->where('price_type_id', $query->price_type_id));

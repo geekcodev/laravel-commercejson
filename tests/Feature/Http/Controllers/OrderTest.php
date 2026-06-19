@@ -22,7 +22,7 @@ describe('OrderController', function () {
             $order->setRelation('items', collect([$orderItem]));
 
             $mockResult = Mockery::mock(stdClass::class);
-            $mockResult->shouldReceive('items')->andReturn(collect([$order]));
+            $mockResult->shouldReceive('items')->andReturn([$order]);
             $mockResult->shouldReceive('currentPage')->andReturn(1);
             $mockResult->shouldReceive('lastPage')->andReturn(1);
             $mockResult->shouldReceive('perPage')->andReturn(15);

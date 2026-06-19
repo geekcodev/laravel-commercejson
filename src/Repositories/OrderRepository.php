@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace GeekCo\CommerceJson\Repositories;
 
 use GeekCo\CommerceJson\Models\Order;
+use Illuminate\Support\Collection;
 
 class OrderRepository extends BaseRepository
 {
@@ -13,9 +14,9 @@ class OrderRepository extends BaseRepository
         parent::__construct($model);
     }
 
-    public function findByStatus(string $status): array
+    public function findByStatus(string $status): Collection
     {
-        return $this->model->where('status', $status)->get()->toArray();
+        return $this->model->where('status', $status)->get();
     }
 
     public function findByExternalId(string $externalId): ?Order

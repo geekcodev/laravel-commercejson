@@ -15,21 +15,11 @@ use Illuminate\Support\Facades\DB;
 
 class UpsertOfferCommandHandler implements CommandHandlerInterface
 {
-    private OfferRepository $repository;
-
-    private OfferPriceRepository $offerPriceRepository;
-
-    private StockRepository $stockRepository;
-
     public function __construct(
-        OfferRepository $repository,
-        OfferPriceRepository $offerPriceRepository,
-        StockRepository $stockRepository,
-    ) {
-        $this->repository = $repository;
-        $this->offerPriceRepository = $offerPriceRepository;
-        $this->stockRepository = $stockRepository;
-    }
+        private readonly OfferRepository $offerRepository,
+        private readonly OfferPriceRepository $offerPriceRepository,
+        private readonly StockRepository $stockRepository,
+    ) {}
 
     public function handle(CommandInterface $command): mixed
     {
@@ -38,7 +28,7 @@ class UpsertOfferCommandHandler implements CommandHandlerInterface
         $data = $command->offerData;
 
         return DB::transaction(function () use ($data) {
-            $offer = $this->repository->updateOrCreate(
+            $offer = $this->offerRepository->updateOrCreate(
                 [
                     'product_id' => $data->product_id,
                     'variant_id' => $data->variant_id,

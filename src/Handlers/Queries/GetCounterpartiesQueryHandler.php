@@ -8,20 +8,17 @@ use GeekCo\CommerceJson\Queries\GetCounterpartiesQuery;
 use GeekCo\CommerceJson\Queries\QueryInterface;
 use GeekCo\CommerceJson\Repositories\CounterpartyRepository;
 
-class GetCounterpartiesQueryHandler implements QueryHandlerInterface
+readonly class GetCounterpartiesQueryHandler implements QueryHandlerInterface
 {
-    private CounterpartyRepository $repository;
-
-    public function __construct(CounterpartyRepository $repository)
-    {
-        $this->repository = $repository;
-    }
+    public function __construct(
+        private CounterpartyRepository $counterpartyRepository,
+    ) {}
 
     public function handle(QueryInterface $query): mixed
     {
         assert($query instanceof GetCounterpartiesQuery);
 
-        $qb = $this->repository->newQuery();
+        $qb = $this->counterpartyRepository->newQuery();
 
         if ($query->type !== null) {
             $qb->where('type', $query->type);

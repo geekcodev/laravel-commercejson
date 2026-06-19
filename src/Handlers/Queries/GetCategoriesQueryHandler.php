@@ -8,19 +8,22 @@ use GeekCo\CommerceJson\Queries\GetCategoriesQuery;
 use GeekCo\CommerceJson\Queries\QueryInterface;
 use GeekCo\CommerceJson\Repositories\CategoryRepository;
 
-class GetCategoriesQueryHandler implements QueryHandlerInterface
+readonly class GetCategoriesQueryHandler implements QueryHandlerInterface
 {
-    private CategoryRepository $repository;
-
-    public function __construct(CategoryRepository $repository)
-    {
-        $this->repository = $repository;
-    }
+    public function __construct(
+        private CategoryRepository $categoryRepository,
+    ) {}
 
     public function handle(QueryInterface $query): mixed
     {
         assert($query instanceof GetCategoriesQuery);
 
-        return $this->repository->paginate($query->perPage);
+        $qb = $this->categoryRepository->newQuery();
+
+        if ($query->updated_after !== null) {
+            $qb->where('updated_at', '>', $query->updated_after);
+        }
+
+        return $qb->get();
     }
 }

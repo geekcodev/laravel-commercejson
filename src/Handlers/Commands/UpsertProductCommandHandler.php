@@ -18,12 +18,9 @@ use Illuminate\Support\Facades\DB;
 
 class UpsertProductCommandHandler implements CommandHandlerInterface
 {
-    private ProductRepository $repository;
-
-    public function __construct(ProductRepository $repository)
-    {
-        $this->repository = $repository;
-    }
+    public function __construct(
+        private readonly ProductRepository $productRepository,
+    ) {}
 
     public function handle(CommandInterface $command): mixed
     {
@@ -32,16 +29,16 @@ class UpsertProductCommandHandler implements CommandHandlerInterface
         $data = $command->productData;
 
         return DB::transaction(function () use ($data) {
-            $product = $this->repository->find($data->id);
+            $product = $this->productRepository->find($data->id);
 
             if (! $product && $data->external_id !== null) {
-                $product = $this->repository->findByExternalId($data->external_id);
+                $product = $this->productRepository->findByExternalId($data->external_id);
             }
 
             if ($product) {
                 $product->update($this->buildFlatAttributes($data));
             } else {
-                $product = $this->repository->create($this->buildFlatAttributes($data));
+                $product = $this->productRepository->create($this->buildFlatAttributes($data));
             }
 
             assert($product instanceof Product);

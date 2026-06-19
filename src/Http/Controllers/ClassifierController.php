@@ -36,15 +36,23 @@ class ClassifierController extends Controller
         $classifierId = config('commercejson.classifier_id', '00000000-0000-0000-0000-000000000001');
         $classifierName = config('commercejson.classifier_name', 'Main Classifier');
 
-        $categories = $this->queryBus->ask(new GetCategoriesQuery(perPage: 9999));
-        $properties = $this->queryBus->ask(new GetPropertyDefinitionsQuery);
-        $priceTypes = $this->queryBus->ask(new GetPriceTypesQuery);
+        $updatedAfter = $request->input('updated_after');
+
+        $categories = $this->queryBus->ask(new GetCategoriesQuery(
+            updated_after: $updatedAfter,
+        ));
+        $properties = $this->queryBus->ask(new GetPropertyDefinitionsQuery(
+            updated_after: $updatedAfter,
+        ));
+        $priceTypes = $this->queryBus->ask(new GetPriceTypesQuery(
+            updated_after: $updatedAfter,
+        ));
 
         return response()->json(ClassifierData::from([
             'id' => $classifierId,
             'name' => $classifierName,
             'version' => (string) now()->timestamp,
-            'categories' => CategoryData::collect($categories->items(), DataCollection::class),
+            'categories' => CategoryData::collect($categories, DataCollection::class),
             'properties' => PropertyDefinitionData::collect($properties, DataCollection::class),
             'price_types' => PriceTypeData::collect($priceTypes, DataCollection::class),
             'updated_at' => now()->toIso8601String(),

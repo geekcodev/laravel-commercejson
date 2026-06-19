@@ -8,23 +8,20 @@ use GeekCo\CommerceJson\Queries\GetWarehousesQuery;
 use GeekCo\CommerceJson\Queries\QueryInterface;
 use GeekCo\CommerceJson\Repositories\WarehouseRepository;
 
-class GetWarehousesQueryHandler implements QueryHandlerInterface
+readonly class GetWarehousesQueryHandler implements QueryHandlerInterface
 {
-    private WarehouseRepository $repository;
-
-    public function __construct(WarehouseRepository $repository)
-    {
-        $this->repository = $repository;
-    }
+    public function __construct(
+        private WarehouseRepository $warehouseRepository,
+    ) {}
 
     public function handle(QueryInterface $query): mixed
     {
         assert($query instanceof GetWarehousesQuery);
 
-        if ($query->includeDeleted) {
-            return $this->repository->allWithTrashed();
+        if ($query->include_deleted) {
+            return $this->warehouseRepository->allWithTrashed();
         }
 
-        return $this->repository->all();
+        return $this->warehouseRepository->all();
     }
 }

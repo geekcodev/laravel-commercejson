@@ -11,23 +11,20 @@ use Illuminate\Support\Facades\DB;
 
 class DeleteProductCommandHandler implements CommandHandlerInterface
 {
-    private ProductRepository $repository;
-
-    public function __construct(ProductRepository $repository)
-    {
-        $this->repository = $repository;
-    }
+    public function __construct(
+        private readonly ProductRepository $productRepository,
+    ) {}
 
     public function handle(CommandInterface $command): mixed
     {
         assert($command instanceof DeleteProductCommand);
 
         return DB::transaction(function () use ($command) {
-            $product = $this->repository->findOrFail($command->id);
+            $product = $this->productRepository->findOrFail($command->id);
 
-            $this->repository->update($product, ['is_active' => false]);
+            $this->productRepository->update($product, ['is_active' => false]);
 
-            $this->repository->delete($product);
+            $this->productRepository->delete($product);
 
             return $product->fresh();
         });

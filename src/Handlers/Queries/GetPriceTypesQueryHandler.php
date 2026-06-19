@@ -8,19 +8,22 @@ use GeekCo\CommerceJson\Queries\GetPriceTypesQuery;
 use GeekCo\CommerceJson\Queries\QueryInterface;
 use GeekCo\CommerceJson\Repositories\PriceTypeRepository;
 
-class GetPriceTypesQueryHandler implements QueryHandlerInterface
+readonly class GetPriceTypesQueryHandler implements QueryHandlerInterface
 {
-    private PriceTypeRepository $repository;
-
-    public function __construct(PriceTypeRepository $repository)
-    {
-        $this->repository = $repository;
-    }
+    public function __construct(
+        private PriceTypeRepository $priceTypeRepository,
+    ) {}
 
     public function handle(QueryInterface $query): mixed
     {
         assert($query instanceof GetPriceTypesQuery);
 
-        return $this->repository->all();
+        $qb = $this->priceTypeRepository->newQuery();
+
+        if ($query->updated_after !== null) {
+            $qb->where('updated_at', '>', $query->updated_after);
+        }
+
+        return $qb->get();
     }
 }

@@ -11,8 +11,7 @@
 - **Провайдер:** `CommerceJsonServiceProvider` (autodiscovery через `composer.json`)
 - **Архитектурные принципы:** SOLID, DRY, KISS, CQRS, инкапсуляция данных через Repository/Query
 
-> **Единственный источник истины по API:** `spec.yaml`. Любые изменения роутов или схем должны сверяться с
-> ним.
+> **Единственный источник истины по API:** `spec.yaml`. Любые изменения роутов или схем должны сверяться с ним.
 
 ---
 
@@ -161,7 +160,7 @@ class ProductData extends Data
 - Модель → DTO: `ProductData::from($model)`
 - Коллекция → DTO collection: `ProductData::collect($collection, DataCollection::class)`
 
-### Файлы DTO (48 в `src/Data/`)
+### Файлы DTO (49 в `src/Data/`)
 
 | Категория | Файлы                                                                                                                                                                                                                                                 |
 |-----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -169,7 +168,7 @@ class ProductData extends Data
 | Products  | `ProductData`, `ProductVariantData`, `ProductImageData`, `ProductListData`, `ProductImportData`                                                                                                                                                       |
 | Offers    | `OfferData`, `OfferImportData`, `OfferListData`, `OfferPriceData`, `StockData`                                                                                                                                                                        |
 | Orders    | `OrderData`, `OrderCreateData`, `OrderImportData`, `OrderListData`, `OrderItemData`, `OrderItemCreateData`, `OrderItemUpdateData`, `OrderBulkUpdateItemData`, `OrderDeliveryTrackData`, `OrderItemTaxData`, `OrderPatchData`, `OrderPatchPaymentData` |
-| Customers | `OrderCustomerData`, `OrderDeliveryData`, `OrderPaymentData`, `OrderTotalsData`, `CounterpartyData`, `CounterpartyListData`, `ContactData`, `BankAccountData`                                                                                         |
+| Customers | `OrderCustomerData`, `OrderDeliveryData`, `OrderPaymentData`, `OrderTotalsData`, `CounterpartyData`, `CounterpartyListData`, `CounterpartyImportData`, `ContactData`, `BankAccountData`                                                               |
 | Warehouse | `WarehouseData`, `WarehouseImportData`                                                                                                                                                                                                                |
 | Common    | `MoneyData`, `AddressData`, `SeoMetaData`, `DimensionsData`, `UnitData`, `ManufacturerData`, `SignatoryData`, `CustomAttributeData`, `PropertyValueData`, `StatusHistoryEntryData`                                                                    |
 | Handshake | `HandshakeResponseData`, `CapabilitiesData`                                                                                                                                                                                                           |
@@ -396,7 +395,7 @@ ExchangeManager → ProductImporter / OrderImporter / ClassifierImporter / Order
 ## Тестирование
 
 ```bash
-docker compose exec app vendor/bin/pest                              # Запуск всех тестов (Pest v3.8, 119 тестов, 879 assertions)
+docker compose exec app vendor/bin/pest                              # Запуск всех тестов (Pest v3.8, 127 тестов, 900 assertions)
 docker compose exec app vendor/bin/pest --parallel                   # Параллельный запуск
 docker compose exec app vendor/bin/phpstan analyse                   # PHPStan (локально)
 docker compose exec app vendor/bin/phpstan analyse --error-format=github  # PHPStan (как в CI — обязателен перед push)
@@ -614,6 +613,39 @@ docker compose exec app vendor/bin/pint --test                       # Pint то
   4xx, отключения логирования, исключения путей
 - **127 тестов (900 assertions), PHPStan 0 errors, Pint clean**
 
+### Сессия 11 — Code review, spec compliance, architectural fixes
+
+- **Code review** — 18 issues найдено (1 HIGH баг, 8 MEDIUM, 9 LOW)
+    - **HIGH fix:** `PatchOrderCommandHandler::paid_at` → `payment_paid_at` (тихая потеря данных исправлена)
+    - **MEDIUM fix:** `buildBulkItems()` бизнес-логика перенесена из `OrderController` в
+      `BulkUpsertOrderCommandHandler::buildItems()` (thin controller)
+    - **MEDIUM fix:** `CreateOrderCommandHandler` — промоутед проперти `$orderRepository` вместо ручного присвоения
+    - **LOW fix:** 8 хендлеров — `$repository` переименован в `$orderRepository`/`$productRepository` и т.д. (AGENTS.md
+      naming convention)
+    - **LOW fix:** `GetWarehousesQuery::includeDeleted` → `include_deleted` (snake_case)
+    - **LOW fix:** `OrderRepository::findByStatus()` возвращает `Collection` вместо `array`
+    - **LOW fix:** `PropertyTypeEnum::getLocalizedName()` fallback `$this->name` → `$this->value`
+- **Spec compliance check** — 2 HIGH, 5 MEDIUM, 3 LOW расхождения найдены
+    - **HIGH fix:** `OrderBulkUpdateItemData` — добавлен `withValidator()` для `anyOf: [id, external_id]`
+    - **HIGH fix:** `ProductController::destroy()` — добавлен try/catch ModelNotFoundException (404 с ErrorResponse)
+    - **MEDIUM fix:** `limit` default 15→100, max clamp 100→1000 во всех 4 list-контроллерах
+    - **MEDIUM fix:** `ClassifierController::index()` — добавлена поддержка `updated_after` (3 новых Query + 3 Handler)
+- **127 тестов (900 assertions), PHPStan 0 errors (на changed files), Pint clean
+
+### Сессия 12 — Code review, naming conformity, CounterpartyImportData
+
+- **Code review** — найдено и исправлено 6 issues:
+    - **HIGH fix:** `UpsertProductCommandHandler::$repository` → `$productRepository` (AGENTS.md naming)
+    - **HIGH fix:** `UpsertOfferCommandHandler::$repository` → `$offerRepository`
+    - **LOW fix:** `PatchOrderCommandHandler` — `readonly class` → `class` + `private readonly` (unified style)
+    - **LOW fix:** `WarehouseController::store()` — добавлен `id` в catch-блок `\Exception`
+    - **LOW fix:** `CounterpartyController::store()` — создан `CounterpartyImportData` DTO, возврат `ImportResultData`
+    - **LOW fix:** `OfferController::store()` — `$processed` теперь считает все entity types (offers, price_types,
+      warehouses)
+- **Style unification:** `DeleteProductCommandHandler` — `readonly class` → `class` + `private readonly`
+- **Новый DTO:** `CounterpartyImportData` (итого 49 DTO)
+- **127 тестов (900 assertions), PHPStan 0 errors, Pint clean****
+
 ---
 
 ## Ключевые файлы
@@ -625,7 +657,7 @@ docker compose exec app vendor/bin/pint --test                       # Pint то
 | `src/CommerceJsonServiceProvider.php`                     | Service provider с Bus::map() и QueryBus                         |
 | `src/config/commercejson.php`                             | Конфигурация пакета                                              |
 | `src/Http/Controllers/`                                   | 6 контроллеров + HandshakeController                             |
-| `src/Data/`                                               | 48 DTO (Spatie Laravel Data v4)                                  |
+| `src/Data/`                                               | 49 DTO (Spatie Laravel Data v4)                                  |
 | `src/Models/`                                             | 23 Eloquent-модели                                               |
 | `src/Repositories/`                                       | RepositoryInterface + 10 реализаций                              |
 | `src/Exchange/`                                           | Координация синхронизации (импортёры, экспортёры, jobs, команды) |

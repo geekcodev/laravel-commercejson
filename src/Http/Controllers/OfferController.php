@@ -33,7 +33,7 @@ class OfferController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = new GetOffersQuery(
-            perPage: (int) ($request->input('limit', 15)),
+            perPage: max(1, min(1000, (int) ($request->input('limit', 100)))),
             price_type_id: $request->input('price_type_id'),
             warehouse_id: $request->input('warehouse_id'),
             updated_after: $request->input('updated_after'),
@@ -71,20 +71,30 @@ class OfferController extends Controller
     {
         $import = OfferImportData::from($request->all());
 
+        $processed = 0;
+        $errors = [];
+
         if ($import->price_types) {
             foreach ($import->price_types as $priceTypeData) {
-                $this->commandBus->dispatch(new UpsertPriceTypeCommand($priceTypeData));
+                try {
+                    $this->commandBus->dispatch(new UpsertPriceTypeCommand($priceTypeData));
+                    $processed++;
+                } catch (\Exception $e) {
+                    $errors[] = ['id' => $priceTypeData->id, 'code' => 'INTERNAL_ERROR', 'message' => $e->getMessage()];
+                }
             }
         }
 
         if ($import->warehouses) {
             foreach ($import->warehouses as $warehouseData) {
-                $this->commandBus->dispatch(new UpsertWarehouseCommand($warehouseData));
+                try {
+                    $this->commandBus->dispatch(new UpsertWarehouseCommand($warehouseData));
+                    $processed++;
+                } catch (\Exception $e) {
+                    $errors[] = ['id' => $warehouseData->id, 'code' => 'INTERNAL_ERROR', 'message' => $e->getMessage()];
+                }
             }
         }
-
-        $processed = 0;
-        $errors = [];
 
         foreach ($import->offers as $offerData) {
             try {

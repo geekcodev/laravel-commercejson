@@ -31,7 +31,7 @@ class ProductController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = new GetProductsQuery(
-            perPage: (int) ($request->input('limit', 15)),
+            perPage: max(1, min(1000, (int) ($request->input('limit', 100)))),
             category_id: $request->input('category_id'),
             is_active: $request->has('is_active') ? $request->boolean('is_active') : null,
             updated_after: $request->input('updated_after'),
@@ -96,8 +96,15 @@ class ProductController extends Controller
 
     public function destroy(string $id): JsonResponse
     {
-        $product = $this->commandBus->dispatch(new DeleteProductCommand($id));
+        try {
+            $product = $this->commandBus->dispatch(new DeleteProductCommand($id));
 
-        return response()->json(ProductData::from($product));
+            return response()->json(ProductData::from($product));
+        } catch (ModelNotFoundException) {
+            return response()->json(
+                ErrorResponseData::from(['error' => ['code' => 'NOT_FOUND', 'message' => 'Product not found']]),
+                404
+            );
+        }
     }
 }

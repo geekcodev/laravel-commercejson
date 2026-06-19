@@ -6,6 +6,7 @@ namespace GeekCo\CommerceJson\Data;
 
 use Carbon\Carbon;
 use GeekCo\CommerceJson\Enums\CurrencyEnum;
+use GeekCo\CommerceJson\Enums\DeliveryMethodEnum;
 use GeekCo\CommerceJson\Enums\DocumentTypeEnum;
 use GeekCo\CommerceJson\Enums\OrderStatusEnum;
 use GeekCo\CommerceJson\Enums\PartyRoleEnum;
@@ -184,7 +185,11 @@ class OrderData extends Data
                 ]);
             }
 
-            if ($model->delivery_address_country || $model->delivery_address_city || $model->delivery_address_full) {
+            $hasAddress = $model->delivery_address_country || $model->delivery_address_city || $model->delivery_address_full;
+            $deliveryMethod = DeliveryMethodEnum::tryFrom($model->delivery_type);
+            $requiresAddress = $deliveryMethod?->requiresAddress() ?? false;
+
+            if ($hasAddress || $requiresAddress) {
                 $delivery['address'] = AddressData::from([
                     'country' => $model->delivery_address_country,
                     'region' => $model->delivery_address_region,

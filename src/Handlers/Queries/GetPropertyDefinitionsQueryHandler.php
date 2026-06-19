@@ -8,19 +8,22 @@ use GeekCo\CommerceJson\Queries\GetPropertyDefinitionsQuery;
 use GeekCo\CommerceJson\Queries\QueryInterface;
 use GeekCo\CommerceJson\Repositories\PropertyDefinitionRepository;
 
-class GetPropertyDefinitionsQueryHandler implements QueryHandlerInterface
+readonly class GetPropertyDefinitionsQueryHandler implements QueryHandlerInterface
 {
-    private PropertyDefinitionRepository $repository;
-
-    public function __construct(PropertyDefinitionRepository $repository)
-    {
-        $this->repository = $repository;
-    }
+    public function __construct(
+        private PropertyDefinitionRepository $propertyDefinitionRepository,
+    ) {}
 
     public function handle(QueryInterface $query): mixed
     {
         assert($query instanceof GetPropertyDefinitionsQuery);
 
-        return $this->repository->all();
+        $qb = $this->propertyDefinitionRepository->newQuery();
+
+        if ($query->updated_after !== null) {
+            $qb->where('updated_at', '>', $query->updated_after);
+        }
+
+        return $qb->get();
     }
 }
