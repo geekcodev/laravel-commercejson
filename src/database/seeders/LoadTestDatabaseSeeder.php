@@ -33,7 +33,7 @@ use Illuminate\Support\Str;
  * - COMMERCEJSON_SEED_VARIANTS_MIN (default 2)
  * - COMMERCEJSON_SEED_VARIANTS_MAX (default 5)
  * - COMMERCEJSON_SEED_PRICE_TIERS (default 2) // 1=только min_quantity=1, 2=добавить tier для min_quantity=10
- * - COMMERCEJSON_SEED_STOCKS_PER_OFFER (default 1) // 1=только склад по умолчанию, 0=без остатков, N>1=несколько складов
+ * - COMMERCEJSON_SEED_STOCKS_PER_OFFER (default -1) // -1=все склады, 0=без остатков, N>0=указанное кол-во складов
  * - COMMERCEJSON_SEED_PROPERTIES (default 40)
  * - COMMERCEJSON_SEED_PRODUCT_PROPERTIES (default 6)
  * - COMMERCEJSON_SEED_VARIANT_PROPERTIES (default 3)
@@ -42,6 +42,9 @@ use Illuminate\Support\Str;
 class LoadTestDatabaseSeeder extends Seeder
 {
     private string $runKey = 'LD';
+
+    /** @var array<int, string> Все ID товаров для генерации аналогов */
+    private array $allProductIds = [];
 
     public function run(): void
     {
@@ -59,7 +62,7 @@ class LoadTestDatabaseSeeder extends Seeder
         $variantsMax = max($variantsMin, (int) config('commercejson.seeding.load.variants_max', 5));
 
         $priceTiers = max(1, (int) config('commercejson.seeding.load.price_tiers', 2));
-        $stocksPerOffer = max(0, (int) config('commercejson.seeding.load.stocks_per_offer', 1));
+        $stocksPerOffer = max(-1, (int) config('commercejson.seeding.load.stocks_per_offer', -1));
 
         $propertiesCount = max(0, (int) config('commercejson.seeding.load.properties', 40));
         $productPropertiesPerEntity = max(0, (int) config('commercejson.seeding.load.product_properties', 6));
@@ -174,7 +177,8 @@ class LoadTestDatabaseSeeder extends Seeder
                 $parentId = $parentPool[array_rand($parentPool)];
             }
 
-            $name = 'Категория '.str_pad((string) $i, 7, '0', STR_PAD_LEFT);
+            $categoryNames = ['Двигатель', 'Подвеска', 'Тормоза', 'Фильтры', 'Электрика', 'Трансмиссия', 'Кузов', 'Оптика', 'Выхлоп', 'Охлаждение'];
+            $name = ($categoryNames[($i - 1) % count($categoryNames)]).'  '.str_pad((string) $i, 7, '0', STR_PAD_LEFT);
 
             $buffer[] = [
                 'id' => $id,
@@ -184,7 +188,7 @@ class LoadTestDatabaseSeeder extends Seeder
                 'sort' => $i,
                 'is_active' => fake()->boolean(97),
                 'image_url' => fake()->boolean(30) ? fake()->imageUrl() : null,
-                'seo_title' => "Купить {$name} - интернет-магазин",
+                'seo_title' => "Купить {$name} - интернет-магазин автозапчастей",
                 'seo_description' => fake()->sentence(20),
                 'seo_keywords' => implode(', ', fake()->words(10)),
                 'created_at' => $now,
@@ -233,7 +237,7 @@ class LoadTestDatabaseSeeder extends Seeder
 
         for ($i = 1; $i <= $count; $i++) {
             $id = (string) Str::uuid();
-            $name = 'Контрагент '.str_pad((string) $i, 6, '0', STR_PAD_LEFT);
+            $name = 'Поставщик автозапчастей '.str_pad((string) $i, 6, '0', STR_PAD_LEFT);
 
             // В таблице есть уникальные ограничения на inn/ogrn, поэтому делаем их детерминированными.
             // Важно: базовый CounterpartySeeder использует ИНН вида 77********,
@@ -292,7 +296,7 @@ class LoadTestDatabaseSeeder extends Seeder
 
         for ($i = 1; $i <= $count; $i++) {
             $type = $types[($i - 1) % count($types)];
-            $name = 'Свойство '.str_pad((string) $i, 3, '0', STR_PAD_LEFT);
+            $name = 'Характеристика '.str_pad((string) $i, 3, '0', STR_PAD_LEFT);
 
             $enumValues = null;
             if ($type->requiresEnumValues()) {
@@ -511,7 +515,7 @@ class LoadTestDatabaseSeeder extends Seeder
                         $variantId = (string) Str::uuid();
                         $variantIdsInBatch[] = $variantId;
 
-                        $variantName = "{$name} / Вариант {$v}";
+                        $variantName = "{$name} / Модификация {$v}";
                         $variantBarcode = str_pad((string) (10_000_000 + $variantSeq), 14, '0', STR_PAD_LEFT);
 
                         $variants[] = [
@@ -618,11 +622,50 @@ class LoadTestDatabaseSeeder extends Seeder
                         }
                     }
                 });
+
+                $this->allProductIds = array_merge($this->allProductIds, $productIdsInBatch);
             } catch (QueryException $e) {
                 throw new \RuntimeException(
                     "LoadTestDatabaseSeeder failed while inserting batch {$batchStart}..{$batchEnd}: {$e->getMessage()}",
                     previous: $e
                 );
+            }
+        }
+
+        // Аналоги: каждому товару назначаем 5-7 случайных аналогов
+        if (! empty($this->allProductIds)) {
+            $this->command?->info(' - Assigning analogues (5-7 per product)...');
+            $analogueBuffer = [];
+
+            foreach ($this->allProductIds as $productId) {
+                $count = fake()->numberBetween(5, 7);
+                $candidates = array_values(array_diff($this->allProductIds, [$productId]));
+                if (empty($candidates)) {
+                    continue;
+                }
+                $selected = fake()->randomElements($candidates, min($count, count($candidates)));
+
+                foreach ($selected as $analogueId) {
+                    $analogueBuffer[] = [
+                        'product_id' => $productId,
+                        'analogue_id' => $analogueId,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ];
+                }
+
+                if (count($analogueBuffer) >= 50000) {
+                    foreach (array_chunk($analogueBuffer, 2000) as $chunk) {
+                        DB::table('product_analogues')->insert($chunk);
+                    }
+                    $analogueBuffer = [];
+                }
+            }
+
+            if (! empty($analogueBuffer)) {
+                foreach (array_chunk($analogueBuffer, 2000) as $chunk) {
+                    DB::table('product_analogues')->insert($chunk);
+                }
             }
         }
     }
@@ -709,7 +752,9 @@ class LoadTestDatabaseSeeder extends Seeder
         CarbonInterface $now
     ): void {
         $selected = [];
-        if ($perOffer === 1) {
+        if ($perOffer === -1) {
+            $selected = $warehousePool;
+        } elseif ($perOffer === 1) {
             $selected[] = $defaultWarehouseId;
         } else {
             $selected[] = $defaultWarehouseId;

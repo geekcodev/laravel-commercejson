@@ -287,7 +287,7 @@ return [
             'variants_max' => (int) env('COMMERCEJSON_SEED_VARIANTS_MAX', 5),
 
             'price_tiers' => (int) env('COMMERCEJSON_SEED_PRICE_TIERS', 2),
-            'stocks_per_offer' => (int) env('COMMERCEJSON_SEED_STOCKS_PER_OFFER', 1),
+            'stocks_per_offer' => (int) env('COMMERCEJSON_SEED_STOCKS_PER_OFFER', -1), // -1 = все склады
 
             'properties' => (int) env('COMMERCEJSON_SEED_PROPERTIES', 40),
             'product_properties' => (int) env('COMMERCEJSON_SEED_PRODUCT_PROPERTIES', 6),
