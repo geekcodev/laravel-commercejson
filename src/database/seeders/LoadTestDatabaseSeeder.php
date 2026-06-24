@@ -393,7 +393,7 @@ class LoadTestDatabaseSeeder extends Seeder
                 $barcode = str_pad((string) $productSeq, 14, '0', STR_PAD_LEFT);
 
                 $categoryId = $categoryIds[array_rand($categoryIds)];
-                $manufacturerId = ! empty($manufacturerIds) && fake()->boolean(35) ? $manufacturerIds[array_rand($manufacturerIds)] : null;
+                $manufacturerId = ! empty($manufacturerIds) && fake()->boolean(85) ? $manufacturerIds[array_rand($manufacturerIds)] : null;
                 $brandOwnerId = $manufacturerId && fake()->boolean(30) ? $manufacturerIds[array_rand($manufacturerIds)] : null;
 
                 $isActive = fake()->boolean(96);
@@ -632,18 +632,63 @@ class LoadTestDatabaseSeeder extends Seeder
             }
         }
 
-        // Аналоги: каждому товару назначаем 5-7 случайных аналогов
+        // Аналоги: каждому товару 5-7 аналогов от разных производителей
         if (! empty($this->allProductIds)) {
-            $this->command?->info(' - Assigning analogues (5-7 per product)...');
+            $this->command?->info(' - Assigning analogues from different manufacturers (5-7 per product)...');
+
+            $productRows = DB::table('products')
+                ->whereIn('id', $this->allProductIds)
+                ->select('id', 'manufacturer_id')
+                ->get();
+
+            $productManufacturerMap = [];
+            $productsByManufacturer = [];
+            $noManufacturerIds = [];
+
+            foreach ($productRows as $row) {
+                $pid = $row->id;
+                $mid = $row->manufacturer_id;
+                $productManufacturerMap[$pid] = $mid;
+                if ($mid !== null) {
+                    $productsByManufacturer[$mid][] = $pid;
+                } else {
+                    $noManufacturerIds[] = $pid;
+                }
+            }
+
+            $allManufacturerIds = array_keys($productsByManufacturer);
+
+            $candidatePoolByManufacturer = [];
+            foreach ($allManufacturerIds as $mid) {
+                $pool = $noManufacturerIds;
+                foreach ($allManufacturerIds as $otherMid) {
+                    if ($otherMid !== $mid) {
+                        array_push($pool, ...$productsByManufacturer[$otherMid]);
+                    }
+                }
+                $candidatePoolByManufacturer[$mid] = $pool;
+            }
+
+            $candidatePoolNoManufacturer = $noManufacturerIds;
+            foreach ($allManufacturerIds as $mid) {
+                array_push($candidatePoolNoManufacturer, ...$productsByManufacturer[$mid]);
+            }
+
             $analogueBuffer = [];
 
             foreach ($this->allProductIds as $productId) {
-                $count = fake()->numberBetween(5, 7);
-                $candidates = array_values(array_diff($this->allProductIds, [$productId]));
+                $mid = $productManufacturerMap[$productId] ?? null;
+                $pool = $mid !== null
+                    ? ($candidatePoolByManufacturer[$mid] ?? [])
+                    : $candidatePoolNoManufacturer;
+
+                $candidates = array_values(array_diff($pool, [$productId]));
                 if (empty($candidates)) {
                     continue;
                 }
-                $selected = fake()->randomElements($candidates, min($count, count($candidates)));
+
+                $desiredCount = fake()->numberBetween(5, 7);
+                $selected = fake()->randomElements($candidates, min($desiredCount, count($candidates)));
 
                 foreach ($selected as $analogueId) {
                     $analogueBuffer[] = [
