@@ -67,7 +67,8 @@ class OfferPriceFactory extends CommerceJsonFactory
     {
         return $this->state(fn (array $attributes) => [
             'price_amount' => $amount,
-            'price_type_id' => PriceTypeFactory::new()->default()->create()->id,
+            'price_type_id' => PriceType::where('is_default', true)->first()?->id
+                ?? PriceTypeFactory::new()->default()->create()->id,
         ]);
     }
 

@@ -226,8 +226,16 @@ class TestDatabaseSeeder extends Seeder
     {
         $subtotal = $order->items()->sum('total_amount');
         $delivery = $order->delivery_cost_amount ?? 0;
-        $tax = $subtotal * 0.20; // НДС 20%
-        $total = $subtotal + $delivery + $tax;
+
+        $tax = 0;
+        foreach ($order->items as $item) {
+            $rate = $item->tax_rate ?? 0;
+            $tax += $rate > 0
+                ? round($item->total_amount * $rate / (100 + $rate), 2)
+                : 0;
+        }
+
+        $total = $subtotal + $delivery;
 
         $order->update([
             'totals_subtotal_amount' => $subtotal,
@@ -299,6 +307,9 @@ class TestDatabaseSeeder extends Seeder
                 : $candidatePoolNoManufacturer;
 
             $candidates = array_values(array_diff($pool, [$productId]));
+            if (count($candidates) < 5) {
+                $candidates = array_values(array_diff($allProductIds, [$productId]));
+            }
             if (empty($candidates)) {
                 continue;
             }
