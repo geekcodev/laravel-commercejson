@@ -482,7 +482,7 @@ class LoadTestDatabaseSeeder extends Seeder
                 $priceSeq += count($priceTypes) * $priceTiers;
 
                 // Stocks (per offer)
-                if ($stocksPerOffer > 0) {
+                if ($stocksPerOffer !== 0) {
                     $this->appendStocks(
                         stocks: $stocks,
                         offerId: $offerId,
@@ -491,7 +491,6 @@ class LoadTestDatabaseSeeder extends Seeder
                         perOffer: $stocksPerOffer,
                         now: $now
                     );
-                    $stockSeq += $stocksPerOffer;
                 }
 
                 // Product properties
@@ -553,7 +552,7 @@ class LoadTestDatabaseSeeder extends Seeder
                             now: $now
                         );
 
-                        if ($stocksPerOffer > 0) {
+                        if ($stocksPerOffer !== 0) {
                             $this->appendStocks(
                                 stocks: $stocks,
                                 offerId: $variantOfferId,
@@ -674,15 +673,19 @@ class LoadTestDatabaseSeeder extends Seeder
                 array_push($candidatePoolNoManufacturer, ...$productsByManufacturer[$mid]);
             }
 
+            $allProductIds = $this->allProductIds;
             $analogueBuffer = [];
 
-            foreach ($this->allProductIds as $productId) {
+            foreach ($allProductIds as $productId) {
                 $mid = $productManufacturerMap[$productId] ?? null;
                 $pool = $mid !== null
                     ? ($candidatePoolByManufacturer[$mid] ?? [])
                     : $candidatePoolNoManufacturer;
 
                 $candidates = array_values(array_diff($pool, [$productId]));
+                if (count($candidates) < 5) {
+                    $candidates = array_values(array_diff($allProductIds, [$productId]));
+                }
                 if (empty($candidates)) {
                     continue;
                 }

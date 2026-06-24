@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace GeekCo\CommerceJson\Database\Seeders;
 
+use GeekCo\CommerceJson\Enums\CurrencyEnum;
 use GeekCo\CommerceJson\Models\Category;
 use GeekCo\CommerceJson\Models\Counterparty;
 use GeekCo\CommerceJson\Models\Offer;
@@ -162,14 +163,14 @@ class ProductSeeder extends Seeder
                     ->create([
                         'price_amount' => $amount,
                         'price_with_discount_amount' => $isDiscount ? $amount : null,
-                        'price_with_discount_currency' => $isDiscount ? 'RUB' : null,
+                        'price_with_discount_currency' => $isDiscount ? CurrencyEnum::RUB->value : null,
                         'discount_percent' => $discountPercent,
                         'min_quantity' => $index >= 2 ? ($index === 3 ? 20 : 10) : 1,
                     ]);
             }
 
             foreach ($warehouses as $whIndex => $warehouse) {
-                $qty = $productData['stock_qty'][$whIndex] ?? 0;
+                $qty = $productData['stock_qty'][$whIndex] ?? fake()->randomFloat(3, 0, 200);
 
                 Stock::factory()
                     ->forOffer($offer)
@@ -206,7 +207,7 @@ class ProductSeeder extends Seeder
                     ->create([
                         'price_amount' => $amount,
                         'price_with_discount_amount' => $isDiscount ? $amount : null,
-                        'price_with_discount_currency' => $isDiscount ? 'RUB' : null,
+                        'price_with_discount_currency' => $isDiscount ? CurrencyEnum::RUB->value : null,
                         'discount_percent' => $discountPercent,
                         'min_quantity' => $index >= 2 ? ($index === 3 ? 20 : 10) : 1,
                     ]);
@@ -288,6 +289,9 @@ class ProductSeeder extends Seeder
                 : $candidatePoolNoManufacturer;
 
             $candidates = array_values(array_diff($pool, [$productId]));
+            if (count($candidates) < 5) {
+                $candidates = array_values(array_diff($allProductIds, [$productId]));
+            }
             if (empty($candidates)) {
                 continue;
             }
