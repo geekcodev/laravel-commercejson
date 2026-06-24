@@ -21,6 +21,7 @@ use GeekCo\CommerceJson\Models\PropertyValue;
 use GeekCo\CommerceJson\Models\Stock;
 use GeekCo\CommerceJson\Models\Warehouse;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -67,6 +68,7 @@ class TestDatabaseSeeder extends Seeder
         // Создаём поставщиков и покупателей
         $supplier = Counterparty::factory()->legalEntity()->create(['name' => 'ООО "АвтоДистрибьюция"']);
         $customer = Counterparty::factory()->legalEntity()->create(['name' => 'ООО "Автосервис Плюс"']);
+        $manufacturerIds = Counterparty::query()->pluck('id')->all();
 
         // Добавляем контакты контрагентам
         for ($i = 0; $i < 3; $i++) {
@@ -115,7 +117,10 @@ class TestDatabaseSeeder extends Seeder
         foreach ($productNames as $name) {
             $products->push(Product::factory()
                 ->forCategory($categories->random())
-                ->create(['name' => $name]));
+                ->create([
+                    'name' => $name,
+                    'manufacturer_id' => ! empty($manufacturerIds) ? $manufacturerIds[array_rand($manufacturerIds)] : null,
+                ]));
         }
 
         // Создаём варианты товаров
@@ -167,32 +172,8 @@ class TestDatabaseSeeder extends Seeder
             }
         }
 
-        // Аналоги: каждому товару назначаем 5-7 случайных аналогов
-        $allProductIds = $products->pluck('id')->all();
-        $analogueBuffer = [];
-        $now = now();
-
-        foreach ($allProductIds as $productId) {
-            $count = fake()->numberBetween(5, 7);
-            $candidates = array_values(array_diff($allProductIds, [$productId]));
-            shuffle($candidates);
-            $selected = array_slice($candidates, 0, min($count, count($candidates)));
-
-            foreach ($selected as $analogueId) {
-                $analogueBuffer[] = [
-                    'product_id' => $productId,
-                    'analogue_id' => $analogueId,
-                    'created_at' => $now,
-                    'updated_at' => $now,
-                ];
-            }
-        }
-
-        if (! empty($analogueBuffer)) {
-            foreach (array_chunk($analogueBuffer, 2000) as $chunk) {
-                DB::table('product_analogues')->insert($chunk);
-            }
-        }
+        // Аналоги: каждому товару 5-7 аналогов от разных производителей
+        $this->assignAnaloguesFromDifferentManufacturers($products);
 
         // Создаём значения свойств для товаров
         $productsForProperties = $products->take(10);
@@ -254,5 +235,91 @@ class TestDatabaseSeeder extends Seeder
             'totals_tax_amount' => $tax,
             'totals_total_amount' => $total,
         ]);
+    }
+
+    /**
+     * @param  Collection<int, Product>  $products
+     */
+    private function assignAnaloguesFromDifferentManufacturers($products): void
+    {
+        $allProductIds = $products->pluck('id')->all();
+
+        if (empty($allProductIds)) {
+            return;
+        }
+
+        $productRows = DB::table('products')
+            ->whereIn('id', $allProductIds)
+            ->select('id', 'manufacturer_id')
+            ->get();
+
+        $productsByManufacturer = [];
+        $noManufacturerIds = [];
+
+        foreach ($productRows as $row) {
+            if ($row->manufacturer_id !== null) {
+                $productsByManufacturer[$row->manufacturer_id][] = $row->id;
+            } else {
+                $noManufacturerIds[] = $row->id;
+            }
+        }
+
+        $allManufacturerIds = array_keys($productsByManufacturer);
+
+        $candidatePoolByManufacturer = [];
+        foreach ($allManufacturerIds as $mid) {
+            $pool = $noManufacturerIds;
+            foreach ($allManufacturerIds as $otherMid) {
+                if ($otherMid !== $mid) {
+                    array_push($pool, ...$productsByManufacturer[$otherMid]);
+                }
+            }
+            $candidatePoolByManufacturer[$mid] = $pool;
+        }
+
+        $candidatePoolNoManufacturer = $noManufacturerIds;
+        foreach ($allManufacturerIds as $mid) {
+            array_push($candidatePoolNoManufacturer, ...$productsByManufacturer[$mid]);
+        }
+
+        $analogueBuffer = [];
+        $now = now();
+
+        foreach ($allProductIds as $productId) {
+            $productManufacturerId = null;
+            foreach ($productsByManufacturer as $mid => $ids) {
+                if (in_array($productId, $ids, true)) {
+                    $productManufacturerId = $mid;
+                    break;
+                }
+            }
+
+            $pool = $productManufacturerId !== null
+                ? ($candidatePoolByManufacturer[$productManufacturerId] ?? [])
+                : $candidatePoolNoManufacturer;
+
+            $candidates = array_values(array_diff($pool, [$productId]));
+            if (empty($candidates)) {
+                continue;
+            }
+
+            $count = fake()->numberBetween(5, 7);
+            $selected = fake()->randomElements($candidates, min($count, count($candidates)));
+
+            foreach ($selected as $analogueId) {
+                $analogueBuffer[] = [
+                    'product_id' => $productId,
+                    'analogue_id' => $analogueId,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            }
+        }
+
+        if (! empty($analogueBuffer)) {
+            foreach (array_chunk($analogueBuffer, 2000) as $chunk) {
+                DB::table('product_analogues')->insert($chunk);
+            }
+        }
     }
 }
