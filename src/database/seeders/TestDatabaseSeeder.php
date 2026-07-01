@@ -18,6 +18,7 @@ use GeekCo\CommerceJson\Models\ProductImage;
 use GeekCo\CommerceJson\Models\ProductVariant;
 use GeekCo\CommerceJson\Models\PropertyDefinition;
 use GeekCo\CommerceJson\Models\PropertyValue;
+use GeekCo\CommerceJson\Models\Representative;
 use GeekCo\CommerceJson\Models\Stock;
 use GeekCo\CommerceJson\Models\Warehouse;
 use Illuminate\Database\Seeder;
@@ -66,7 +67,7 @@ class TestDatabaseSeeder extends Seeder
         }
 
         // Создаём поставщиков и покупателей
-        $supplier = Counterparty::factory()->legalEntity()->create(['name' => 'ООО "АвтоДистрибьюция"']);
+        $supplier = Counterparty::factory()->legalEntity()->withCreditInfo()->create(['name' => 'ООО "АвтоДистрибьюция"']);
         $customer = Counterparty::factory()->legalEntity()->create(['name' => 'ООО "Автосервис Плюс"']);
         $manufacturerIds = Counterparty::query()->pluck('id')->all();
 
@@ -82,6 +83,20 @@ class TestDatabaseSeeder extends Seeder
         for ($i = 0; $i < 2; $i++) {
             BankAccount::factory()->forCounterparty($supplier)->create();
         }
+
+        // Добавляем представителей
+        Representative::factory()->forCounterparty($supplier)->create(['relation' => 'CEO']);
+        Representative::factory()->forCounterparty($customer)->create(['relation' => 'Manager']);
+
+        // Добавляем пользовательские атрибуты
+        $supplier->customAttributes()->createMany([
+            ['key' => 'source', 'value_string' => 'test_seeder'],
+            ['key' => 'rating', 'value_number' => 5],
+            ['key' => 'is_vip', 'value_boolean' => true],
+        ]);
+        $customer->customAttributes()->createMany([
+            ['key' => 'source', 'value_string' => 'test_seeder'],
+        ]);
 
         // Создаём свойства
         $properties = collect();

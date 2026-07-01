@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace GeekCo\CommerceJson\Database\Seeders;
 
 use Carbon\CarbonInterface;
+use GeekCo\CommerceJson\Enums\ContactTypeEnum;
 use GeekCo\CommerceJson\Enums\CurrencyEnum;
 use GeekCo\CommerceJson\Enums\PropertyTypeEnum;
 use GeekCo\CommerceJson\Models\Category;
@@ -231,20 +232,22 @@ class LoadTestDatabaseSeeder extends Seeder
     {
         $this->command?->info(" - Seeding {$count} extra counterparties...");
 
-        // Без фабрик: быстрый bulk insert для производителей/контрагентов.
-        // Минимально заполняем ключевые поля; остальное пусть остаётся null.
         $buffer = [];
+        $contactsBuffer = [];
+        $bankAccountsBuffer = [];
+        $representativesBuffer = [];
+        $customAttrsBuffer = [];
 
         for ($i = 1; $i <= $count; $i++) {
             $id = (string) Str::uuid();
             $name = 'Поставщик автозапчастей '.str_pad((string) $i, 6, '0', STR_PAD_LEFT);
 
-            // В таблице есть уникальные ограничения на inn/ogrn, поэтому делаем их детерминированными.
-            // Важно: базовый CounterpartySeeder использует ИНН вида 77********,
-            // поэтому здесь используем префикс 99, чтобы исключить пересечения.
             $seed2 = $seed % 100;
-            $inn = '99'.str_pad((string) (($seed2 * 1_000_000) + $i), 8, '0', STR_PAD_LEFT); // 10 digits
-            $ogrn = '99'.str_pad((string) (($seed2 * 10_000_000_000) + $i), 11, '0', STR_PAD_LEFT); // 13 digits
+            $inn = '99'.str_pad((string) (($seed2 * 1_000_000) + $i), 8, '0', STR_PAD_LEFT);
+            $ogrn = '99'.str_pad((string) (($seed2 * 10_000_000_000) + $i), 11, '0', STR_PAD_LEFT);
+
+            // 60% counterparties get credit info
+            $hasCredit = fake()->boolean(60);
 
             $buffer[] = [
                 'id' => $id,
@@ -261,20 +264,129 @@ class LoadTestDatabaseSeeder extends Seeder
                 'legal_address_city' => fake()->city(),
                 'legal_address_street' => fake()->streetName(),
                 'legal_address_house' => fake()->buildingNumber(),
+                'credit_limit_amount' => $hasCredit ? fake()->randomFloat(2, 50000, 3000000) : null,
+                'credit_limit_currency' => CurrencyEnum::RUB->value,
+                'credit_limit_remaining_amount' => $hasCredit ? fake()->randomFloat(2, 0, 2000000) : null,
+                'credit_limit_remaining_currency' => CurrencyEnum::RUB->value,
+                'payment_deferral_days' => $hasCredit ? fake()->randomElement([7, 14, 30, 45, 60]) : null,
+                'outstanding_debt_amount' => $hasCredit && fake()->boolean(50) ? fake()->randomFloat(2, 0, 1000000) : null,
+                'outstanding_debt_currency' => CurrencyEnum::RUB->value,
                 'is_active' => true,
                 'created_at' => $now,
                 'updated_at' => $now,
                 'deleted_at' => null,
             ];
 
+            // 1 email contact per counterparty
+            $contactsBuffer[] = [
+                'id' => (string) Str::uuid(),
+                'counterparty_id' => $id,
+                'type' => ContactTypeEnum::Email->value,
+                'value' => fake()->companyEmail(),
+                'comment' => null,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+
+            // 50% get a phone contact too
+            if (fake()->boolean(50)) {
+                $contactsBuffer[] = [
+                    'id' => (string) Str::uuid(),
+                    'counterparty_id' => $id,
+                    'type' => fake()->randomElement([ContactTypeEnum::Phone->value, ContactTypeEnum::Mobile->value]),
+                    'value' => fake()->phoneNumber(),
+                    'comment' => null,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            }
+
+            // 1 bank account per counterparty
+            $bankAccountsBuffer[] = [
+                'id' => (string) Str::uuid(),
+                'counterparty_id' => $id,
+                'bik' => fake()->numerify('#########'),
+                'account' => fake()->numerify('####################'),
+                'bank_name' => fake()->company().' Банк',
+                'corr_account' => fake()->numerify('####################'),
+                'swift' => null,
+                'is_default' => true,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+
+            // 30% get a representative
+            if (fake()->boolean(30)) {
+                $representativesBuffer[] = [
+                    'id' => (string) Str::uuid(),
+                    'counterparty_id' => $id,
+                    'name' => fake()->name(),
+                    'relation' => fake()->randomElement(['CEO', 'Manager', 'Accountant', 'Sales Rep']),
+                    'phone' => fake()->phoneNumber(),
+                    'email' => fake()->companyEmail(),
+                    'position' => fake()->jobTitle(),
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            }
+
+            // 40% get a custom attribute
+            if (fake()->boolean(40)) {
+                $customAttrsBuffer[] = [
+                    'id' => (string) Str::uuid(),
+                    'attributable_type' => (new Counterparty)->getMorphClass(),
+                    'attributable_id' => $id,
+                    'key' => fake()->randomElement(['source', 'rating', 'is_vip', 'segment']),
+                    'value_string' => fake()->word(),
+                    'value_number' => null,
+                    'value_boolean' => null,
+                    'value_json' => null,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            }
+
             if (count($buffer) >= $chunkSize) {
-                DB::table('counterparties')->insertOrIgnore($buffer);
+                $this->insertCounterpartyChunk($buffer, $contactsBuffer, $bankAccountsBuffer, $representativesBuffer, $customAttrsBuffer);
                 $buffer = [];
+                $contactsBuffer = [];
+                $bankAccountsBuffer = [];
+                $representativesBuffer = [];
+                $customAttrsBuffer = [];
             }
         }
 
         if (! empty($buffer)) {
-            DB::table('counterparties')->insertOrIgnore($buffer);
+            $this->insertCounterpartyChunk($buffer, $contactsBuffer, $bankAccountsBuffer, $representativesBuffer, $customAttrsBuffer);
+        }
+    }
+
+    private function insertCounterpartyChunk(array $buffer, array $contactsBuffer, array $bankAccountsBuffer, array $representativesBuffer, array $customAttrsBuffer): void
+    {
+        DB::table('counterparties')->insertOrIgnore($buffer);
+
+        if ($contactsBuffer !== []) {
+            foreach (array_chunk($contactsBuffer, 2000) as $chunk) {
+                DB::table('contacts')->insert($chunk);
+            }
+        }
+
+        if ($bankAccountsBuffer !== []) {
+            foreach (array_chunk($bankAccountsBuffer, 2000) as $chunk) {
+                DB::table('bank_accounts')->insert($chunk);
+            }
+        }
+
+        if ($representativesBuffer !== []) {
+            foreach (array_chunk($representativesBuffer, 2000) as $chunk) {
+                DB::table('representatives')->insert($chunk);
+            }
+        }
+
+        if ($customAttrsBuffer !== []) {
+            foreach (array_chunk($customAttrsBuffer, 2000) as $chunk) {
+                DB::table('custom_attributes')->insert($chunk);
+            }
         }
     }
 

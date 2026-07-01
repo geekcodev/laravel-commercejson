@@ -30,6 +30,28 @@ info:
     Все операции записи (POST/PATCH) принимают опциональный заголовок `X-Idempotency-Key`.
     Это критически важно для надежной работы в условиях нестабильной сети (повторные попытки не создают дублей).
 
+    ## Changelog v1.0.8.1
+    - `Counterparty`: добавлены поля `credit_limit_remaining` (Money), `payment_deferral_days` (integer,
+      min 0), `outstanding_debt` (Money) — остаток кредитного лимита, отсрочка платежа и текущая
+      задолженность соответственно.
+    - `UpsertCounterpartyCommandHandler`: исправлен баг — `toArray()` передавал MoneyData/AddressData
+      как вложенные объекты вместо плоских колонок (например, `credit_limit_remaining: {amount, currency}`
+      вместо `credit_limit_remaining_amount`/`credit_limit_remaining_currency`).
+      Добавлен метод `toDatabaseArray()` для корректного flatten.
+    - `Counterparty.contacts`, `Counterparty.representatives`, `Counterparty.bank_accounts`,
+      `Counterparty.custom_attributes`: теперь сохраняются в БД (ранее молча выкидывались).
+      Добавлены методы `syncContacts()`, `syncRepresentatives()`, `syncBankAccounts()`,
+      `syncCustomAttributes()` в `UpsertCounterpartyCommandHandler`.
+    - Модели `Contact`, `BankAccount`, `CustomAttribute`: добавлен `HasUuids` (багфикс — UUID PK
+      не генерировался). Модели `Representative`, `CustomAttribute`: добавлен `HasFactory`.
+    - Созданы `RepresentativeFactory`, `CustomAttributeFactory`.
+    - `CounterpartyFactory`: добавлен `withRelations()` для создания contacts/representatives/bank_accounts/
+      custom_attributes; default definition теперь заполняет credit-поля (ранее все были null).
+    - Сидеры: `CounterpartySeeder` — добавлены relations и credit fields для всех 4 контрагентов;
+      `TestDatabaseSeeder` — добавлены representatives и custom_attributes;
+      `LoadTestDatabaseSeeder` — добавлены credit fields, contacts, bank_accounts,
+      representatives и custom_attributes для bulk-генерации.
+
     ## Changelog v1.0.8
     - `OrderItemUpdate`: исправлена критическая ошибка — отсутствие идентификации позиции.
       Добавлен `anyOf:[{required:[product_id,quantity]},{required:[id,quantity]}]`: новая позиция
@@ -2533,6 +2555,16 @@ components:
         credit_limit:
           $ref: "#/components/schemas/Money"
           description: Кредитный лимит
+        credit_limit_remaining:
+          $ref: "#/components/schemas/Money"
+          description: Остаток доступного кредитного лимита
+        payment_deferral_days:
+          type: integer
+          minimum: 0
+          description: Отсрочка платежа (количество дней)
+        outstanding_debt:
+          $ref: "#/components/schemas/Money"
+          description: Текущая задолженность контрагента
         custom_attributes:
           type: array
           description: Произвольные реквизиты контрагента (ЗначенияРеквизитов в CML2)

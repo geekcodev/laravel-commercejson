@@ -11,6 +11,8 @@ use Spatie\LaravelData\Attributes\DataCollectionOf;
 use Spatie\LaravelData\Attributes\Validation\ArrayType;
 use Spatie\LaravelData\Attributes\Validation\BooleanType;
 use Spatie\LaravelData\Attributes\Validation\Enum;
+use Spatie\LaravelData\Attributes\Validation\IntegerType;
+use Spatie\LaravelData\Attributes\Validation\Min;
 use Spatie\LaravelData\Attributes\Validation\Nullable;
 use Spatie\LaravelData\Attributes\Validation\Regex;
 use Spatie\LaravelData\Attributes\Validation\Required;
@@ -62,6 +64,12 @@ class CounterpartyData extends Data
         public ?string $price_type_id = null,
         #[Nullable]
         public ?MoneyData $credit_limit = null,
+        #[Nullable]
+        public ?MoneyData $credit_limit_remaining = null,
+        #[Nullable, IntegerType, Min(0)]
+        public ?int $payment_deferral_days = null,
+        #[Nullable]
+        public ?MoneyData $outstanding_debt = null,
         #[Nullable, ArrayType, DataCollectionOf(CustomAttributeData::class)]
         public ?array $custom_attributes = null,
         #[Nullable, BooleanType]
@@ -131,6 +139,22 @@ class CounterpartyData extends Data
             $data['credit_limit'] = MoneyData::from([
                 'amount' => (string) $model->credit_limit_amount,
                 'currency' => $model->credit_limit_currency,
+            ]);
+        }
+
+        if ($model->credit_limit_remaining_amount !== null && $model->credit_limit_remaining_currency !== null) {
+            $data['credit_limit_remaining'] = MoneyData::from([
+                'amount' => (string) $model->credit_limit_remaining_amount,
+                'currency' => $model->credit_limit_remaining_currency,
+            ]);
+        }
+
+        $data['payment_deferral_days'] = $model->payment_deferral_days;
+
+        if ($model->outstanding_debt_amount !== null && $model->outstanding_debt_currency !== null) {
+            $data['outstanding_debt'] = MoneyData::from([
+                'amount' => (string) $model->outstanding_debt_amount,
+                'currency' => $model->outstanding_debt_currency,
             ]);
         }
 

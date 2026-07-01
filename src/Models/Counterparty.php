@@ -54,6 +54,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string|null $price_type_id
  * @property string|null $credit_limit_amount
  * @property string|null $credit_limit_currency
+ * @property string|null $credit_limit_remaining_amount
+ * @property string|null $credit_limit_remaining_currency
+ * @property int|null $payment_deferral_days
+ * @property string|null $outstanding_debt_amount
+ * @property string|null $outstanding_debt_currency
  * @property bool|null $is_active
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -109,6 +114,11 @@ class Counterparty extends Model
         'price_type_id',
         'credit_limit_amount',
         'credit_limit_currency',
+        'credit_limit_remaining_amount',
+        'credit_limit_remaining_currency',
+        'payment_deferral_days',
+        'outstanding_debt_amount',
+        'outstanding_debt_currency',
         'is_active',
     ];
 
@@ -117,6 +127,11 @@ class Counterparty extends Model
         'registration_date' => 'date',
         'credit_limit_amount' => 'decimal:2',
         'credit_limit_currency' => CurrencyEnum::class,
+        'credit_limit_remaining_amount' => 'decimal:2',
+        'credit_limit_remaining_currency' => CurrencyEnum::class,
+        'payment_deferral_days' => 'integer',
+        'outstanding_debt_amount' => 'decimal:2',
+        'outstanding_debt_currency' => CurrencyEnum::class,
         'is_active' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
