@@ -121,6 +121,69 @@ class CounterpartyDataTest extends TestCase
         $this->assertNull($dto->credit_limit);
     }
 
+    public function test_from_model_maps_credit_limit_remaining(): void
+    {
+        $model = Counterparty::factory()->make([
+            'credit_limit_remaining_amount' => '300000.00',
+            'credit_limit_remaining_currency' => CurrencyEnum::RUB->value,
+        ]);
+
+        $dto = CounterpartyData::fromModel($model);
+
+        $this->assertInstanceOf(MoneyData::class, $dto->credit_limit_remaining);
+        $this->assertSame('300000.00', $dto->credit_limit_remaining->amount);
+        $this->assertSame(CurrencyEnum::RUB, $dto->credit_limit_remaining->currency);
+    }
+
+    public function test_from_model_skips_credit_limit_remaining_when_amount_null(): void
+    {
+        $model = Counterparty::factory()->make([
+            'credit_limit_remaining_amount' => null,
+            'credit_limit_remaining_currency' => CurrencyEnum::RUB->value,
+        ]);
+
+        $dto = CounterpartyData::fromModel($model);
+
+        $this->assertNull($dto->credit_limit_remaining);
+    }
+
+    public function test_from_model_maps_payment_deferral_days(): void
+    {
+        $model = Counterparty::factory()->make([
+            'payment_deferral_days' => 45,
+        ]);
+
+        $dto = CounterpartyData::fromModel($model);
+
+        $this->assertSame(45, $dto->payment_deferral_days);
+    }
+
+    public function test_from_model_maps_outstanding_debt(): void
+    {
+        $model = Counterparty::factory()->make([
+            'outstanding_debt_amount' => '15000.00',
+            'outstanding_debt_currency' => CurrencyEnum::RUB->value,
+        ]);
+
+        $dto = CounterpartyData::fromModel($model);
+
+        $this->assertInstanceOf(MoneyData::class, $dto->outstanding_debt);
+        $this->assertSame('15000.00', $dto->outstanding_debt->amount);
+        $this->assertSame(CurrencyEnum::RUB, $dto->outstanding_debt->currency);
+    }
+
+    public function test_from_model_skips_outstanding_debt_when_amount_null(): void
+    {
+        $model = Counterparty::factory()->make([
+            'outstanding_debt_amount' => null,
+            'outstanding_debt_currency' => CurrencyEnum::RUB->value,
+        ]);
+
+        $dto = CounterpartyData::fromModel($model);
+
+        $this->assertNull($dto->outstanding_debt);
+    }
+
     public function test_from_model_maps_loaded_relations(): void
     {
         $model = Counterparty::factory()->make();

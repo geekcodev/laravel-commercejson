@@ -6,7 +6,10 @@ namespace GeekCo\CommerceJson\Database\Factories;
 
 use GeekCo\CommerceJson\Enums\CounterpartyTypeEnum;
 use GeekCo\CommerceJson\Enums\CurrencyEnum;
+use GeekCo\CommerceJson\Models\BankAccount;
+use GeekCo\CommerceJson\Models\Contact;
 use GeekCo\CommerceJson\Models\Counterparty;
+use GeekCo\CommerceJson\Models\Representative;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -58,8 +61,13 @@ class CounterpartyFactory extends CommerceJsonFactory
             'actual_address_postal_code' => fake()->postcode(),
             'actual_address_full' => null,
             'price_type_id' => null,
-            'credit_limit_amount' => null,
+            'credit_limit_amount' => fake()->randomFloat(2, 50000, 2000000),
             'credit_limit_currency' => CurrencyEnum::RUB->value,
+            'credit_limit_remaining_amount' => fake()->randomFloat(2, 0, 1000000),
+            'credit_limit_remaining_currency' => CurrencyEnum::RUB->value,
+            'payment_deferral_days' => fake()->boolean(70) ? fake()->randomElement([7, 14, 30, 45, 60]) : null,
+            'outstanding_debt_amount' => fake()->boolean(50) ? fake()->randomFloat(2, 0, 500000) : null,
+            'outstanding_debt_currency' => CurrencyEnum::RUB->value,
             'is_active' => true,
             'created_at' => now(),
             'updated_at' => now(),
@@ -118,6 +126,21 @@ class CounterpartyFactory extends CommerceJsonFactory
     }
 
     /**
+     * Контрагент с полной кредитной информацией
+     */
+    public function withCreditInfo(float $limit = 100000, float $remaining = 50000, float $debt = 25000, int $deferralDays = 30): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'credit_limit_amount' => $limit,
+            'credit_limit_remaining_amount' => $remaining,
+            'credit_limit_remaining_currency' => CurrencyEnum::RUB->value,
+            'payment_deferral_days' => $deferralDays,
+            'outstanding_debt_amount' => $debt,
+            'outstanding_debt_currency' => CurrencyEnum::RUB->value,
+        ]);
+    }
+
+    /**
      * Активный контрагент
      */
     public function active(): static
@@ -145,5 +168,20 @@ class CounterpartyFactory extends CommerceJsonFactory
         return $this->state(fn (array $attributes) => [
             'deleted_at' => now(),
         ]);
+    }
+
+    /**
+     * Контрагент со связанными сущностями (контакты, представители, счета, атрибуты)
+     */
+    public function withRelations(): static
+    {
+        return $this->afterCreating(function (Counterparty $counterparty) {
+            Contact::factory()->count(2)->forCounterparty($counterparty)->create();
+            BankAccount::factory()->count(1)->forCounterparty($counterparty)->create();
+            Representative::factory()->count(1)->forCounterparty($counterparty)->create();
+            $counterparty->customAttributes()->createMany([
+                ['key' => 'source', 'value_string' => 'factory', 'value_number' => null, 'value_boolean' => null, 'value_json' => null],
+            ]);
+        });
     }
 }

@@ -18,7 +18,9 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Spatie\LaravelData\DataCollection;
+use Spatie\LaravelData\Exceptions\CannotCastEnum;
 
 class CounterpartyController extends Controller
 {
@@ -65,7 +67,20 @@ class CounterpartyController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $import = CounterpartyImportData::from($request->all());
+        try {
+            $import = CounterpartyImportData::from($request->all());
+        } catch (CannotCastEnum $e) {
+            return response()->json(
+                ErrorResponseData::from([
+                    'error' => [
+                        'code' => 'VALIDATION_ERROR',
+                        'message' => $e->getMessage(),
+                    ],
+                ]),
+                422
+            );
+        }
+
         $processed = 0;
         $errors = [];
 
@@ -83,10 +98,14 @@ class CounterpartyController extends Controller
                     'message' => $fe->getMessage(),
                 ];
             } catch (\Exception $e) {
+                Log::warning('Counterparty import failed', [
+                    'counterparty_id' => $counterpartyData->id,
+                    'error' => $e->getMessage(),
+                ]);
                 $errors[] = [
                     'id' => $counterpartyData->id,
                     'code' => 'INTERNAL_ERROR',
-                    'message' => $e->getMessage(),
+                    'message' => 'Internal error processing counterparty',
                 ];
             }
         }

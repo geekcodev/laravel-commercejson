@@ -9,6 +9,7 @@ use Spatie\LaravelData\Attributes\Validation\Nullable;
 use Spatie\LaravelData\Attributes\Validation\Regex;
 use Spatie\LaravelData\Attributes\Validation\Required;
 use Spatie\LaravelData\Attributes\Validation\StringType;
+use Spatie\LaravelData\Attributes\Validation\Uuid;
 use Spatie\LaravelData\Data;
 
 class BankAccountData extends Data
@@ -26,5 +27,7 @@ class BankAccountData extends Data
         public ?string $swift = null,
         #[Nullable, BooleanType]
         public ?bool $is_default = false,
+        #[Nullable, StringType, Uuid]
+        public ?string $id = null,
     ) {}
 }
