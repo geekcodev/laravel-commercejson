@@ -143,6 +143,7 @@ class OrderController extends Controller
                     custom_attributes: $bulkItem->custom_attributes,
                     items: $items,
                     deliveryTrack: $bulkItem->delivery,
+                    linkedDocuments: $bulkItem->linked_documents,
                 ));
                 $processed++;
             } catch (QueryException $e) {

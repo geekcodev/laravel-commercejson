@@ -19,7 +19,7 @@ readonly class GetOrderQueryHandler implements QueryHandlerInterface
         assert($query instanceof GetOrderQuery);
 
         return $this->orderRepository->newQuery()
-            ->with('items')
+            ->with(['items', 'linkedDocuments'])
             ->findOrFail($query->id);
     }
 }

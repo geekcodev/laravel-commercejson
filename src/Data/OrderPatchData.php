@@ -28,5 +28,7 @@ class OrderPatchData extends Data
         public ?OrderPatchPaymentData $payment = null,
         #[Nullable]
         public ?OrderDeliveryTrackData $delivery = null,
+        #[Nullable, ArrayType, DataCollectionOf(LinkedDocumentData::class)]
+        public ?array $linked_documents = null,
     ) {}
 }

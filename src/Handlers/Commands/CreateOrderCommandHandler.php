@@ -8,6 +8,7 @@ use GeekCo\CommerceJson\Commands\CommandInterface;
 use GeekCo\CommerceJson\Commands\CreateOrderCommand;
 use GeekCo\CommerceJson\Enums\CurrencyEnum;
 use GeekCo\CommerceJson\Enums\OrderStatusEnum;
+use GeekCo\CommerceJson\Models\Order;
 use GeekCo\CommerceJson\Models\Product;
 use GeekCo\CommerceJson\Repositories\OrderRepository;
 use GeekCo\CommerceJson\Repositories\ProductRepository;
@@ -122,6 +123,11 @@ class CreateOrderCommandHandler implements CommandHandlerInterface
                 }
             }
 
+            if ($createData->linked_documents) {
+                assert($order instanceof Order);
+                $this->orderRepository->syncLinkedDocuments($order, $createData->linked_documents);
+            }
+
             $productIds = array_unique(array_map(fn ($i) => $i->product_id, $createData->items));
             $products = $this->productRepository->newQuery()
                 ->whereIn('id', $productIds)
@@ -167,7 +173,7 @@ class CreateOrderCommandHandler implements CommandHandlerInterface
                 'totals_total_currency' => $currency->value,
             ]);
 
-            return $order->load('items');
+            return $order->load(['items', 'linkedDocuments']);
         });
     }
 }
