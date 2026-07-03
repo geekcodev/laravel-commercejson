@@ -145,4 +145,66 @@ describe('ApiLoggingMiddleware', function () {
             expect($this->testHandler->getRecords())->toBeEmpty();
         });
     });
+
+    it('excludes request body for matching paths but still logs metadata', function () {
+        mockCommandBus()->shouldReceive('dispatch')
+            ->zeroOrMoreTimes();
+
+        config()->set('commercejson.api_logging.exclude_request_body_paths', ['orders']);
+
+        $this->postJson('/api/commercejson/orders', ['document_type' => 'order']);
+
+        $records = $this->testHandler->getRecords();
+        $requestRecord = collect($records)->firstWhere('message', 'Incoming API request');
+
+        expect($requestRecord['context'])->toHaveKey('method');
+        expect($requestRecord['context'])->toHaveKey('url');
+        expect($requestRecord['context'])->not->toHaveKey('body');
+    });
+
+    it('excludes response body for matching paths but still logs metadata', function () {
+        mockCommandBus()->shouldReceive('dispatch')
+            ->zeroOrMoreTimes();
+
+        config()->set('commercejson.api_logging.log_response_body', true);
+        config()->set('commercejson.api_logging.exclude_response_body_paths', ['orders']);
+
+        $this->postJson('/api/commercejson/orders', ['document_type' => 'order']);
+
+        $records = $this->testHandler->getRecords();
+        $responseRecord = collect($records)->firstWhere('message', 'API response');
+
+        expect($responseRecord['context'])->toHaveKey('status');
+        expect($responseRecord['context'])->toHaveKey('duration_ms');
+        expect($responseRecord['context'])->not->toHaveKey('body');
+    });
+
+    it('includes request body when path is not excluded', function () {
+        mockCommandBus()->shouldReceive('dispatch')
+            ->zeroOrMoreTimes();
+
+        config()->set('commercejson.api_logging.exclude_request_body_paths', ['products']);
+
+        $this->postJson('/api/commercejson/orders', ['document_type' => 'order']);
+
+        $records = $this->testHandler->getRecords();
+        $requestRecord = collect($records)->firstWhere('message', 'Incoming API request');
+
+        expect($requestRecord['context']['body']['document_type'])->toBe('order');
+    });
+
+    it('includes response body when path is not excluded', function () {
+        mockCommandBus()->shouldReceive('dispatch')
+            ->zeroOrMoreTimes();
+
+        config()->set('commercejson.api_logging.log_response_body', true);
+        config()->set('commercejson.api_logging.exclude_response_body_paths', ['products']);
+
+        $this->postJson('/api/commercejson/orders', ['document_type' => 'order']);
+
+        $records = $this->testHandler->getRecords();
+        $responseRecord = collect($records)->firstWhere('message', 'API response');
+
+        expect($responseRecord['context']['body'])->not->toBeNull();
+    });
 });

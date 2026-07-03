@@ -396,7 +396,7 @@ ExchangeManager → ProductImporter / OrderImporter / ClassifierImporter / Order
 ## Тестирование
 
 ```bash
-docker compose exec app vendor/bin/pest                              # Запуск всех тестов (Pest v3.8, 204 теста, 1072 assertions)
+docker compose exec app vendor/bin/pest                              # Запуск всех тестов (Pest v3.8, 208 тестов, 1084 assertions)
 docker compose exec app vendor/bin/pest --parallel                   # Параллельный запуск
 docker compose exec app vendor/bin/phpstan analyse                   # PHPStan (локально)
 docker compose exec app vendor/bin/phpstan analyse --error-format=github  # PHPStan (как в CI — обязателен перед push)
@@ -700,6 +700,17 @@ docker compose exec app vendor/bin/pint --test                       # Pint то
   nullsafe). **0 errors.**
 - **Warehouse:** добавлены поля `is_partner` и `can_cancel_order` (nullable boolean) — spec, migration, model, DTO
 - **Тесты:** 204 tests (1072 assertions), PHPStan 0 errors, Pint clean
+
+### Сессия 16 — exclude_request_body_paths / exclude_response_body_paths (выборочное логирование body)
+
+- **Новые конфиг-опции** в секции `api_logging`:
+    - `exclude_request_body_paths` — пути, для которых логируются метаданные запроса, но **не тело**
+    - `exclude_response_body_paths` — пути, для которых логируются статус и длительность, но **не тело ответа**
+- **`LogApiRequestsMiddleware`:** извлечена общая логика проверки пути в `isPathExcluded()`, используется во всех
+  трёх проверках (`exclude_paths`, `exclude_request_body_paths`, `exclude_response_body_paths`)
+- **Тесты (4):** request body excluded для matching paths, response body excluded для matching paths,
+  request body включён когда путь не в exclude, response body включён когда путь не в exclude
+- **208 тестов (1084 assertions), PHPStan 0 errors, Pint clean**
 
 ---
 
