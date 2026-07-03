@@ -98,7 +98,11 @@ class BulkUpsertOrderCommandHandler implements CommandHandlerInterface
             $this->applyDeliveryTracking($order, $command->deliveryTrack);
         }
 
-        return $order->fresh();
+        if ($command->linkedDocuments !== null) {
+            $this->orderRepository->syncLinkedDocuments($order, $command->linkedDocuments);
+        }
+
+        return $order->fresh('linkedDocuments');
     }
 
     private function updateExisting(Order $order, BulkUpsertOrderCommand $command): Order
@@ -122,7 +126,11 @@ class BulkUpsertOrderCommandHandler implements CommandHandlerInterface
             $this->applyDeliveryTracking($order, $command->deliveryTrack);
         }
 
-        return $order->fresh();
+        if ($command->linkedDocuments !== null) {
+            $this->orderRepository->syncLinkedDocuments($order, $command->linkedDocuments);
+        }
+
+        return $order->fresh('linkedDocuments');
     }
 
     private function syncItems(Order $order, array $items): void

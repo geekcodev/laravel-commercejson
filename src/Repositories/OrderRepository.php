@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace GeekCo\CommerceJson\Repositories;
 
+use GeekCo\CommerceJson\Data\LinkedDocumentData;
 use GeekCo\CommerceJson\Models\Order;
 use Illuminate\Support\Collection;
 
@@ -25,5 +26,34 @@ class OrderRepository extends BaseRepository
         $order = $this->model->where('external_id', $externalId)->first();
 
         return $order;
+    }
+
+    /**
+     * @param  array<int, LinkedDocumentData>  $linkedDocuments
+     */
+    public function syncLinkedDocuments(Order $order, array $linkedDocuments): void
+    {
+        $sync = [];
+        $skippedSelf = false;
+
+        foreach ($linkedDocuments as $doc) {
+            if ($doc->id === $order->id) {
+                $skippedSelf = true;
+
+                continue;
+            }
+
+            $sync[$doc->id] = [
+                'type' => $doc->type->value,
+                'external_id' => $doc->external_id,
+            ];
+        }
+
+        // All items were self-references — preserve existing links
+        if ($skippedSelf && $sync === []) {
+            return;
+        }
+
+        $order->linkedDocuments()->sync($sync);
     }
 }

@@ -18,7 +18,7 @@ readonly class GetCounterpartiesQueryHandler implements QueryHandlerInterface
     {
         assert($query instanceof GetCounterpartiesQuery);
 
-        $qb = $this->counterpartyRepository->newQuery();
+        $qb = $this->counterpartyRepository->newQuery()->with('documents');
 
         if ($query->type !== null) {
             $qb->where('type', $query->type);

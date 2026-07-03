@@ -2,8 +2,10 @@
 
 declare(strict_types=1);
 
+use GeekCo\CommerceJson\Data\LinkedDocumentData;
 use GeekCo\CommerceJson\Enums\CounterpartyTypeEnum;
 use GeekCo\CommerceJson\Enums\CurrencyEnum;
+use GeekCo\CommerceJson\Enums\DocumentTypeEnum;
 use GeekCo\CommerceJson\Enums\OrderStatusEnum;
 use GeekCo\CommerceJson\Enums\PropertyTypeEnum;
 use GeekCo\CommerceJson\Models\Category;
@@ -113,6 +115,102 @@ describe('OrderRepository', function () {
         $found = $repo->findByStatus(OrderStatusEnum::New->value);
 
         expect($found)->toHaveCount(3);
+    });
+
+    it('syncs linked documents', function () {
+        $order = Order::factory()->create();
+        $linked = Order::factory()->create();
+
+        $repo = new OrderRepository(new Order);
+        $repo->syncLinkedDocuments($order, [
+            new LinkedDocumentData(
+                id: $linked->id,
+                type: DocumentTypeEnum::Order,
+            ),
+        ]);
+
+        test()->assertDatabaseHas('order_linked_documents', [
+            'order_id' => $order->id,
+            'linked_order_id' => $linked->id,
+            'type' => DocumentTypeEnum::Order->value,
+        ]);
+    });
+
+    it('replaces linked documents on sync', function () {
+        $order = Order::factory()->create();
+        $oldLinked = Order::factory()->create();
+        $newLinked = Order::factory()->create();
+        $order->linkedDocuments()->attach($oldLinked->id, ['type' => DocumentTypeEnum::Order->value]);
+
+        $repo = new OrderRepository(new Order);
+        $repo->syncLinkedDocuments($order, [
+            new LinkedDocumentData(
+                id: $newLinked->id,
+                type: DocumentTypeEnum::Invoice,
+            ),
+        ]);
+
+        test()->assertDatabaseMissing('order_linked_documents', [
+            'order_id' => $order->id,
+            'linked_order_id' => $oldLinked->id,
+        ]);
+        test()->assertDatabaseHas('order_linked_documents', [
+            'order_id' => $order->id,
+            'linked_order_id' => $newLinked->id,
+            'type' => DocumentTypeEnum::Invoice->value,
+        ]);
+    });
+
+    it('clears all linked documents via empty array', function () {
+        $order = Order::factory()->create();
+        $linked = Order::factory()->create();
+        $order->linkedDocuments()->attach($linked->id, ['type' => DocumentTypeEnum::Order->value]);
+
+        $repo = new OrderRepository(new Order);
+        $repo->syncLinkedDocuments($order, []);
+
+        test()->assertDatabaseMissing('order_linked_documents', [
+            'order_id' => $order->id,
+        ]);
+    });
+
+    it('ignores self-link in linked documents', function () {
+        $order = Order::factory()->create();
+
+        $repo = new OrderRepository(new Order);
+        $repo->syncLinkedDocuments($order, [
+            new LinkedDocumentData(
+                id: $order->id,
+                type: DocumentTypeEnum::Order,
+            ),
+        ]);
+
+        test()->assertDatabaseMissing('order_linked_documents', [
+            'order_id' => $order->id,
+        ]);
+    });
+
+    it('preserves existing links when all linked are self-references', function () {
+        $order = Order::factory()->create();
+        $linked = Order::factory()->create();
+        $order->linkedDocuments()->attach($linked->id, ['type' => DocumentTypeEnum::Order->value]);
+
+        $repo = new OrderRepository(new Order);
+        $repo->syncLinkedDocuments($order, [
+            new LinkedDocumentData(
+                id: $order->id,
+                type: DocumentTypeEnum::Order,
+            ),
+            new LinkedDocumentData(
+                id: $order->id,
+                type: DocumentTypeEnum::Invoice,
+            ),
+        ]);
+
+        test()->assertDatabaseHas('order_linked_documents', [
+            'order_id' => $order->id,
+            'linked_order_id' => $linked->id,
+        ]);
     });
 });
 

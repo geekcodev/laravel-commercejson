@@ -7,6 +7,8 @@ namespace GeekCo\CommerceJson\Data;
 use Carbon\Carbon;
 use GeekCo\CommerceJson\Enums\CounterpartyTypeEnum;
 use GeekCo\CommerceJson\Models\Counterparty;
+use GeekCo\CommerceJson\Models\Document;
+use Illuminate\Database\Eloquent\Collection;
 use Spatie\LaravelData\Attributes\DataCollectionOf;
 use Spatie\LaravelData\Attributes\Validation\ArrayType;
 use Spatie\LaravelData\Attributes\Validation\BooleanType;
@@ -72,6 +74,8 @@ class CounterpartyData extends Data
         public ?MoneyData $outstanding_debt = null,
         #[Nullable, ArrayType, DataCollectionOf(CustomAttributeData::class)]
         public ?array $custom_attributes = null,
+        #[Nullable, ArrayType, DataCollectionOf(CounterpartyDocumentData::class)]
+        public ?array $documents = null,
         #[Nullable, BooleanType]
         public ?bool $is_active = null,
         #[Nullable]
@@ -172,6 +176,14 @@ class CounterpartyData extends Data
 
         if ($model->relationLoaded('custom_attributes')) {
             $data['custom_attributes'] = CustomAttributeData::collect($model->custom_attributes, DataCollection::class);
+        }
+
+        if ($model->relationLoaded('documents')) {
+            /** @var Collection<int, Document> $documents */
+            $documents = $model->documents;
+            $data['documents'] = $documents->map(
+                fn (Document $doc) => CounterpartyDocumentData::createForOutput($doc),
+            )->all();
         }
 
         return static::from($data);

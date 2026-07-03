@@ -5,7 +5,7 @@
 - **Пакет:** `geekcodev/laravel-commercejson`
 - **Описание:** Интеграция CommerceJSON v1.0.8 для Laravel 13
 - **Тип:** Laravel-пакет (library)
-- **Стандарт:** OpenAPI 3.1 — `spec.yaml` (2682 строки, 40+ схем)
+- **Стандарт:** OpenAPI 3.1 — `spec.yaml` (2770+ строк, 40+ схем)
 - **Назначение:** Двусторонний обмен коммерческими данными между ERP (1С) и сайтом
 - **Namespace:** `GeekCo\CommerceJson\`
 - **Провайдер:** `CommerceJsonServiceProvider` (autodiscovery через `composer.json`)
@@ -160,7 +160,7 @@ class ProductData extends Data
 - Модель → DTO: `ProductData::from($model)`
 - Коллекция → DTO collection: `ProductData::collect($collection, DataCollection::class)`
 
-### Файлы DTO (49 в `src/Data/`)
+### Файлы DTO (50 в `src/Data/`)
 
 | Категория | Файлы                                                                                                                                                                                                                                                 |
 |-----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -168,7 +168,7 @@ class ProductData extends Data
 | Products  | `ProductData`, `ProductVariantData`, `ProductImageData`, `ProductListData`, `ProductImportData`                                                                                                                                                       |
 | Offers    | `OfferData`, `OfferImportData`, `OfferListData`, `OfferPriceData`, `StockData`                                                                                                                                                                        |
 | Orders    | `OrderData`, `OrderCreateData`, `OrderImportData`, `OrderListData`, `OrderItemData`, `OrderItemCreateData`, `OrderItemUpdateData`, `OrderBulkUpdateItemData`, `OrderDeliveryTrackData`, `OrderItemTaxData`, `OrderPatchData`, `OrderPatchPaymentData` |
-| Customers | `OrderCustomerData`, `OrderDeliveryData`, `OrderPaymentData`, `OrderTotalsData`, `CounterpartyData`, `CounterpartyListData`, `CounterpartyImportData`, `ContactData`, `BankAccountData`                                                               |
+| Customers | `OrderCustomerData`, `OrderDeliveryData`, `OrderPaymentData`, `OrderTotalsData`, `CounterpartyData`, `CounterpartyListData`, `CounterpartyImportData`, `ContactData`, `BankAccountData`, `CounterpartyDocumentData`                                   |
 | Warehouse | `WarehouseData`, `WarehouseImportData`                                                                                                                                                                                                                |
 | Common    | `MoneyData`, `AddressData`, `SeoMetaData`, `DimensionsData`, `UnitData`, `ManufacturerData`, `SignatoryData`, `CustomAttributeData`, `PropertyValueData`, `StatusHistoryEntryData`                                                                    |
 | Handshake | `HandshakeResponseData`, `CapabilitiesData`                                                                                                                                                                                                           |
@@ -276,7 +276,7 @@ interface RepositoryInterface
 
 ---
 
-## Модели (23 Eloquent-модели в `src/Models/`)
+## Модели (24 Eloquent-модели в `src/Models/`)
 
 | Модель             | SoftDeletes | HasUuids | Ключевые связи                        |
 |--------------------|-------------|----------|---------------------------------------|
@@ -288,6 +288,7 @@ interface RepositoryInterface
 | ProductComponent   | —           | —        | pivot (product_id, component_id, qty) |
 | Offer              | ✓           | ✓        | product, variant, prices, stocks      |
 | OfferPrice         | —           | —        | offer, priceType                      |
+| Document           | ✓           | ✓        | documentable (polymorphic)            |
 | PriceType          | —           | ✓        | offerPrices, counterparties           |
 | Stock              | —           | —        | offer, warehouse                      |
 | Warehouse          | ✓           | ✓        | stocks, orders                        |
@@ -395,7 +396,7 @@ ExchangeManager → ProductImporter / OrderImporter / ClassifierImporter / Order
 ## Тестирование
 
 ```bash
-docker compose exec app vendor/bin/pest                              # Запуск всех тестов (Pest v3.8, 127 тестов, 900 assertions)
+docker compose exec app vendor/bin/pest                              # Запуск всех тестов (Pest v3.8, 202 теста, 1064 assertions)
 docker compose exec app vendor/bin/pest --parallel                   # Параллельный запуск
 docker compose exec app vendor/bin/phpstan analyse                   # PHPStan (локально)
 docker compose exec app vendor/bin/phpstan analyse --error-format=github  # PHPStan (как в CI — обязателен перед push)
@@ -646,6 +647,59 @@ docker compose exec app vendor/bin/pint --test                       # Pint то
 - **Новый DTO:** `CounterpartyImportData` (итого 49 DTO)
 - **127 тестов (900 assertions), PHPStan 0 errors, Pint clean****
 
+### Сессия 13 — Документы для контрагентов (Document entity, polymorphic, base64 upload)
+
+- **Новая сущность Document** — полиморфная (`documentable_type`/`documentable_id`), поддерживает привязку к любым
+  сущностям (контрагенты, в будущем заказы)
+- **`FileDocumentTypeEnum`** — типы: contract, invoice, act, receipt, statement, waybill, certificate, other
+- **`CounterpartyDocumentData`** — DTO с `external_id` (required), `file_content` (base64, только для записи),
+  условная валидация (если есть file_content → type, name, file_name обязательны)
+- **`DocumentRepository`** — `findByExternalId()`, `deleteMissingExternalIds()`
+- **`UpsertCounterpartyCommandHandler`** — `syncDocuments()`: полная перезапись по external_id, dedup,
+  сохранение файлов через Storage, удаление отсутствующих. Транзакция.
+- **`CounterpartyData`** — добавлено поле `documents` (nullable), `fromModel()` генерирует `download_url`
+- **Загрузка/скачивание:** `POST /counterparties` принимает base64 в JSON, `GET /{id}` возвращает download_url,
+  `GET /{counterpartyId}/documents/{documentId}/download` — stream файла с Content-Disposition
+- **`spec.yaml`** — добавлена схема `CounterpartyDocument`, поле `documents` в `Counterparty`, changelog v1.0.8.3
+- **Config:** секция `documents` (disk, path, max_file_size, allowed_mime_types)
+- **Code quality:** 167 tests (985 assertions), PHPStan 0 errors on new code (4 pre-existing in
+  UpsertOrderCommandHandler),
+  Pint clean
+- **Итоговое кол-во DTO:** 50 (добавлен `CounterpartyDocumentData`)
+
+### Сессия 14 — Code review doc-загрузки, исправление 10 issues
+
+- **HIGH: Удалён** `GET /counterparties/{counterpartyId}/documents/{documentId}/download` — роут и метод контроллера
+  (не нужен, документы отдаются через внешние защищённые ссылки). `download_url` в ответе сохранён.
+- **HIGH: Repository pattern enforcement:**
+    - `UpsertCounterpartyCommandHandler::syncDocuments()`: `Document::create()` → `$this->documentRepository->create()`
+    - `CounterpartyController::downloadDocument()`: удалён вместе с прямым `Document::where()`
+- **MEDIUM: `max_file_size` validation** — добавлена в `CounterpartyDocumentData::withValidator()` (проверка размера
+  base64 перед декодингом). Config default: 20MB → 10MB.
+- **MEDIUM: `file_path` nullable** — миграция изменена (`->nullable()`), phantom `.bin` path удалён.
+- **MEDIUM: Invalid base64 logging** — `Log::warning()` при `base64_decode()` failure (ранее silent skip).
+- **MEDIUM: morphClass fix** — удалён `new Counterparty` из контроллера (весь метод удалён).
+- **LOW: Document в config** — `'document' => Document::class` добавлен в `commercejson.php` models.
+- **LOW: Metadata update без файла** — `syncDocuments()` теперь обновляет только явно переданные поля
+  (type, name, file_name, description) без необходимости перезагружать файл. `external_id` без других полей = confirm.
+- **Тесты:** 199 tests (1057 assertions), PHPStan 0 errors (4 pre-existing), Pint clean
+
+### Сессия 15 — Code review финальных замечаний, production hardening
+
+- **HIGH fix:** `DocumentRepository::findByExternalId()` — добавлен `->withTrashed()`, чтобы избежать unique violation
+  при re-import ранее soft-deleted документа. В `syncDocuments()` добавлен `$existing->restore()`.
+- **MEDIUM fix:** `max_file_size` — добавлена проверка в `syncDocuments()` после base64 decode (дублирующая
+  DTO-валидацию, defense-in-depth).
+- **MEDIUM fix:** Repository pattern enforcement — `$existing->update()` → `$this->documentRepository->update()`.
+- **MEDIUM fix:** `Storage::delete($oldFile)` — старый файл удаляется с диска при замене документа.
+- **LOW fix:** `disk` приведён к `'public'` везде (migration default, factory, tests). Ранее было `'local'`.
+- **LOW fix:** `CounterpartyDocumentData::createForOutput()` — `uploaded_at` передаётся Carbon, не строка.
+- **Spec compliance:** 5 output-only полей маркированы `readonly` в DTO (`id`, `mime_type`, `file_size`,
+  `download_url`, `uploaded_at`).
+- **PHPStan:** исправлены 4 pre-existing ошибки в `UpsertOrderCommandHandler` (type narrowing, always-true condition,
+  nullsafe). **0 errors.**
+- **Тесты:** 202 tests (1064 assertions), PHPStan 0 errors, Pint clean
+
 ---
 
 ## Ключевые файлы
@@ -657,9 +711,9 @@ docker compose exec app vendor/bin/pint --test                       # Pint то
 | `src/CommerceJsonServiceProvider.php`                     | Service provider с Bus::map() и QueryBus                         |
 | `src/config/commercejson.php`                             | Конфигурация пакета                                              |
 | `src/Http/Controllers/`                                   | 6 контроллеров + HandshakeController                             |
-| `src/Data/`                                               | 49 DTO (Spatie Laravel Data v4)                                  |
-| `src/Models/`                                             | 23 Eloquent-модели                                               |
-| `src/Repositories/`                                       | RepositoryInterface + 10 реализаций                              |
+| `src/Data/`                                               | 50 DTO (Spatie Laravel Data v4)                                  |
+| `src/Models/`                                             | 24 Eloquent-модели                                               |
+| `src/Repositories/`                                       | RepositoryInterface + 11 реализаций                              |
 | `src/Exchange/`                                           | Координация синхронизации (импортёры, экспортёры, jobs, команды) |
 | `tests/TestCase.php`                                      | Testbench bootstrap                                              |
 | `tests/Pest.php`                                          | Глобальные хелперы и конфигурация                                |
@@ -670,3 +724,7 @@ docker compose exec app vendor/bin/pint --test                       # Pint то
 | `src/Data/OrderPatchData.php`                             | DTO для PATCH /orders/{id}                                       |
 | `src/Data/OrderPatchPaymentData.php`                      | DTO payment для PATCH                                            |
 | `src/Http/Middleware/LogApiRequestsMiddleware.php`        | Middleware для логирования всех API-запросов                     |
+| `src/Models/Document.php`                                 | Полиморфная модель документов (base64-файлы)                     |
+| `src/Data/CounterpartyDocumentData.php`                   | DTO для загрузки документов контрагента                          |
+| `src/Repositories/DocumentRepository.php`                 | Репозиторий для работы с документами                             |
+| `src/Enums/FileDocumentTypeEnum.php`                      | Enum типов файлов документов                                     |

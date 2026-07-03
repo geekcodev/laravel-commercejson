@@ -50,6 +50,8 @@ class OrderCreateData extends Data
         public ?array $custom_attributes = null,
         #[Nullable, ArrayType, DataCollectionOf(SignatoryData::class)]
         public ?array $signatories = null,
+        #[Nullable, ArrayType, DataCollectionOf(LinkedDocumentData::class)]
+        public ?array $linked_documents = null,
     ) {}
 
     public static function withValidator(Validator $validator): void

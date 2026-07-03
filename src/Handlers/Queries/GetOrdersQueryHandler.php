@@ -18,7 +18,7 @@ readonly class GetOrdersQueryHandler implements QueryHandlerInterface
     {
         assert($query instanceof GetOrdersQuery);
 
-        $qb = $this->orderRepository->newQuery()->with('items');
+        $qb = $this->orderRepository->newQuery()->with(['items', 'linkedDocuments']);
 
         if ($query->status !== null) {
             $qb->where('status', $query->status);

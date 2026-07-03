@@ -21,7 +21,8 @@
     "laravel/framework": "^v13.0",
     "spatie/laravel-data": "^4.0",
     "guzzlehttp/guzzle": "^7.9",
-    "symfony/yaml": "^8.0"
+    "symfony/yaml": "^8.0",
+    "ext-fileinfo": "*"
   },
   "require-dev": {
     "larastan/larastan": "^3.10",

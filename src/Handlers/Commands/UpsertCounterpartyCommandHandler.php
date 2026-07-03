@@ -8,11 +8,16 @@ use GeekCo\CommerceJson\Commands\CommandInterface;
 use GeekCo\CommerceJson\Commands\UpsertCounterpartyCommand;
 use GeekCo\CommerceJson\Data\BankAccountData;
 use GeekCo\CommerceJson\Data\ContactData;
+use GeekCo\CommerceJson\Data\CounterpartyDocumentData;
 use GeekCo\CommerceJson\Data\CustomAttributeData;
 use GeekCo\CommerceJson\Data\RepresentativeData;
 use GeekCo\CommerceJson\Models\Counterparty;
 use GeekCo\CommerceJson\Repositories\CounterpartyRepository;
+use GeekCo\CommerceJson\Repositories\DocumentRepository;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class UpsertCounterpartyCommandHandler implements CommandHandlerInterface
 {
@@ -35,9 +40,14 @@ class UpsertCounterpartyCommandHandler implements CommandHandlerInterface
 
     private CounterpartyRepository $counterpartyRepository;
 
-    public function __construct(CounterpartyRepository $counterpartyRepository)
-    {
+    private DocumentRepository $documentRepository;
+
+    public function __construct(
+        CounterpartyRepository $counterpartyRepository,
+        DocumentRepository $documentRepository,
+    ) {
         $this->counterpartyRepository = $counterpartyRepository;
+        $this->documentRepository = $documentRepository;
     }
 
     public function handle(CommandInterface $command): mixed
@@ -60,6 +70,7 @@ class UpsertCounterpartyCommandHandler implements CommandHandlerInterface
             $this->syncRepresentatives($counterparty, $data->representatives);
             $this->syncBankAccounts($counterparty, $data->bank_accounts);
             $this->syncCustomAttributes($counterparty, $data->custom_attributes);
+            $this->syncDocuments($counterparty, $data->documents);
 
             return $counterparty;
         });
@@ -226,7 +237,7 @@ class UpsertCounterpartyCommandHandler implements CommandHandlerInterface
         }
 
         if (is_bool($value)) {
-            return ['value_string' => null, 'value_number' => null, 'value_boolean' => $value, 'value_json' => null];
+            return ['value_string' => null, 'value_boolean' => $value, 'value_number' => null, 'value_json' => null];
         }
 
         if (is_array($value)) {
@@ -234,5 +245,154 @@ class UpsertCounterpartyCommandHandler implements CommandHandlerInterface
         }
 
         return ['value_string' => (string) $value, 'value_number' => null, 'value_boolean' => null, 'value_json' => null];
+    }
+
+    /**
+     * @param  array<int, CounterpartyDocumentData>|null  $documentsData
+     */
+    private function syncDocuments(Counterparty $counterparty, ?array $documentsData): void
+    {
+        if ($documentsData === null) {
+            return;
+        }
+
+        $disk = config('commercejson.documents.disk', 'public');
+        $basePath = config('commercejson.documents.path', 'commercejson/documents');
+
+        $morphType = $counterparty->getMorphClass();
+        $incomingExternalIds = [];
+
+        foreach ($documentsData as $docData) {
+            $existing = $this->documentRepository->findByExternalId(
+                $morphType,
+                $counterparty->id,
+                $docData->external_id,
+            );
+
+            if ($existing?->trashed()) {
+                $existing->restore();
+            }
+
+            $incomingExternalIds[] = $docData->external_id;
+
+            $filePath = null;
+            $mimeType = null;
+            $fileSize = null;
+
+            if ($docData->file_content !== null) {
+                $decoded = base64_decode($docData->file_content, true);
+                if ($decoded === false) {
+                    Log::warning('Invalid base64 in document', [
+                        'external_id' => $docData->external_id,
+                        'counterparty_id' => $counterparty->id,
+                    ]);
+
+                    continue;
+                }
+
+                $detectedMime = (new \finfo(FILEINFO_MIME_TYPE))->buffer($decoded);
+
+                $allowedMimeTypes = config('commercejson.documents.allowed_mime_types', []);
+                if (! empty($allowedMimeTypes) && ! in_array($detectedMime, $allowedMimeTypes, true)) {
+                    Log::warning('Document MIME type not allowed', [
+                        'external_id' => $docData->external_id,
+                        'mime_type' => $detectedMime,
+                        'counterparty_id' => $counterparty->id,
+                    ]);
+
+                    continue;
+                }
+
+                $maxFileSize = (int) config('commercejson.documents.max_file_size', 10 * 1024 * 1024);
+                if (strlen($decoded) > $maxFileSize) {
+                    Log::warning('Document file size exceeds maximum', [
+                        'external_id' => $docData->external_id,
+                        'file_size' => strlen($decoded),
+                        'max_size' => $maxFileSize,
+                        'counterparty_id' => $counterparty->id,
+                    ]);
+
+                    continue;
+                }
+
+                $extension = $docData->file_name ? pathinfo($docData->file_name, PATHINFO_EXTENSION) : 'bin';
+                $fileId = $existing ? $existing->id : (string) Str::uuid();
+                $filePath = $basePath.'/'.$counterparty->id.'/'.$fileId.'.'.$extension;
+
+                Storage::disk($disk)->put($filePath, $decoded);
+
+                $mimeType = $detectedMime;
+                $fileSize = strlen($decoded);
+            }
+
+            $hasMetadata = $docData->type !== null
+                || $docData->name !== null
+                || $docData->file_name !== null
+                || $docData->description !== null;
+
+            if ($existing) {
+                if ($filePath !== null || $hasMetadata) {
+                    $update = [];
+                    if ($filePath !== null) {
+                        if ($existing->file_path !== null) {
+                            Storage::disk($existing->disk ?? $disk)->delete($existing->file_path);
+                        }
+                        $update['file_path'] = $filePath;
+                        $update['disk'] = $disk;
+                        $update['mime_type'] = $mimeType;
+                        $update['file_size'] = $fileSize;
+                    }
+                    if ($hasMetadata) {
+                        if ($docData->type !== null) {
+                            $update['type'] = $docData->type->value;
+                        }
+                        if ($docData->name !== null) {
+                            $update['name'] = $docData->name;
+                        }
+                        if ($docData->file_name !== null) {
+                            $update['file_name'] = $docData->file_name;
+                        }
+                        if ($docData->description !== null) {
+                            $update['description'] = $docData->description;
+                        }
+                    }
+                    $this->documentRepository->update($existing, $update);
+                }
+            } else {
+                $values = [
+                    'id' => (string) Str::uuid(),
+                    'documentable_type' => $morphType,
+                    'documentable_id' => $counterparty->id,
+                    'external_id' => $docData->external_id,
+                ];
+
+                if ($docData->type !== null) {
+                    $values['type'] = $docData->type->value;
+                }
+                if ($docData->name !== null) {
+                    $values['name'] = $docData->name;
+                }
+                if ($docData->file_name !== null) {
+                    $values['file_name'] = $docData->file_name;
+                }
+                if ($docData->description !== null) {
+                    $values['description'] = $docData->description;
+                }
+                if ($filePath !== null) {
+                    $values['file_path'] = $filePath;
+                    $values['disk'] = $disk;
+                    $values['mime_type'] = $mimeType;
+                    $values['file_size'] = $fileSize;
+                }
+
+                $this->documentRepository->create($values);
+            }
+        }
+
+        $this->documentRepository->deleteMissingExternalIds(
+            $morphType,
+            $counterparty->id,
+            $incomingExternalIds,
+        );
     }
 }

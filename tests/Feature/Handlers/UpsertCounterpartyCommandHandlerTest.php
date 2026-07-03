@@ -9,7 +9,15 @@ use GeekCo\CommerceJson\Enums\CounterpartyTypeEnum;
 use GeekCo\CommerceJson\Enums\CurrencyEnum;
 use GeekCo\CommerceJson\Handlers\Commands\UpsertCounterpartyCommandHandler;
 use GeekCo\CommerceJson\Models\Counterparty;
+use GeekCo\CommerceJson\Models\Document;
 use GeekCo\CommerceJson\Repositories\CounterpartyRepository;
+use GeekCo\CommerceJson\Repositories\DocumentRepository;
+use Illuminate\Support\Facades\Storage;
+
+function pdfContent(string $text): string
+{
+    return base64_encode("%PDF-1.4\n{$text}");
+}
 
 describe('UpsertCounterpartyCommandHandler', function () {
     it('creates a new counterparty with all fields', function () {
@@ -40,7 +48,7 @@ describe('UpsertCounterpartyCommandHandler', function () {
         ]);
 
         $repository = new CounterpartyRepository(new Counterparty);
-        $handler = new UpsertCounterpartyCommandHandler($repository);
+        $handler = new UpsertCounterpartyCommandHandler($repository, new DocumentRepository(new Document));
 
         $result = $handler->handle(new UpsertCounterpartyCommand($data));
 
@@ -81,7 +89,7 @@ describe('UpsertCounterpartyCommandHandler', function () {
         ]);
 
         $repository = new CounterpartyRepository(new Counterparty);
-        $handler = new UpsertCounterpartyCommandHandler($repository);
+        $handler = new UpsertCounterpartyCommandHandler($repository, new DocumentRepository(new Document));
 
         $result = $handler->handle(new UpsertCounterpartyCommand($data));
 
@@ -104,7 +112,7 @@ describe('UpsertCounterpartyCommandHandler', function () {
         ]);
 
         $repository = new CounterpartyRepository(new Counterparty);
-        $handler = new UpsertCounterpartyCommandHandler($repository);
+        $handler = new UpsertCounterpartyCommandHandler($repository, new DocumentRepository(new Document));
 
         $result = $handler->handle(new UpsertCounterpartyCommand($data));
 
@@ -129,7 +137,7 @@ describe('UpsertCounterpartyCommandHandler', function () {
         ]);
 
         $repository = new CounterpartyRepository(new Counterparty);
-        $handler = new UpsertCounterpartyCommandHandler($repository);
+        $handler = new UpsertCounterpartyCommandHandler($repository, new DocumentRepository(new Document));
 
         $handler->handle(new UpsertCounterpartyCommand($data));
 
@@ -158,7 +166,7 @@ describe('UpsertCounterpartyCommandHandler', function () {
         ]);
 
         $repository = new CounterpartyRepository(new Counterparty);
-        $handler = new UpsertCounterpartyCommandHandler($repository);
+        $handler = new UpsertCounterpartyCommandHandler($repository, new DocumentRepository(new Document));
 
         $handler->handle(new UpsertCounterpartyCommand($data));
 
@@ -189,7 +197,7 @@ describe('UpsertCounterpartyCommandHandler', function () {
         ]);
 
         $repository = new CounterpartyRepository(new Counterparty);
-        $handler = new UpsertCounterpartyCommandHandler($repository);
+        $handler = new UpsertCounterpartyCommandHandler($repository, new DocumentRepository(new Document));
 
         $handler->handle(new UpsertCounterpartyCommand($initialData));
 
@@ -228,7 +236,7 @@ describe('UpsertCounterpartyCommandHandler', function () {
         ]);
 
         $repository = new CounterpartyRepository(new Counterparty);
-        $handler = new UpsertCounterpartyCommandHandler($repository);
+        $handler = new UpsertCounterpartyCommandHandler($repository, new DocumentRepository(new Document));
 
         $handler->handle(new UpsertCounterpartyCommand($data));
 
@@ -254,7 +262,7 @@ describe('UpsertCounterpartyCommandHandler', function () {
         ]);
 
         $repository = new CounterpartyRepository(new Counterparty);
-        $handler = new UpsertCounterpartyCommandHandler($repository);
+        $handler = new UpsertCounterpartyCommandHandler($repository, new DocumentRepository(new Document));
 
         $handler->handle(new UpsertCounterpartyCommand($data));
 
@@ -282,7 +290,7 @@ describe('UpsertCounterpartyCommandHandler', function () {
         ]);
 
         $repository = new CounterpartyRepository(new Counterparty);
-        $handler = new UpsertCounterpartyCommandHandler($repository);
+        $handler = new UpsertCounterpartyCommandHandler($repository, new DocumentRepository(new Document));
 
         $handler->handle(new UpsertCounterpartyCommand($data));
 
@@ -319,7 +327,7 @@ describe('UpsertCounterpartyCommandHandler', function () {
         ]);
 
         $repository = new CounterpartyRepository(new Counterparty);
-        $handler = new UpsertCounterpartyCommandHandler($repository);
+        $handler = new UpsertCounterpartyCommandHandler($repository, new DocumentRepository(new Document));
 
         $handler->handle(new UpsertCounterpartyCommand($data));
 
@@ -328,5 +336,336 @@ describe('UpsertCounterpartyCommandHandler', function () {
         expect(Counterparty::find($id)->representatives()->count())->toBe(0);
         expect(Counterparty::find($id)->bankAccounts()->count())->toBe(0);
         expect(Counterparty::find($id)->customAttributes()->count())->toBe(0);
+    });
+
+    it('creates documents from CounterpartyDocumentData', function () {
+        $id = test()->createTestUuid();
+
+        $data = CounterpartyData::from([
+            'id' => $id,
+            'type' => CounterpartyTypeEnum::LegalEntity,
+            'name' => 'Doc Corp',
+            'documents' => [
+                [
+                    'external_id' => 'doc-001',
+                    'type' => 'contract',
+                    'name' => 'Main Contract',
+                    'file_name' => 'contract.pdf',
+                    'file_content' => pdfContent('fake-pdf-content'),
+                    'description' => 'The main contract',
+                ],
+                [
+                    'external_id' => 'doc-002',
+                    'type' => 'invoice',
+                    'name' => 'Invoice 001',
+                    'file_name' => 'invoice.pdf',
+                    'file_content' => pdfContent('fake-invoice-content'),
+                ],
+            ],
+        ]);
+
+        $repository = new CounterpartyRepository(new Counterparty);
+        $handler = new UpsertCounterpartyCommandHandler($repository, new DocumentRepository(new Document));
+        $handler->handle(new UpsertCounterpartyCommand($data));
+
+        test()->assertDatabaseHas('documents', [
+            'documentable_id' => $id,
+            'external_id' => 'doc-001',
+            'type' => 'contract',
+            'name' => 'Main Contract',
+            'file_name' => 'contract.pdf',
+            'description' => 'The main contract',
+        ]);
+
+        test()->assertDatabaseHas('documents', [
+            'documentable_id' => $id,
+            'external_id' => 'doc-002',
+            'type' => 'invoice',
+            'name' => 'Invoice 001',
+            'file_name' => 'invoice.pdf',
+        ]);
+
+        expect(Document::where('documentable_id', $id)->count())->toBe(2);
+    });
+
+    it('updates existing document on re-import with file_content', function () {
+        Storage::fake('public');
+
+        $counterparty = Counterparty::factory()->create();
+        Document::factory()->create([
+            'documentable_id' => $counterparty->id,
+            'external_id' => 'doc-001',
+            'name' => 'Old Name',
+            'file_path' => 'commercejson/documents/old/contract.pdf',
+            'disk' => 'public',
+        ]);
+
+        Storage::disk('public')->put('commercejson/documents/old/contract.pdf', 'old-content');
+
+        $data = CounterpartyData::from([
+            'id' => $counterparty->id,
+            'type' => CounterpartyTypeEnum::LegalEntity,
+            'name' => $counterparty->name,
+            'documents' => [
+                [
+                    'external_id' => 'doc-001',
+                    'type' => 'contract',
+                    'name' => 'Updated Name',
+                    'file_name' => 'contract.pdf',
+                    'file_content' => pdfContent('updated-content'),
+                ],
+            ],
+        ]);
+
+        $repository = new CounterpartyRepository(new Counterparty);
+        $handler = new UpsertCounterpartyCommandHandler($repository, new DocumentRepository(new Document));
+        $handler->handle(new UpsertCounterpartyCommand($data));
+
+        test()->assertDatabaseHas('documents', [
+            'documentable_id' => $counterparty->id,
+            'external_id' => 'doc-001',
+            'name' => 'Updated Name',
+        ]);
+
+        expect(Document::where('documentable_id', $counterparty->id)->count())->toBe(1);
+        Storage::disk('public')->assertMissing('commercejson/documents/old/contract.pdf');
+    });
+
+    it('does not update existing document when file_content is null', function () {
+        $counterparty = Counterparty::factory()->create();
+        Document::factory()->create([
+            'documentable_id' => $counterparty->id,
+            'external_id' => 'doc-keep',
+            'name' => 'Keep Name',
+        ]);
+
+        $data = CounterpartyData::from([
+            'id' => $counterparty->id,
+            'type' => CounterpartyTypeEnum::LegalEntity,
+            'name' => $counterparty->name,
+            'documents' => [
+                [
+                    'external_id' => 'doc-keep',
+                ],
+            ],
+        ]);
+
+        $repository = new CounterpartyRepository(new Counterparty);
+        $handler = new UpsertCounterpartyCommandHandler($repository, new DocumentRepository(new Document));
+        $handler->handle(new UpsertCounterpartyCommand($data));
+
+        test()->assertDatabaseHas('documents', [
+            'documentable_id' => $counterparty->id,
+            'external_id' => 'doc-keep',
+            'name' => 'Keep Name',
+        ]);
+    });
+
+    it('removes documents when empty array is passed', function () {
+        $counterparty = Counterparty::factory()->create();
+        Document::factory(2)->create([
+            'documentable_id' => $counterparty->id,
+        ]);
+
+        $data = CounterpartyData::from([
+            'id' => $counterparty->id,
+            'type' => CounterpartyTypeEnum::LegalEntity,
+            'name' => $counterparty->name,
+            'documents' => [],
+        ]);
+
+        $repository = new CounterpartyRepository(new Counterparty);
+        $handler = new UpsertCounterpartyCommandHandler($repository, new DocumentRepository(new Document));
+        $handler->handle(new UpsertCounterpartyCommand($data));
+
+        expect(Document::where('documentable_id', $counterparty->id)->count())->toBe(0);
+    });
+
+    it('does not touch documents when null is passed', function () {
+        $counterparty = Counterparty::factory()->create();
+        Document::factory(2)->create([
+            'documentable_id' => $counterparty->id,
+        ]);
+
+        $data = CounterpartyData::from([
+            'id' => $counterparty->id,
+            'type' => CounterpartyTypeEnum::LegalEntity,
+            'name' => $counterparty->name,
+            'documents' => null,
+        ]);
+
+        $repository = new CounterpartyRepository(new Counterparty);
+        $handler = new UpsertCounterpartyCommandHandler($repository, new DocumentRepository(new Document));
+        $handler->handle(new UpsertCounterpartyCommand($data));
+
+        expect(Document::where('documentable_id', $counterparty->id)->count())->toBe(2);
+    });
+
+    it('deduplicates documents with same external_id using last occurrence', function () {
+        $id = test()->createTestUuid();
+
+        $data = CounterpartyData::from([
+            'id' => $id,
+            'type' => CounterpartyTypeEnum::LegalEntity,
+            'name' => 'Dedup Corp',
+            'documents' => [
+                [
+                    'external_id' => 'doc-001',
+                    'type' => 'contract',
+                    'name' => 'First Name',
+                    'file_name' => 'first.pdf',
+                    'file_content' => pdfContent('first'),
+                ],
+                [
+                    'external_id' => 'doc-001',
+                    'type' => 'contract',
+                    'name' => 'Second Name',
+                    'file_name' => 'second.pdf',
+                    'file_content' => pdfContent('second'),
+                ],
+            ],
+        ]);
+
+        $repository = new CounterpartyRepository(new Counterparty);
+        $handler = new UpsertCounterpartyCommandHandler($repository, new DocumentRepository(new Document));
+        $handler->handle(new UpsertCounterpartyCommand($data));
+
+        $docs = Document::where('documentable_id', $id)
+            ->where('external_id', 'doc-001')
+            ->get();
+
+        expect($docs)->toHaveCount(1);
+        expect($docs->first()->name)->toBe('Second Name');
+    });
+
+    it('deletes documents not in the new list and keeps existing ones', function () {
+        $counterparty = Counterparty::factory()->create();
+        Document::factory()->create([
+            'documentable_id' => $counterparty->id,
+            'external_id' => 'keep-01',
+        ]);
+        Document::factory()->create([
+            'documentable_id' => $counterparty->id,
+            'external_id' => 'delete-01',
+        ]);
+
+        $data = CounterpartyData::from([
+            'id' => $counterparty->id,
+            'type' => CounterpartyTypeEnum::LegalEntity,
+            'name' => $counterparty->name,
+            'documents' => [
+                [
+                    'external_id' => 'keep-01',
+                ],
+            ],
+        ]);
+
+        $repository = new CounterpartyRepository(new Counterparty);
+        $handler = new UpsertCounterpartyCommandHandler($repository, new DocumentRepository(new Document));
+        $handler->handle(new UpsertCounterpartyCommand($data));
+
+        test()->assertDatabaseHas('documents', ['external_id' => 'keep-01']);
+        expect(Document::where('external_id', 'delete-01')->withTrashed()->first()->deleted_at)->not->toBeNull();
+    });
+
+    it('ignores invalid base64 and continues with other documents', function () {
+        $id = test()->createTestUuid();
+
+        $data = CounterpartyData::from([
+            'id' => $id,
+            'type' => CounterpartyTypeEnum::LegalEntity,
+            'name' => 'Base64 Corp',
+            'documents' => [
+                [
+                    'external_id' => 'doc-invalid',
+                    'type' => 'contract',
+                    'name' => 'Bad File',
+                    'file_name' => 'bad.pdf',
+                    'file_content' => '!!!not-valid-base64!!!',
+                ],
+                [
+                    'external_id' => 'doc-valid',
+                    'type' => 'invoice',
+                    'name' => 'Good File',
+                    'file_name' => 'good.pdf',
+                    'file_content' => pdfContent('valid-content'),
+                ],
+            ],
+        ]);
+
+        $repository = new CounterpartyRepository(new Counterparty);
+        $handler = new UpsertCounterpartyCommandHandler($repository, new DocumentRepository(new Document));
+        $handler->handle(new UpsertCounterpartyCommand($data));
+
+        $docs = Document::where('documentable_id', $id)->get();
+        expect($docs)->toHaveCount(1);
+        expect($docs->first()->external_id)->toBe('doc-valid');
+    });
+
+    it('rejects oversized file content', function () {
+        $id = test()->createTestUuid();
+        $oversized = str_repeat('A', 11 * 1024 * 1024);
+
+        $data = CounterpartyData::from([
+            'id' => $id,
+            'type' => CounterpartyTypeEnum::LegalEntity,
+            'name' => 'Oversize Corp',
+            'documents' => [
+                [
+                    'external_id' => 'doc-big',
+                    'type' => 'contract',
+                    'name' => 'Big File',
+                    'file_name' => 'big.pdf',
+                    'file_content' => base64_encode($oversized),
+                ],
+            ],
+        ]);
+
+        $repository = new CounterpartyRepository(new Counterparty);
+        $handler = new UpsertCounterpartyCommandHandler($repository, new DocumentRepository(new Document));
+        $handler->handle(new UpsertCounterpartyCommand($data));
+
+        expect(Document::where('documentable_id', $id)->count())->toBe(0);
+    });
+
+    it('restores soft-deleted document on re-import with same external_id', function () {
+        $counterparty = Counterparty::factory()->create();
+        Document::factory()->create([
+            'documentable_id' => $counterparty->id,
+            'external_id' => 'doc-restore',
+            'name' => 'To Restore',
+            'file_path' => 'commercejson/documents/restore/contract.pdf',
+            'disk' => 'public',
+        ]);
+
+        Document::where('documentable_id', $counterparty->id)
+            ->where('external_id', 'doc-restore')
+            ->delete();
+
+        expect(Document::where('documentable_id', $counterparty->id)->count())->toBe(0, 'Document should be soft-deleted');
+
+        $data = CounterpartyData::from([
+            'id' => $counterparty->id,
+            'type' => CounterpartyTypeEnum::LegalEntity,
+            'name' => $counterparty->name,
+            'documents' => [
+                [
+                    'external_id' => 'doc-restore',
+                    'name' => 'Restored',
+                ],
+            ],
+        ]);
+
+        $repository = new CounterpartyRepository(new Counterparty);
+        $handler = new UpsertCounterpartyCommandHandler($repository, new DocumentRepository(new Document));
+        $handler->handle(new UpsertCounterpartyCommand($data));
+
+        $doc = Document::where('documentable_id', $counterparty->id)
+            ->where('external_id', 'doc-restore')
+            ->first();
+
+        expect($doc)->not->toBeNull('Document should be restored and visible');
+        expect($doc->name)->toBe('Restored');
+        expect($doc->deleted_at)->toBeNull('Document should not be soft-deleted');
     });
 });

@@ -67,6 +67,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property Collection<BankAccount> $bank_accounts
  * @property Collection<Representative> $representatives
  * @property Collection<CustomAttribute> $custom_attributes
+ * @property Collection<Document> $documents
  */
 class Counterparty extends Model
 {
@@ -181,5 +182,10 @@ class Counterparty extends Model
     public function customAttributes(): MorphMany
     {
         return $this->morphMany(CustomAttribute::class, 'attributable');
+    }
+
+    public function documents(): MorphMany
+    {
+        return $this->morphMany(Document::class, 'documentable');
     }
 }

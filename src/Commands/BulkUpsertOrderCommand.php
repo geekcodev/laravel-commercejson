@@ -17,5 +17,6 @@ class BulkUpsertOrderCommand extends Command
         public ?array $custom_attributes = null,
         public ?array $items = null,
         public ?OrderDeliveryTrackData $deliveryTrack = null,
+        public ?array $linkedDocuments = null,
     ) {}
 }

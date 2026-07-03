@@ -27,6 +27,7 @@ class PatchOrderCommandHandler implements CommandHandlerInterface
 
         return DB::transaction(function () use ($command) {
             $order = $this->orderRepository->findOrFail($command->id);
+            assert($order instanceof Order);
 
             $patch = $command->patchData;
 
@@ -62,11 +63,14 @@ class PatchOrderCommandHandler implements CommandHandlerInterface
 
             if ($patch->items !== null) {
                 $order->items()->delete();
-                assert($order instanceof Order);
                 $this->syncItems($order, $patch->items);
             }
 
-            return $order->fresh();
+            if ($patch->linked_documents !== null) {
+                $this->orderRepository->syncLinkedDocuments($order, $patch->linked_documents);
+            }
+
+            return $order->fresh(['items', 'linkedDocuments']);
         });
     }
 
