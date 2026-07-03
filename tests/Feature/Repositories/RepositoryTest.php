@@ -240,6 +240,24 @@ describe('WarehouseRepository', function () {
         expect($active)->toHaveCount(2);
         expect($withTrashed)->toHaveCount(3);
     });
+
+    it('persists is_partner and can_cancel_order', function () {
+        $repo = new WarehouseRepository(new Warehouse);
+
+        $warehouse = $repo->create([
+            'id' => test()->createTestUuid(),
+            'name' => 'Partner WH',
+            'is_partner' => true,
+            'can_cancel_order' => false,
+        ]);
+
+        expect($warehouse->is_partner)->toBeTrue();
+        expect($warehouse->can_cancel_order)->toBeFalse();
+
+        $found = $repo->find($warehouse->id);
+        expect($found->is_partner)->toBeTrue();
+        expect($found->can_cancel_order)->toBeFalse();
+    });
 });
 
 describe('PriceTypeRepository', function () {

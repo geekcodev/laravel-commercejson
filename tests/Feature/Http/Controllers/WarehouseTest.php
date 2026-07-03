@@ -22,7 +22,7 @@ describe('WarehouseController', function () {
 
             $response->assertStatus(200)
                 ->assertJsonStructure([
-                    'warehouses' => [['id', 'name']],
+                    'warehouses' => [['id', 'name', 'is_partner', 'can_cancel_order']],
                 ]);
         });
     });
@@ -68,6 +68,29 @@ describe('WarehouseController', function () {
                     'success' => false,
                     'processed' => 0,
                 ]);
+        });
+
+        it('accepts is_partner and can_cancel_order fields', function () {
+            $commandBus = mockCommandBus();
+
+            $commandBus->shouldReceive('dispatch')
+                ->once()
+                ->with(Mockery::on(function ($command) {
+                    return $command->warehouseData->is_partner === true
+                        && $command->warehouseData->can_cancel_order === false;
+                }))
+                ->andReturn(null);
+
+            $this->postJson('/api/commercejson/warehouses', [
+                'warehouses' => [
+                    [
+                        'id' => test()->createTestUuid(),
+                        'name' => 'Partner WH',
+                        'is_partner' => true,
+                        'can_cancel_order' => false,
+                    ],
+                ],
+            ])->assertStatus(200);
         });
     });
 });

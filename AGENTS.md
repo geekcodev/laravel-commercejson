@@ -396,7 +396,7 @@ ExchangeManager → ProductImporter / OrderImporter / ClassifierImporter / Order
 ## Тестирование
 
 ```bash
-docker compose exec app vendor/bin/pest                              # Запуск всех тестов (Pest v3.8, 202 теста, 1064 assertions)
+docker compose exec app vendor/bin/pest                              # Запуск всех тестов (Pest v3.8, 204 теста, 1072 assertions)
 docker compose exec app vendor/bin/pest --parallel                   # Параллельный запуск
 docker compose exec app vendor/bin/phpstan analyse                   # PHPStan (локально)
 docker compose exec app vendor/bin/phpstan analyse --error-format=github  # PHPStan (как в CI — обязателен перед push)
@@ -698,7 +698,8 @@ docker compose exec app vendor/bin/pint --test                       # Pint то
   `download_url`, `uploaded_at`).
 - **PHPStan:** исправлены 4 pre-existing ошибки в `UpsertOrderCommandHandler` (type narrowing, always-true condition,
   nullsafe). **0 errors.**
-- **Тесты:** 202 tests (1064 assertions), PHPStan 0 errors, Pint clean
+- **Warehouse:** добавлены поля `is_partner` и `can_cancel_order` (nullable boolean) — spec, migration, model, DTO
+- **Тесты:** 204 tests (1072 assertions), PHPStan 0 errors, Pint clean
 
 ---
 
