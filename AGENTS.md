@@ -391,12 +391,6 @@ ExchangeManager → ProductImporter / OrderImporter / ClassifierImporter / Order
 Мёртвый код отсутствует — все неиспользуемые файлы удалены. Если в будущем появятся,
 они будут задокументированы ниже.
 
-### PHPStan (4 pre-existing errors)
-
-- `UpsertOrderCommandHandler.php:42,46,158,198` — type narrowing issues (Model vs Order, always-true condition,
-  nullsafe).
-  Не влияют на runtime.
-
 ---
 
 ## Тестирование
@@ -702,7 +696,9 @@ docker compose exec app vendor/bin/pint --test                       # Pint то
 - **LOW fix:** `CounterpartyDocumentData::createForOutput()` — `uploaded_at` передаётся Carbon, не строка.
 - **Spec compliance:** 5 output-only полей маркированы `readonly` в DTO (`id`, `mime_type`, `file_size`,
   `download_url`, `uploaded_at`).
-- **Тесты:** 202 tests (1064 assertions), PHPStan 0 errors (4 pre-existing), Pint clean
+- **PHPStan:** исправлены 4 pre-existing ошибки в `UpsertOrderCommandHandler` (type narrowing, always-true condition,
+  nullsafe). **0 errors.**
+- **Тесты:** 202 tests (1064 assertions), PHPStan 0 errors, Pint clean
 
 ---
 

@@ -38,6 +38,8 @@ class UpsertOrderCommandHandler implements CommandHandlerInterface
                 $order = $this->orderRepository->create($flat);
             }
 
+            assert($order instanceof Order);
+
             if ($data->items) {
                 $this->syncItems($order, $data->items);
             }
@@ -155,24 +157,22 @@ class UpsertOrderCommandHandler implements CommandHandlerInterface
             $flat['payment_paid_at'] = $p->paid_at;
         }
 
-        if ($data->totals) {
-            $t = $data->totals;
-            $flat['totals_subtotal_amount'] = $t->subtotal->amount;
-            $flat['totals_subtotal_currency'] = $t->subtotal->currency;
-            $flat['totals_total_amount'] = $t->total->amount;
-            $flat['totals_total_currency'] = $t->total->currency;
-            if ($t->discount) {
-                $flat['totals_discount_amount'] = $t->discount->amount;
-                $flat['totals_discount_currency'] = $t->discount->currency;
-            }
-            if ($t->delivery) {
-                $flat['totals_delivery_amount'] = $t->delivery->amount;
-                $flat['totals_delivery_currency'] = $t->delivery->currency;
-            }
-            if ($t->tax) {
-                $flat['totals_tax_amount'] = $t->tax->amount;
-                $flat['totals_tax_currency'] = $t->tax->currency;
-            }
+        $t = $data->totals;
+        $flat['totals_subtotal_amount'] = $t->subtotal->amount;
+        $flat['totals_subtotal_currency'] = $t->subtotal->currency;
+        $flat['totals_total_amount'] = $t->total->amount;
+        $flat['totals_total_currency'] = $t->total->currency;
+        if ($t->discount) {
+            $flat['totals_discount_amount'] = $t->discount->amount;
+            $flat['totals_discount_currency'] = $t->discount->currency;
+        }
+        if ($t->delivery) {
+            $flat['totals_delivery_amount'] = $t->delivery->amount;
+            $flat['totals_delivery_currency'] = $t->delivery->currency;
+        }
+        if ($t->tax) {
+            $flat['totals_tax_amount'] = $t->tax->amount;
+            $flat['totals_tax_currency'] = $t->tax->currency;
         }
 
         return $flat;
@@ -189,14 +189,16 @@ class UpsertOrderCommandHandler implements CommandHandlerInterface
             assert($item instanceof OrderItemData);
 
             $product = $products->get($item->product_id);
+            $defaultProductName = $product?->name;
+            $defaultProductCode = $product?->code;
 
             $row = [
                 'id' => $item->id,
                 'product_id' => $item->product_id,
                 'variant_id' => $item->variant_id,
                 'quantity' => $item->quantity,
-                'product_name' => $item->product_name ?? $product?->name ?? 'Unknown Product',
-                'product_code' => $item->product_code ?? $product?->code,
+                'product_name' => $item->product_name ?? $defaultProductName ?? 'Unknown Product',
+                'product_code' => $item->product_code ?? $defaultProductCode,
                 'price_amount' => $item->price->amount,
                 'price_currency' => $item->price->currency,
                 'total_amount' => $item->total->amount,
