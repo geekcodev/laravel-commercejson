@@ -29,6 +29,10 @@ class WarehouseData extends Data
         public ?bool $is_active = null,
         #[Nullable, BooleanType]
         public ?bool $is_default = null,
+        #[Nullable, BooleanType]
+        public ?bool $is_partner = null,
+        #[Nullable, BooleanType]
+        public ?bool $can_cancel_order = null,
         #[Nullable]
         public ?Carbon $created_at = null,
         #[Nullable]

@@ -278,6 +278,8 @@ abstract class TestCase extends BaseTestCase
             'code' => $attributes['code'] ?? 'WH-001',
             'is_active' => $attributes['is_active'] ?? true,
             'is_default' => $attributes['is_default'] ?? false,
+            'is_partner' => $attributes['is_partner'] ?? null,
+            'can_cancel_order' => $attributes['can_cancel_order'] ?? null,
         ]);
     }
 

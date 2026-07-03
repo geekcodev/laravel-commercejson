@@ -37,11 +37,15 @@ class Warehouse extends Model
         'address_full',
         'is_active',
         'is_default',
+        'is_partner',
+        'can_cancel_order',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
         'is_default' => 'boolean',
+        'is_partner' => 'boolean',
+        'can_cancel_order' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',

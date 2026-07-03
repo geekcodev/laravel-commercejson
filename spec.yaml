@@ -30,6 +30,9 @@ info:
     Все операции записи (POST/PATCH) принимают опциональный заголовок `X-Idempotency-Key`.
     Это критически важно для надежной работы в условиях нестабильной сети (повторные попытки не создают дублей).
 
+    ## Changelog v1.0.8.4
+    - `Warehouse`: добавлены поля `is_partner` (склад партнёра) и `can_cancel_order` (отмена заказов).
+
     ## Changelog v1.0.8.3
     - `Counterparty`: добавлено поле `documents` (массив `CounterpartyDocument`). Контрагенты
       могут иметь прикреплённые файлы (договоры, акты, счета). Загрузка через base64 в `POST`,
@@ -2830,6 +2833,14 @@ components:
           type: boolean
           default: false
           description: Склад отгрузки по умолчанию (не более одного на систему)
+        is_partner:
+          type: boolean
+          nullable: true
+          description: Склад принадлежит партнёру (не владельцу сайта)
+        can_cancel_order:
+          type: boolean
+          nullable: true
+          description: Разрешена ли отмена заказов с этого склада
         deleted_at:
           type: string
           format: date-time
