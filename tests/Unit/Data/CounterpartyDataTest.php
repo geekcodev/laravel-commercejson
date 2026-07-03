@@ -6,11 +6,14 @@ namespace GeekCo\CommerceJson\Tests\Unit\Data;
 
 use GeekCo\CommerceJson\Data\AddressData;
 use GeekCo\CommerceJson\Data\CounterpartyData;
+use GeekCo\CommerceJson\Data\CounterpartyDocumentData;
 use GeekCo\CommerceJson\Data\MoneyData;
 use GeekCo\CommerceJson\Enums\CounterpartyTypeEnum;
 use GeekCo\CommerceJson\Enums\CurrencyEnum;
 use GeekCo\CommerceJson\Models\Counterparty;
+use GeekCo\CommerceJson\Models\Document;
 use GeekCo\CommerceJson\Tests\TestCase;
+use Illuminate\Support\Facades\Storage;
 
 class CounterpartyDataTest extends TestCase
 {
@@ -199,6 +202,51 @@ class CounterpartyDataTest extends TestCase
         $this->assertIsArray($dto->bank_accounts);
         $this->assertIsArray($dto->custom_attributes);
         $this->assertEmpty($dto->contacts);
+    }
+
+    public function test_from_model_maps_documents_with_download_url(): void
+    {
+        $model = Counterparty::factory()->make();
+        $filePath = 'commercejson/documents/'.$model->id.'/test-file.pdf';
+        $doc = new Document([
+            'id' => $docId = $this->createTestUuid(),
+            'external_id' => 'doc-001',
+            'type' => 'contract',
+            'name' => 'Main Contract',
+            'file_name' => 'contract.pdf',
+            'file_path' => $filePath,
+            'disk' => 'public',
+            'mime_type' => 'application/pdf',
+            'file_size' => 2048,
+            'description' => 'The contract',
+        ]);
+        $doc->setAttribute('created_at', $now = now());
+        $model->setRelation('documents', collect([$doc]));
+
+        $dto = CounterpartyData::fromModel($model);
+
+        $this->assertIsArray($dto->documents);
+        $this->assertCount(1, $dto->documents);
+        $this->assertInstanceOf(CounterpartyDocumentData::class, $dto->documents[0]);
+        $this->assertSame('doc-001', $dto->documents[0]->external_id);
+        $this->assertSame('contract', $dto->documents[0]->type?->value);
+        $this->assertSame('Main Contract', $dto->documents[0]->name);
+        $this->assertSame('application/pdf', $dto->documents[0]->mime_type);
+        $this->assertSame(2048, $dto->documents[0]->file_size);
+        $this->assertSame(
+            Storage::disk('public')->url($filePath),
+            $dto->documents[0]->download_url
+        );
+        $this->assertSame($now->toIso8601String(), $dto->documents[0]->uploaded_at?->toIso8601String());
+    }
+
+    public function test_from_model_skips_documents_when_not_loaded(): void
+    {
+        $model = Counterparty::factory()->make();
+
+        $dto = CounterpartyData::fromModel($model);
+
+        $this->assertNull($dto->documents);
     }
 
     public function test_from_maps_model_automatically(): void

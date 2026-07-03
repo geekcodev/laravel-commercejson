@@ -19,6 +19,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 use Spatie\LaravelData\DataCollection;
 use Spatie\LaravelData\Exceptions\CannotCastEnum;
 
@@ -68,13 +69,16 @@ class CounterpartyController extends Controller
     public function store(Request $request): JsonResponse
     {
         try {
-            $import = CounterpartyImportData::from($request->all());
-        } catch (CannotCastEnum $e) {
+            $import = CounterpartyImportData::validateAndCreate($request->all());
+        } catch (CannotCastEnum|ValidationException $e) {
+            $details = $e instanceof ValidationException ? $e->errors() : null;
+
             return response()->json(
                 ErrorResponseData::from([
                     'error' => [
                         'code' => 'VALIDATION_ERROR',
                         'message' => $e->getMessage(),
+                        ...($details ? ['details' => $details] : []),
                     ],
                 ]),
                 422

@@ -30,6 +30,11 @@ info:
     Все операции записи (POST/PATCH) принимают опциональный заголовок `X-Idempotency-Key`.
     Это критически важно для надежной работы в условиях нестабильной сети (повторные попытки не создают дублей).
 
+    ## Changelog v1.0.8.3
+    - `Counterparty`: добавлено поле `documents` (массив `CounterpartyDocument`). Контрагенты
+      могут иметь прикреплённые файлы (договоры, акты, счета). Загрузка через base64 в `POST`,
+      скачивание по URL из `GET`. Дедупликация по `external_id`.
+
     ## Changelog v1.0.8.2
     - `OrderCreate`, `OrderBulkUpdateItem`, `OrderPatch`: добавлено поле `linked_documents` —
       создание и обновление заказов теперь поддерживает установку связанных документов
@@ -2623,6 +2628,15 @@ components:
           description: Произвольные реквизиты контрагента (ЗначенияРеквизитов в CML2)
           items:
             $ref: "#/components/schemas/CustomAttribute"
+        documents:
+          type: array
+          description: |
+            Прикреплённые файлы (договоры, акты, счета и т.п.).
+            Для создания/обновления документа требуется `external_id`, `type`, `name`, `file_name`, `file_content` (base64).
+            Для подтверждения существования документа достаточно одного `external_id`.
+            Пустой массив удаляет все документы контрагента. `null` — не изменяет.
+          items:
+            $ref: "#/components/schemas/CounterpartyDocument"
         is_active:
           type: boolean
           default: true
@@ -2655,6 +2669,65 @@ components:
             pattern: '^\d{12}$'
           ogrn:
             pattern: '^\d{15}$'
+
+    CounterpartyDocument:
+      type: object
+      description: |
+        Файл документа, прикреплённого к контрагенту (договор, акт, счёт, сертификат и т.п.).
+        Для загрузки нового файла передаётся содержимое в base64 (`file_content`).
+        Для подтверждения уже переданного документа достаточно указать `external_id`.
+      required: [ external_id ]
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+          description: UUID документа на сайте (только в ответе)
+        external_id:
+          type: string
+          description: ID документа в ERP (1С). Используется для дедупликации.
+        type:
+          type: string
+          enum:
+            - contract
+            - invoice
+            - act
+            - receipt
+            - statement
+            - waybill
+            - certificate
+            - other
+          description: Тип документа
+        name:
+          type: string
+          description: Название документа
+        file_name:
+          type: string
+          description: Оригинальное имя файла (с расширением)
+        file_content:
+          type: string
+          description: Содержимое файла в base64. Только для записи.
+        mime_type:
+          type: string
+          readOnly: true
+          description: MIME-тип файла (только в ответе)
+        file_size:
+          type: integer
+          readOnly: true
+          description: Размер файла в байтах (только в ответе)
+        download_url:
+          type: string
+          format: uri
+          readOnly: true
+          description: Ссылка для скачивания файла (только в ответе)
+        description:
+          type: string
+          description: Описание / комментарий к документу
+        uploaded_at:
+          type: string
+          format: date-time
+          readOnly: true
+          description: Дата загрузки документа на сайт (только в ответе)
 
     Contact:
       type: object

@@ -5,6 +5,7 @@ use GeekCo\CommerceJson\Events\OrderImported;
 use GeekCo\CommerceJson\Events\ProductsImported;
 use GeekCo\CommerceJson\Models\Category;
 use GeekCo\CommerceJson\Models\Counterparty;
+use GeekCo\CommerceJson\Models\Document;
 use GeekCo\CommerceJson\Models\Offer;
 use GeekCo\CommerceJson\Models\Order;
 use GeekCo\CommerceJson\Models\OrderItem;
@@ -189,6 +190,38 @@ return [
     |
     */
 
+    /*
+    |--------------------------------------------------------------------------
+    | Document Storage Settings
+    |--------------------------------------------------------------------------
+    |
+    | Настройки хранения файлов документов, прикреплённых к контрагентам
+    | и другим сущностям (заказы, товары).
+    |
+    */
+
+    'documents' => [
+        // Диск для хранения файлов (local, s3, minio, etc.)
+        'disk' => env('COMMERCEJSON_DOCUMENTS_DISK', 'public'),
+
+        // Путь на диске относительно корня
+        'path' => env('COMMERCEJSON_DOCUMENTS_PATH', 'commercejson/documents'),
+
+        // Максимальный размер файла (байты)
+        'max_file_size' => (int) env('COMMERCEJSON_DOCUMENTS_MAX_SIZE', 10 * 1024 * 1024),
+
+        // Разрешённые MIME-типы
+        'allowed_mime_types' => [
+            'application/pdf',
+            'image/jpeg',
+            'image/png',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/vnd.ms-excel',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ],
+    ],
+
     'api_logging' => [
         'enabled' => env('COMMERCEJSON_API_LOGGING', true),
 
@@ -252,6 +285,7 @@ return [
         'order' => Order::class,
         'order_item' => OrderItem::class,
         'counterparty' => Counterparty::class,
+        'document' => Document::class,
         'warehouse' => Warehouse::class,
         'price_type' => PriceType::class,
     ],

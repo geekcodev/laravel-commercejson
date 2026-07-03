@@ -107,6 +107,29 @@ describe('CounterpartyController', function () {
                     'success', 'processed', 'errors' => [['code', 'message']],
                 ]);
         });
+
+        it('returns 422 on validation error in documents (missing external_id)', function () {
+            $response = $this->postJson('/api/commercejson/counterparties', [
+                'counterparties' => [
+                    [
+                        'id' => test()->createTestUuid(),
+                        'name' => 'Doc Corp',
+                        'type' => CounterpartyTypeEnum::LegalEntity->value,
+                        'documents' => [
+                            [
+                                'file_content' => base64_encode('content'),
+                                'type' => 'contract',
+                                'name' => 'No external ID',
+                                'file_name' => 'nope.pdf',
+                            ],
+                        ],
+                    ],
+                ],
+            ]);
+
+            $response->assertStatus(422)
+                ->assertJsonPath('error.code', 'VALIDATION_ERROR');
+        });
     });
 
     describe('GET /counterparties/{id}', function () {

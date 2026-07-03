@@ -65,6 +65,7 @@ use GeekCo\CommerceJson\Http\Middleware\IdempotencyMiddleware;
 use GeekCo\CommerceJson\Http\Middleware\LogApiRequestsMiddleware;
 use GeekCo\CommerceJson\Models\Category;
 use GeekCo\CommerceJson\Models\Counterparty;
+use GeekCo\CommerceJson\Models\Document;
 use GeekCo\CommerceJson\Models\Offer;
 use GeekCo\CommerceJson\Models\OfferPrice;
 use GeekCo\CommerceJson\Models\Order;
@@ -86,6 +87,7 @@ use GeekCo\CommerceJson\Queries\GetPropertyDefinitionsQuery;
 use GeekCo\CommerceJson\Queries\GetWarehousesQuery;
 use GeekCo\CommerceJson\Repositories\CategoryRepository;
 use GeekCo\CommerceJson\Repositories\CounterpartyRepository;
+use GeekCo\CommerceJson\Repositories\DocumentRepository;
 use GeekCo\CommerceJson\Repositories\OfferPriceRepository;
 use GeekCo\CommerceJson\Repositories\OfferRepository;
 use GeekCo\CommerceJson\Repositories\OrderRepository;
@@ -199,6 +201,10 @@ class CommerceJsonServiceProvider extends ServiceProvider
         });
         $this->app->singleton(OfferPriceRepository::class, function ($app) {
             return new OfferPriceRepository($app->make(OfferPrice::class));
+        });
+
+        $this->app->singleton(DocumentRepository::class, function ($app) {
+            return new DocumentRepository($app->make(Document::class));
         });
 
         // Регистрация QueryBus (read-операции)
