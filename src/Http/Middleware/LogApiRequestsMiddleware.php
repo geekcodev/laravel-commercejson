@@ -39,18 +39,29 @@ class LogApiRequestsMiddleware
             return false;
         }
 
-        $excludePaths = config('commercejson.api_logging.exclude_paths', ['handshake']);
+        return ! $this->isPathExcluded(
+            $request,
+            config('commercejson.api_logging.exclude_paths', ['handshake'])
+        );
+    }
+
+    private function isPathExcluded(Request $request, array $excludePaths): bool
+    {
+        if ($excludePaths === []) {
+            return false;
+        }
+
         $path = '/'.trim($request->path(), '/').'/';
 
         foreach ($excludePaths as $excluded) {
             $search = '/'.trim($excluded, '/').'/';
 
             if (str_contains($path, $search)) {
-                return false;
+                return true;
             }
         }
 
-        return true;
+        return false;
     }
 
     private function getLogger(): LoggerInterface
@@ -85,7 +96,10 @@ class LogApiRequestsMiddleware
             'user_agent' => $request->userAgent(),
         ];
 
-        if (config('commercejson.api_logging.log_request_body', true)) {
+        $shouldLogBody = config('commercejson.api_logging.log_request_body', true)
+            && ! $this->isPathExcluded($request, config('commercejson.api_logging.exclude_request_body_paths', []));
+
+        if ($shouldLogBody) {
             $body = $request->getContent();
 
             if (! empty($body)) {
@@ -109,7 +123,10 @@ class LogApiRequestsMiddleware
             'duration_ms' => round($durationMs, 2),
         ];
 
-        if (config('commercejson.api_logging.log_response_body', false)) {
+        $shouldLogBody = config('commercejson.api_logging.log_response_body', false)
+            && ! $this->isPathExcluded($request, config('commercejson.api_logging.exclude_response_body_paths', []));
+
+        if ($shouldLogBody) {
             $content = $response->getContent();
 
             if (! empty($content)) {

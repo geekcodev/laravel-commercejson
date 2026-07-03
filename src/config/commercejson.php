@@ -240,8 +240,14 @@ return [
         // Максимальная длина тела не-JSON ответа (символов)
         'log_response_body_max_length' => env('COMMERCEJSON_API_LOG_RESPONSE_BODY_MAX_LENGTH', 1000),
 
-        // Пути, исключённые из логирования (префиксы URL)
+        // Пути, полностью исключённые из логирования
         'exclude_paths' => ['handshake'],
+
+        // Пути, для которых не логируется тело запроса (метаданные остаются)
+        'exclude_request_body_paths' => [],
+
+        // Пути, для которых не логируется тело ответа (метаданные остаются)
+        'exclude_response_body_paths' => [],
     ],
 
     /*
