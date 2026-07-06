@@ -105,9 +105,9 @@ class LogApiRequestsMiddleware
             if (! empty($body)) {
                 $decoded = json_decode($body, true);
 
-                $data['body'] = $decoded !== null
+                $data['body'] = is_array($decoded)
                     ? $this->maskSensitiveData($decoded)
-                    : $body;
+                    : ($decoded ?? $body);
             }
         }
 
@@ -132,9 +132,9 @@ class LogApiRequestsMiddleware
             if (! empty($content)) {
                 $decoded = json_decode($content, true);
 
-                $data['body'] = $decoded !== null
+                $data['body'] = is_array($decoded)
                     ? $this->maskSensitiveData($decoded)
-                    : mb_substr($content, 0, (int) config('commercejson.api_logging.log_response_body_max_length', 1000));
+                    : ($decoded ?? mb_substr($content, 0, (int) config('commercejson.api_logging.log_response_body_max_length', 1000)));
             }
         }
 
