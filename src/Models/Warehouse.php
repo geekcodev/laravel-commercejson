@@ -39,6 +39,7 @@ class Warehouse extends Model
         'is_default',
         'is_partner',
         'can_cancel_order',
+        'delivery_time',
     ];
 
     protected $casts = [

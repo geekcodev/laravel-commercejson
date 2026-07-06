@@ -30,6 +30,9 @@ info:
     Все операции записи (POST/PATCH) принимают опциональный заголовок `X-Idempotency-Key`.
     Это критически важно для надежной работы в условиях нестабильной сети (повторные попытки не создают дублей).
 
+    ## Changelog v1.0.8.5
+    - `Warehouse`: добавлено поле `delivery_time` (срок доставки со склада).
+
     ## Changelog v1.0.8.4
     - `Warehouse`: добавлены поля `is_partner` (склад партнёра) и `can_cancel_order` (отмена заказов).
 
@@ -2841,6 +2844,10 @@ components:
           type: boolean
           nullable: true
           description: Разрешена ли отмена заказов с этого склада
+        delivery_time:
+          type: string
+          nullable: true
+          description: Срок доставки со склада (например "1-3 дня", "сегодня", "на следующий день")
         deleted_at:
           type: string
           format: date-time
