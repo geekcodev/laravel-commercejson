@@ -22,7 +22,7 @@ describe('WarehouseController', function () {
 
             $response->assertStatus(200)
                 ->assertJsonStructure([
-                    'warehouses' => [['id', 'name', 'is_partner', 'can_cancel_order']],
+                    'warehouses' => [['id', 'name', 'is_partner', 'can_cancel_order', 'delivery_time']],
                 ]);
         });
     });
@@ -68,6 +68,27 @@ describe('WarehouseController', function () {
                     'success' => false,
                     'processed' => 0,
                 ]);
+        });
+
+        it('accepts delivery_time field', function () {
+            $commandBus = mockCommandBus();
+
+            $commandBus->shouldReceive('dispatch')
+                ->once()
+                ->with(Mockery::on(function ($command) {
+                    return $command->warehouseData->delivery_time === '1-3 дня';
+                }))
+                ->andReturn(null);
+
+            $this->postJson('/api/commercejson/warehouses', [
+                'warehouses' => [
+                    [
+                        'id' => test()->createTestUuid(),
+                        'name' => 'Fast WH',
+                        'delivery_time' => '1-3 дня',
+                    ],
+                ],
+            ])->assertStatus(200);
         });
 
         it('accepts is_partner and can_cancel_order fields', function () {

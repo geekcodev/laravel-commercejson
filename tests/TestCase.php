@@ -280,6 +280,7 @@ abstract class TestCase extends BaseTestCase
             'is_default' => $attributes['is_default'] ?? false,
             'is_partner' => $attributes['is_partner'] ?? null,
             'can_cancel_order' => $attributes['can_cancel_order'] ?? null,
+            'delivery_time' => $attributes['delivery_time'] ?? null,
         ]);
     }
 

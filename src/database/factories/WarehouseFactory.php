@@ -36,6 +36,7 @@ class WarehouseFactory extends CommerceJsonFactory
             'address_full' => null,
             'is_active' => true,
             'is_default' => false,
+            'delivery_time' => fake()->boolean(70) ? fake()->randomElement(['1-3 дня', 'сегодня', 'на следующий день', '3-5 дней', 'до 7 дней']) : null,
             'created_at' => now(),
             'updated_at' => now(),
             'deleted_at' => null,
