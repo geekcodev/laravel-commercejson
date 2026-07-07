@@ -5,11 +5,9 @@ declare(strict_types=1);
 namespace GeekCo\CommerceJson\Data;
 
 use Carbon\Carbon;
-use GeekCo\CommerceJson\Enums\FileDocumentTypeEnum;
 use GeekCo\CommerceJson\Models\Document;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Validator;
-use Spatie\LaravelData\Attributes\Validation\Enum;
 use Spatie\LaravelData\Attributes\Validation\Nullable;
 use Spatie\LaravelData\Attributes\Validation\Required;
 use Spatie\LaravelData\Attributes\Validation\StringType;
@@ -20,8 +18,8 @@ class CounterpartyDocumentData extends Data
     public function __construct(
         #[Required, StringType]
         public string $external_id,
-        #[Nullable, Enum(FileDocumentTypeEnum::class)]
-        public ?FileDocumentTypeEnum $type = null,
+        #[Nullable, StringType]
+        public ?string $type = null,
         #[Nullable, StringType]
         public ?string $name = null,
         #[Nullable, StringType]

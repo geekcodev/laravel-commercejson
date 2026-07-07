@@ -651,7 +651,7 @@ docker compose exec app vendor/bin/pint --test                       # Pint то
 
 - **Новая сущность Document** — полиморфная (`documentable_type`/`documentable_id`), поддерживает привязку к любым
   сущностям (контрагенты, в будущем заказы)
-- **`FileDocumentTypeEnum`** — типы: contract, invoice, act, receipt, statement, waybill, certificate, other
+- *(FileDocumentTypeEnum удалён — тип документа теперь свободная строка)*
 - **`CounterpartyDocumentData`** — DTO с `external_id` (required), `file_content` (base64, только для записи),
   условная валидация (если есть file_content → type, name, file_name обязательны)
 - **`DocumentRepository`** — `findByExternalId()`, `deleteMissingExternalIds()`
@@ -701,6 +701,20 @@ docker compose exec app vendor/bin/pint --test                       # Pint то
 - **Warehouse:** добавлены поля `is_partner` и `can_cancel_order` (nullable boolean) — spec, migration, model, DTO
 - **Тесты:** 204 tests (1072 assertions), PHPStan 0 errors, Pint clean
 
+### Сессия 17 — MoneyAmountCast, запятая как десятичный разделитель, OkeiEnum null-safe
+
+- **`MoneyAmountCast`:** новый каст для `MoneyData::amount` — заменяет `,` на `.` до валидации
+  (1С использует запятую как десятичный разделитель, например `"0,1"`)
+- **`MoneyData::$amount`:** `#[StringType]` заменён на `#[WithCast(MoneyAmountCast::class)]`,
+  regex расширен с `\.\d{1,2}` до `\.\d+`
+- **`spec.yaml`:** `Money.amount` regex теперь `^-?\d+([.,]\d+)?$`, добавлено описание о
+  нормализации запятой
+- **`TrimmedEnumCast`:** переписан — `tryFrom()` вместо `parent::from()`, возвращает `null`
+  для неизвестных кодов (OkeiEnum не падает на `0000` от 1С)
+- **`CounterpartyDocumentData::$type`:** `?FileDocumentTypeEnum` → `?string`, enum удалён
+- **`FileDocumentTypeEnum`:** удалён (мёртвый код)
+- **209 тестов (1087 assertions), PHPStan 0 errors, Pint clean**
+
 ### Сессия 16 — exclude_request_body_paths / exclude_response_body_paths (выборочное логирование body)
 
 - **Новые конфиг-опции** в секции `api_logging`:
@@ -739,4 +753,5 @@ docker compose exec app vendor/bin/pint --test                       # Pint то
 | `src/Models/Document.php`                                 | Полиморфная модель документов (base64-файлы)                     |
 | `src/Data/CounterpartyDocumentData.php`                   | DTO для загрузки документов контрагента                          |
 | `src/Repositories/DocumentRepository.php`                 | Репозиторий для работы с документами                             |
-| `src/Enums/FileDocumentTypeEnum.php`                      | Enum типов файлов документов                                     |
+| `src/Casts/MoneyAmountCast.php`                           | Каст для нормализации десятичного разделителя (`,` → `.`)        |
+

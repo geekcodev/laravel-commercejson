@@ -344,7 +344,7 @@ class UpsertCounterpartyCommandHandler implements CommandHandlerInterface
                     }
                     if ($hasMetadata) {
                         if ($docData->type !== null) {
-                            $update['type'] = $docData->type->value;
+                            $update['type'] = $docData->type;
                         }
                         if ($docData->name !== null) {
                             $update['name'] = $docData->name;
@@ -367,7 +367,7 @@ class UpsertCounterpartyCommandHandler implements CommandHandlerInterface
                 ];
 
                 if ($docData->type !== null) {
-                    $values['type'] = $docData->type->value;
+                    $values['type'] = $docData->type;
                 }
                 if ($docData->name !== null) {
                     $values['name'] = $docData->name;

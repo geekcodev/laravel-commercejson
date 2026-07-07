@@ -64,6 +64,10 @@ class ForeignKeyViolationException extends RuntimeException
                     'code' => 'MISSING_VARIANT',
                     'message' => 'Referenced variant does not exist',
                 ],
+                str_contains($fk, 'warehouse_id') => [
+                    'code' => 'MISSING_WAREHOUSE',
+                    'message' => 'Referenced warehouse does not exist',
+                ],
                 default => [
                     'code' => 'FOREIGN_KEY_VIOLATION',
                     'message' => "Referenced record for constraint '{$fk}' does not exist",
