@@ -715,6 +715,23 @@ docker compose exec app vendor/bin/pint --test                       # Pint то
 - **`FileDocumentTypeEnum`:** удалён (мёртвый код)
 - **209 тестов (1087 assertions), PHPStan 0 errors, Pint clean**
 
+### Сессия 18 — warehouse_id в позициях заказа (мультискладские заказы)
+
+- **`OrderItemData::$warehouse_id`:** добавлено поле `?string $warehouse_id` (UUID, nullable) —
+  склад, с которого был заказан товар. Позволяет для каждой позиции заказа указывать
+  свой склад (мультискладские заказы).
+- **`OrderItemCreateData`, `OrderItemUpdateData`:** добавлено поле `warehouse_id` для
+  задания склада при создании/обновлении позиции.
+- **Миграция `0002_01_01_000029_add_warehouse_id_to_order_items_table`:** новый столбец
+  `warehouse_id` (nullable UUID, FK → warehouses, nullOnDelete).
+- **`OrderItem` model:** добавлены `$fillable` поле, PHPDoc `@property`, relation `warehouse()`.
+- **`OrderData::fromModel()`:** передаёт `warehouse_id` каждой позиции в ответе API.
+- **Хендлеры:** `UpsertOrderCommandHandler`, `CreateOrderCommandHandler`,
+  `BulkUpsertOrderCommandHandler` — передают `warehouse_id` при создании позиций.
+- **`spec.yaml` v1.0.8.6:** `OrderItem`, `OrderItemUpdate`, `OrderItemCreate` — добавлено
+  поле `warehouse_id` (UUID, nullable).
+- **209 тестов (1087 assertions), PHPStan 0 errors, Pint clean**
+
 ### Сессия 16 — exclude_request_body_paths / exclude_response_body_paths (выборочное логирование body)
 
 - **Новые конфиг-опции** в секции `api_logging`:

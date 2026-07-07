@@ -156,6 +156,7 @@ class CreateOrderCommandHandler implements CommandHandlerInterface
                     'id' => (string) Str::uuid(),
                     'product_id' => $item->product_id,
                     'variant_id' => $item->variant_id,
+                    'warehouse_id' => $item->warehouse_id,
                     'quantity' => $item->quantity,
                     'product_name' => $product?->name,
                     'product_code' => $product?->code,

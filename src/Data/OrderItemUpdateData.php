@@ -21,6 +21,8 @@ class OrderItemUpdateData extends Data
         public ?string $product_id = null,
         #[Nullable, StringType, Uuid]
         public ?string $variant_id = null,
+        #[Nullable, StringType, Uuid]
+        public ?string $warehouse_id = null,
         #[Nullable, Numeric, GreaterThan(0)]
         public ?float $quantity = null,
         #[Nullable]

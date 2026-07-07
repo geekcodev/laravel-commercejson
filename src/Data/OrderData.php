@@ -116,6 +116,7 @@ class OrderData extends Data
                 'currency' => $item->total_currency,
             ]),
             'variant_id' => $item->variant_id,
+            'warehouse_id' => $item->warehouse_id,
             'product_name' => $item->product_name,
             'product_code' => $item->product_code,
             'unit' => $item->unit_code ? UnitData::from([
