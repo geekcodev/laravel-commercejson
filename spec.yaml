@@ -33,6 +33,13 @@ info:
     ## Changelog v1.0.8.5
     - `Warehouse`: добавлено поле `delivery_time` (срок доставки со склада).
 
+    ## Changelog v1.0.8.5
+    - `CounterpartyDocument.type`: изменён с enum (contract/invoice/act/...) на свободную строку
+      (nullable) — 1С может передавать нестандартные типы документов.
+    - `Money.amount`: regex расширен до `^-?\d+([.,]\d+)?$` — API принимает как точку, так
+      и запятую в качестве десятичного разделителя (например `"0,1"` из 1С). Сервер
+      нормализует запятую в точку.
+
     ## Changelog v1.0.8.4
     - `Warehouse`: добавлены поля `is_partner` (склад партнёра) и `can_cancel_order` (отмена заказов).
 
@@ -915,10 +922,11 @@ components:
       properties:
         amount:
           type: string
-          pattern: '^-?\d+(\.\d{1,2})?$'
+          pattern: '^-?\d+([.,]\d+)?$'
           description: |
-            Сумма в строковом представлении, до двух знаков после запятой.
-            Примеры: "1500.00", "99.9", "0.01", "-350.00"
+            Сумма в строковом представлении. Допускается как точка, так и запятая
+            в качестве десятичного разделителя (нормализуется на стороне сервера).
+            Примеры: "1500.00", "99,9", "0.01", "-350.00", "0,1"
           example: "1500.00"
         currency:
           type: string
@@ -2694,16 +2702,8 @@ components:
           description: ID документа в ERP (1С). Используется для дедупликации.
         type:
           type: string
-          enum:
-            - contract
-            - invoice
-            - act
-            - receipt
-            - statement
-            - waybill
-            - certificate
-            - other
-          description: Тип документа
+          nullable: true
+          description: Тип документа (произвольная строка из ERP)
         name:
           type: string
           description: Название документа

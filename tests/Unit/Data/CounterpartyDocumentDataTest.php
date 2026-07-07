@@ -37,7 +37,7 @@ class CounterpartyDocumentDataTest extends TestCase
         ]);
 
         $this->assertSame('doc-001', $dto->external_id);
-        $this->assertSame('contract', $dto->type?->value);
+        $this->assertSame('contract', $dto->type);
         $this->assertSame('Contract 2024', $dto->name);
         $this->assertSame('contract.pdf', $dto->file_name);
         $this->assertSame(base64_encode('fake-pdf-content'), $dto->file_content);

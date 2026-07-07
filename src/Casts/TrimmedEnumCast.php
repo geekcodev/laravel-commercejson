@@ -22,7 +22,7 @@ class TrimmedEnumCast implements Cast
 
         $trimmed = is_string($value) ? trim($value) : $value;
 
-        if ($enumType === null || !is_subclass_of($enumType, BackedEnum::class)) {
+        if ($enumType === null || ! is_subclass_of($enumType, BackedEnum::class)) {
             return Uncastable::create();
         }
 

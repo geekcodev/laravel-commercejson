@@ -229,7 +229,7 @@ class CounterpartyDataTest extends TestCase
         $this->assertCount(1, $dto->documents);
         $this->assertInstanceOf(CounterpartyDocumentData::class, $dto->documents[0]);
         $this->assertSame('doc-001', $dto->documents[0]->external_id);
-        $this->assertSame('contract', $dto->documents[0]->type?->value);
+        $this->assertSame('contract', $dto->documents[0]->type);
         $this->assertSame('Main Contract', $dto->documents[0]->name);
         $this->assertSame('application/pdf', $dto->documents[0]->mime_type);
         $this->assertSame(2048, $dto->documents[0]->file_size);
