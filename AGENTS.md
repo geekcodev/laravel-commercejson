@@ -705,14 +705,18 @@ docker compose exec app vendor/bin/pint --test                       # Pint то
 
 - **`MoneyAmountCast`:** новый каст для `MoneyData::amount` — заменяет `,` на `.` до валидации
   (1С использует запятую как десятичный разделитель, например `"0,1"`)
+- **`MoneyAmountCast`:** новый каст для `MoneyData::amount` — заменяет `,` на `.` до валидации
+  (1С использует запятую как десятичный разделитель, например `"0,1"`)
 - **`MoneyData::$amount`:** `#[StringType]` заменён на `#[WithCast(MoneyAmountCast::class)]`,
-  regex расширен с `\.\d{1,2}` до `\.\d+`
+  regex расширен до `^-?\d+([.,]\d+)?$` — принимает и запятую, и точку (на случай если
+  Spatie Data structure cache не даёт отработать касту)
 - **`spec.yaml`:** `Money.amount` regex теперь `^-?\d+([.,]\d+)?$`, добавлено описание о
   нормализации запятой
 - **`TrimmedEnumCast`:** переписан — `tryFrom()` вместо `parent::from()`, возвращает `null`
   для неизвестных кодов (OkeiEnum не падает на `0000` от 1С)
 - **`CounterpartyDocumentData::$type`:** `?FileDocumentTypeEnum` → `?string`, enum удалён
 - **`FileDocumentTypeEnum`:** удалён (мёртвый код)
+- **`MoneyAmountCastTest`:** 5 тестов (замена запятой, точки, int, validateAndCreate, invalid)
 - **209 тестов (1087 assertions), PHPStan 0 errors, Pint clean**
 
 ### Сессия 18 — warehouse_id в позициях заказа (мультискладские заказы)
@@ -730,7 +734,8 @@ docker compose exec app vendor/bin/pint --test                       # Pint то
   `BulkUpsertOrderCommandHandler` — передают `warehouse_id` при создании позиций.
 - **`spec.yaml` v1.0.8.6:** `OrderItem`, `OrderItemUpdate`, `OrderItemCreate` — добавлено
   поле `warehouse_id` (UUID, nullable).
-- **209 тестов (1087 assertions), PHPStan 0 errors, Pint clean**
+- **`ForeignKeyViolationException`:** добавлен `warehouse_id` в список известных FK (MISSING_WAREHOUSE)
+- **214 тестов (1092 assertions), PHPStan 0 errors, Pint clean**
 
 ### Сессия 16 — exclude_request_body_paths / exclude_response_body_paths (выборочное логирование body)
 
