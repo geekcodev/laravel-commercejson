@@ -32,6 +32,8 @@ class OrderItemData extends Data
         public MoneyData $total,
         #[Nullable, StringType, Uuid]
         public ?string $variant_id = null,
+        #[Nullable, StringType, Uuid]
+        public ?string $warehouse_id = null,
         #[Nullable, StringType]
         public ?string $product_name = null,
         #[Nullable, StringType]

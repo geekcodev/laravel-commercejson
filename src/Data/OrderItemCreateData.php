@@ -21,5 +21,7 @@ class OrderItemCreateData extends Data
         public float $quantity,
         #[Nullable, StringType, Uuid]
         public ?string $variant_id = null,
+        #[Nullable, StringType, Uuid]
+        public ?string $warehouse_id = null,
     ) {}
 }

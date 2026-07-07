@@ -170,6 +170,7 @@ class BulkUpsertOrderCommandHandler implements CommandHandlerInterface
                 'id' => $item['id'] ?? (string) Str::uuid(),
                 'product_id' => $productId,
                 'variant_id' => $item['variant_id'] ?? null,
+                'warehouse_id' => $item['warehouse_id'] ?? null,
                 'product_name' => $product ? $product->name : $productId,
                 'product_code' => $product?->code,
                 'unit_code' => $product?->unit_code,

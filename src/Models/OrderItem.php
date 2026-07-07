@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $order_id
  * @property string $product_id
  * @property string|null $variant_id
+ * @property string|null $warehouse_id
  * @property string|null $product_name
  * @property string|null $product_code
  * @property string $quantity
@@ -53,6 +54,7 @@ class OrderItem extends Model
         'order_id',
         'product_id',
         'variant_id',
+        'warehouse_id',
         'product_name',
         'product_code',
         'quantity',
@@ -97,6 +99,11 @@ class OrderItem extends Model
     public function variant(): BelongsTo
     {
         return $this->belongsTo(ProductVariant::class);
+    }
+
+    public function warehouse(): BelongsTo
+    {
+        return $this->belongsTo(Warehouse::class);
     }
 
     public function taxes(): HasMany

@@ -30,10 +30,13 @@ info:
     Все операции записи (POST/PATCH) принимают опциональный заголовок `X-Idempotency-Key`.
     Это критически важно для надежной работы в условиях нестабильной сети (повторные попытки не создают дублей).
 
-    ## Changelog v1.0.8.5
-    - `Warehouse`: добавлено поле `delivery_time` (срок доставки со склада).
+    ## Changelog v1.0.8.6
+    - `OrderItem`, `OrderItemUpdate`, `OrderItemCreate`: добавлено поле `warehouse_id`
+      (UUID, nullable) — склад, с которого был заказан товар. Позволяет передавать в 1С
+      информацию о том, с каких складов были отгружены позиции мультискладского заказа.
 
     ## Changelog v1.0.8.5
+    - `Warehouse`: добавлено поле `delivery_time` (срок доставки со склада).
     - `CounterpartyDocument.type`: изменён с enum (contract/invoice/act/...) на свободную строку
       (nullable) — 1С может передавать нестандартные типы документов.
     - `Money.amount`: regex расширен до `^-?\d+([.,]\d+)?$` — API принимает как точку, так
@@ -2319,6 +2322,11 @@ components:
             - type: string
               format: uuid
             - type: 'null'
+        warehouse_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Склад, с которого был заказан товар (null — не определён)
         product_name:
           type: string
           readOnly: true
@@ -2426,6 +2434,11 @@ components:
           type: string
           format: uuid
           description: UUID варианта товара
+        warehouse_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Склад, с которого заказан товар
         quantity:
           type: number
           exclusiveMinimum: 0
@@ -2449,6 +2462,11 @@ components:
           type: string
           format: uuid
           description: UUID варианта (рекомендуется если товар имеет варианты)
+        warehouse_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Склад, с которого заказан товар
         quantity:
           type: number
           exclusiveMinimum: 0

@@ -196,6 +196,7 @@ class UpsertOrderCommandHandler implements CommandHandlerInterface
                 'id' => $item->id,
                 'product_id' => $item->product_id,
                 'variant_id' => $item->variant_id,
+                'warehouse_id' => $item->warehouse_id,
                 'quantity' => $item->quantity,
                 'product_name' => $item->product_name ?? $defaultProductName ?? 'Unknown Product',
                 'product_code' => $item->product_code ?? $defaultProductCode,
