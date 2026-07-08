@@ -21,9 +21,12 @@ class Representative extends Model
         'phone',
         'email',
         'position',
+        'is_default',
+        'description',
     ];
 
     protected $casts = [
+        'is_default' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];

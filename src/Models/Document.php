@@ -25,6 +25,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string|null $mime_type
  * @property int|null $file_size
  * @property string|null $description
+ * @property bool|null $paid
+ * @property Carbon|null $document_date
+ * @property string|null $document_amount_amount
+ * @property string|null $document_amount_currency
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
@@ -53,10 +57,17 @@ class Document extends Model
         'mime_type',
         'file_size',
         'description',
+        'paid',
+        'document_date',
+        'document_amount_amount',
+        'document_amount_currency',
     ];
 
     protected $casts = [
         'file_size' => 'integer',
+        'paid' => 'boolean',
+        'document_date' => 'date',
+        'document_amount_amount' => 'decimal:2',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',

@@ -25,6 +25,8 @@ class RepresentativeFactory extends CommerceJsonFactory
             'phone' => static::generatePhone(),
             'email' => static::generateEmail(),
             'position' => fake()->jobTitle(),
+            'is_default' => fake()->boolean(20),
+            'description' => fake()->boolean(30) ? fake()->sentence() : null,
             'created_at' => now(),
             'updated_at' => now(),
         ];

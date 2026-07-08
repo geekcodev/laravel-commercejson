@@ -170,6 +170,7 @@ class ProductData extends Data
 | Orders    | `OrderData`, `OrderCreateData`, `OrderImportData`, `OrderListData`, `OrderItemData`, `OrderItemCreateData`, `OrderItemUpdateData`, `OrderBulkUpdateItemData`, `OrderDeliveryTrackData`, `OrderItemTaxData`, `OrderPatchData`, `OrderPatchPaymentData` |
 | Customers | `OrderCustomerData`, `OrderDeliveryData`, `OrderPaymentData`, `OrderTotalsData`, `CounterpartyData`, `CounterpartyListData`, `CounterpartyImportData`, `ContactData`, `BankAccountData`, `CounterpartyDocumentData`                                   |
 | Warehouse | `WarehouseData`, `WarehouseImportData`                                                                                                                                                                                                                |
+| Enum      | `CounterpartyBusinessRoleEnum` (customer/supplier/partner/carrier/customer_supplier/other)                                                                                                                                                            |
 | Common    | `MoneyData`, `AddressData`, `SeoMetaData`, `DimensionsData`, `UnitData`, `ManufacturerData`, `SignatoryData`, `CustomAttributeData`, `PropertyValueData`, `StatusHistoryEntryData`                                                                    |
 | Handshake | `HandshakeResponseData`, `CapabilitiesData`                                                                                                                                                                                                           |
 | Response  | `PaginationData`, `ImportResultData`, `ErrorResponseData`                                                                                                                                                                                             |
@@ -278,25 +279,25 @@ interface RepositoryInterface
 
 ## Модели (24 Eloquent-модели в `src/Models/`)
 
-| Модель             | SoftDeletes | HasUuids | Ключевые связи                        |
-|--------------------|-------------|----------|---------------------------------------|
-| Category           | —           | ✓        | parent, children, products            |
-| Product            | ✓           | ✓        | category, variants, images, offers    |
-| ProductVariant     | —           | —        | product, propertyValues               |
-| ProductImage       | —           | —        | product                               |
-| ProductAnalogue    | —           | —        | pivot (product_id, analogue_id)       |
-| ProductComponent   | —           | —        | pivot (product_id, component_id, qty) |
-| Offer              | ✓           | ✓        | product, variant, prices, stocks      |
-| OfferPrice         | —           | —        | offer, priceType                      |
-| Document           | ✓           | ✓        | documentable (polymorphic)            |
-| PriceType          | —           | ✓        | offerPrices, counterparties           |
-| Stock              | —           | —        | offer, warehouse                      |
-| Warehouse          | ✓           | ✓        | stocks, orders                        |
-| Order              | ✓           | ✓        | items, statusHistory, counterparty    |
-| OrderItem          | —           | —        | order, product, variant, taxes        |
-| Counterparty       | ✓           | ✓        | contacts, bankAccounts, reps          |
-| PropertyDefinition | —           | —        | —                                     |
-| PropertyValue      | —           | —        | —                                     |
+| Модель             | SoftDeletes | HasUuids | Ключевые связи                                                               |
+|--------------------|-------------|----------|------------------------------------------------------------------------------|
+| Category           | —           | ✓        | parent, children, products                                                   |
+| Counterparty       | ✓           | ✓        | contacts, bankAccounts, reps, customAttributes + `role` (business role enum) |
+| Product            | ✓           | ✓        | category, variants, images, offers                                           |
+| ProductVariant     | —           | —        | product, propertyValues                                                      |
+| ProductImage       | —           | —        | product                                                                      |
+| ProductAnalogue    | —           | —        | pivot (product_id, analogue_id)                                              |
+| ProductComponent   | —           | —        | pivot (product_id, component_id, qty)                                        |
+| Offer              | ✓           | ✓        | product, variant, prices, stocks                                             |
+| OfferPrice         | —           | —        | offer, priceType                                                             |
+| Document           | ✓           | ✓        | documentable (polymorphic)                                                   |
+| PriceType          | —           | ✓        | offerPrices, counterparties                                                  |
+| Stock              | —           | —        | offer, warehouse                                                             |
+| Warehouse          | ✓           | ✓        | stocks, orders                                                               |
+| Order              | ✓           | ✓        | items, statusHistory, counterparty                                           |
+| OrderItem          | —           | —        | order, product, variant, taxes                                               |
+| PropertyDefinition | —           | —        | —                                                                            |
+| PropertyValue      | —           | —        | —                                                                            |
 
 ---
 
@@ -349,10 +350,19 @@ ExchangeManager → ProductImporter / OrderImporter / ClassifierImporter / Order
 7. **Валюта** — все денежные значения без исключения должны быть типизированы через `CurrencyEnum`. Запрещены
    хардкодные строки `'RUB'`, `'USD'` и т.п. в любом коде, включая миграции и любые другие файлы.
 
-8. **Ответ с ошибкой** — `{error: {code, message, details?}}`
+8. **Бизнес-роль контрагента** (`Counterparty.role`) — отличается от `CounterpartyType` (юридическая форма)
+   и от `PartyRole` (роль в документе). `CounterpartyType` — legal_entity/individual/IE, это про регистрацию.
+   `CounterpartyBusinessRole` — customer/supplier/partner/carrier, это про бизнес-функцию.
+   `PartyRole` — роль в конкретном документе (seller/buyer/payer).
 
-9. **Идемпотентность** — поддерживается через `IdempotencyMiddleware` (X-Idempotency-Key + кеш с fingerprint md5(path:
-   body), TTL из конфига)
+9. **Ответ с ошибкой** — `{error: {code, message, details?}}`
+
+10. **Идемпотентность** — поддерживается через `IdempotencyMiddleware` (X-Idempotency-Key + кеш с fingerprint md5(path:
+    body), TTL из конфига)
+
+11. **Миграции без `after()`** — запрещено использовать `->after('column')` в миграциях. Порядок колонок
+    в БД не имеет значения для Laravel и создаёт ложное чувство зависимости. Исключение — только если
+    спецификация БД третьей стороны требует определённого порядка колонок.
 
 ---
 

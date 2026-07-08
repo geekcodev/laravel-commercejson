@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace GeekCo\CommerceJson\Database\Factories;
 
+use GeekCo\CommerceJson\Enums\CounterpartyBusinessRoleEnum;
 use GeekCo\CommerceJson\Enums\CounterpartyTypeEnum;
 use GeekCo\CommerceJson\Enums\CurrencyEnum;
 use GeekCo\CommerceJson\Models\BankAccount;
@@ -30,6 +31,13 @@ class CounterpartyFactory extends CommerceJsonFactory
             'type' => $isLegalEntity
                 ? CounterpartyTypeEnum::LegalEntity->value
                 : CounterpartyTypeEnum::Individual->value,
+            'role' => fake()->randomElement([
+                CounterpartyBusinessRoleEnum::Customer->value,
+                CounterpartyBusinessRoleEnum::Supplier->value,
+                CounterpartyBusinessRoleEnum::CustomerSupplier->value,
+                CounterpartyBusinessRoleEnum::Partner->value,
+                null,
+            ]),
             'name' => $name,
             'short_name' => $name,
             'inn' => static::inn($isLegalEntity),

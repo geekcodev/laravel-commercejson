@@ -8,6 +8,7 @@ use Carbon\Carbon;
 use GeekCo\CommerceJson\Models\Document;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Validator;
+use Spatie\LaravelData\Attributes\Validation\BooleanType;
 use Spatie\LaravelData\Attributes\Validation\Nullable;
 use Spatie\LaravelData\Attributes\Validation\Required;
 use Spatie\LaravelData\Attributes\Validation\StringType;
@@ -28,6 +29,12 @@ class CounterpartyDocumentData extends Data
         public ?string $file_content = null,
         #[Nullable, StringType]
         public ?string $description = null,
+        #[Nullable, BooleanType]
+        public ?bool $paid = null,
+        #[Nullable]
+        public ?Carbon $document_date = null,
+        #[Nullable]
+        public ?MoneyData $document_amount = null,
         #[Nullable, StringType]
         public readonly ?string $id = null,
         #[Nullable, StringType]
@@ -44,7 +51,7 @@ class CounterpartyDocumentData extends Data
     {
         $disk = $doc->disk ?? config('commercejson.documents.disk', 'public');
 
-        return static::from([
+        $data = [
             'id' => $doc->id,
             'external_id' => $doc->external_id,
             'type' => $doc->type,
@@ -57,7 +64,22 @@ class CounterpartyDocumentData extends Data
                 ? Storage::disk($disk)->url($doc->file_path)
                 : null,
             'uploaded_at' => $doc->created_at,
-        ]);
+        ];
+
+        $data['paid'] = $doc->paid;
+
+        if ($doc->document_date !== null) {
+            $data['document_date'] = $doc->document_date;
+        }
+
+        if ($doc->document_amount_amount !== null && $doc->document_amount_currency !== null) {
+            $data['document_amount'] = MoneyData::from([
+                'amount' => (string) $doc->document_amount_amount,
+                'currency' => $doc->document_amount_currency,
+            ]);
+        }
+
+        return static::from($data);
     }
 
     public static function withValidator(Validator $validator): void

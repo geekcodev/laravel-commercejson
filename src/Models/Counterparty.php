@@ -6,6 +6,7 @@ namespace GeekCo\CommerceJson\Models;
 
 use Carbon\Carbon;
 use GeekCo\CommerceJson\Database\Factories\CounterpartyFactory;
+use GeekCo\CommerceJson\Enums\CounterpartyBusinessRoleEnum;
 use GeekCo\CommerceJson\Enums\CounterpartyTypeEnum;
 use GeekCo\CommerceJson\Enums\CurrencyEnum;
 use Illuminate\Database\Eloquent\Collection;
@@ -21,6 +22,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string $id
  * @property string|null $external_id
  * @property CounterpartyTypeEnum $type
+ * @property CounterpartyBusinessRoleEnum|null $role
  * @property string $name
  * @property string|null $short_name
  * @property string|null $inn
@@ -82,6 +84,7 @@ class Counterparty extends Model
         'id',
         'external_id',
         'type',
+        'role',
         'name',
         'short_name',
         'inn',
@@ -125,6 +128,7 @@ class Counterparty extends Model
 
     protected $casts = [
         'type' => CounterpartyTypeEnum::class,
+        'role' => CounterpartyBusinessRoleEnum::class,
         'registration_date' => 'date',
         'credit_limit_amount' => 'decimal:2',
         'credit_limit_currency' => CurrencyEnum::class,

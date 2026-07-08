@@ -146,16 +146,25 @@ class UpsertCounterpartyCommandHandler implements CommandHandlerInterface
 
         /** @var RepresentativeData $rep */
         foreach ($representativesData as $rep) {
+            $values = [
+                'counterparty_id' => $counterparty->id,
+                'name' => $rep->name,
+                'relation' => $rep->relation,
+                'phone' => $rep->phone,
+                'email' => $rep->email,
+                'position' => $rep->position,
+            ];
+
+            if ($rep->is_default !== null) {
+                $values['is_default'] = $rep->is_default;
+            }
+            if ($rep->description !== null) {
+                $values['description'] = $rep->description;
+            }
+
             $model = $counterparty->representatives()->updateOrCreate(
                 ['id' => $rep->id],
-                [
-                    'counterparty_id' => $counterparty->id,
-                    'name' => $rep->name,
-                    'relation' => $rep->relation,
-                    'phone' => $rep->phone,
-                    'email' => $rep->email,
-                    'position' => $rep->position,
-                ],
+                $values,
             );
             $incomingIds[] = $model->id;
         }
@@ -328,7 +337,10 @@ class UpsertCounterpartyCommandHandler implements CommandHandlerInterface
             $hasMetadata = $docData->type !== null
                 || $docData->name !== null
                 || $docData->file_name !== null
-                || $docData->description !== null;
+                || $docData->description !== null
+                || $docData->paid !== null
+                || $docData->document_date !== null
+                || $docData->document_amount !== null;
 
             if ($existing) {
                 if ($filePath !== null || $hasMetadata) {
@@ -355,6 +367,16 @@ class UpsertCounterpartyCommandHandler implements CommandHandlerInterface
                         if ($docData->description !== null) {
                             $update['description'] = $docData->description;
                         }
+                        if ($docData->paid !== null) {
+                            $update['paid'] = $docData->paid;
+                        }
+                        if ($docData->document_date !== null) {
+                            $update['document_date'] = $docData->document_date;
+                        }
+                        if ($docData->document_amount !== null) {
+                            $update['document_amount_amount'] = $docData->document_amount->amount;
+                            $update['document_amount_currency'] = $docData->document_amount->currency->value;
+                        }
                     }
                     $this->documentRepository->update($existing, $update);
                 }
@@ -377,6 +399,16 @@ class UpsertCounterpartyCommandHandler implements CommandHandlerInterface
                 }
                 if ($docData->description !== null) {
                     $values['description'] = $docData->description;
+                }
+                if ($docData->paid !== null) {
+                    $values['paid'] = $docData->paid;
+                }
+                if ($docData->document_date !== null) {
+                    $values['document_date'] = $docData->document_date;
+                }
+                if ($docData->document_amount !== null) {
+                    $values['document_amount_amount'] = $docData->document_amount->amount;
+                    $values['document_amount_currency'] = $docData->document_amount->currency->value;
                 }
                 if ($filePath !== null) {
                     $values['file_path'] = $filePath;
