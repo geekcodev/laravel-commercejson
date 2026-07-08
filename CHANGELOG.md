@@ -7,6 +7,19 @@
 
 ## [Невыпущенное]
 
+### Добавлено
+- `CounterpartyBusinessRoleEnum` — бизнес-роль контрагента (customer, supplier, partner, carrier, customer_supplier, other)
+- `Counterparty.role` — новое поле в спецификации, DTO, модели, миграции
+- `Representative.is_default` — флаг основного представителя (boolean)
+- `Representative.description` — свободный комментарий (text, nullable)
+- `CounterpartyDocument.paid` — флаг оплаты документа (boolean, nullable)
+- `CounterpartyDocument.document_date` — дата документа (date, nullable)
+- `CounterpartyDocument.document_amount` — сумма документа (Money, nullable)
+- Миграции: `0002_01_01_000030_add_role_to_counterparties_table.php`,
+  `0002_01_01_000031_add_is_default_and_description_to_representatives_table.php`,
+  `0002_01_01_000032_add_document_fields_to_documents_table.php`
+- Тесты: `CounterpartyBusinessRoleEnumTest` (12 assertions)
+
 ### Изменено
 - Роуты переписаны под OpenAPI спецификацию v1.0.8
 - CommandBus заменён с самописного на Laravel `Bus::map()`

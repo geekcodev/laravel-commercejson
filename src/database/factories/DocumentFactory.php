@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace GeekCo\CommerceJson\Database\Factories;
 
+use GeekCo\CommerceJson\Enums\CurrencyEnum;
 use GeekCo\CommerceJson\Models\Counterparty;
 use GeekCo\CommerceJson\Models\Document;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -28,6 +29,10 @@ class DocumentFactory extends Factory
             'mime_type' => 'application/pdf',
             'file_size' => 1024,
             'description' => null,
+            'paid' => $this->faker->boolean(50),
+            'document_date' => $this->faker->date(),
+            'document_amount_amount' => $this->faker->randomFloat(2, 1000, 500000),
+            'document_amount_currency' => CurrencyEnum::RUB->value,
         ];
     }
 }

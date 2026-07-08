@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace GeekCo\CommerceJson\Data;
 
 use Carbon\Carbon;
+use GeekCo\CommerceJson\Enums\CounterpartyBusinessRoleEnum;
 use GeekCo\CommerceJson\Enums\CounterpartyTypeEnum;
 use GeekCo\CommerceJson\Models\Counterparty;
 use GeekCo\CommerceJson\Models\Document;
@@ -32,6 +33,8 @@ class CounterpartyData extends Data
         public CounterpartyTypeEnum $type,
         #[Required, StringType]
         public string $name,
+        #[Nullable, Enum(CounterpartyBusinessRoleEnum::class)]
+        public ?CounterpartyBusinessRoleEnum $role = null,
         #[Nullable, StringType]
         public ?string $external_id = null,
         #[Nullable, StringType]
@@ -91,6 +94,7 @@ class CounterpartyData extends Data
         $data = [
             'id' => $model->id,
             'type' => $model->type,
+            'role' => $model->role,
             'name' => $model->name,
             'external_id' => $model->external_id,
             'short_name' => $model->short_name,

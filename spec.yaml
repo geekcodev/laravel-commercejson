@@ -30,6 +30,17 @@ info:
     Все операции записи (POST/PATCH) принимают опциональный заголовок `X-Idempotency-Key`.
     Это критически важно для надежной работы в условиях нестабильной сети (повторные попытки не создают дублей).
 
+    ## Changelog v1.0.8.8
+    - `CounterpartyDocument`: добавлены поля `paid` (boolean, флаг оплаты),
+      `document_date` (date, дата документа) и `document_amount` (Money, сумма документа).
+
+    ## Changelog v1.0.8.7
+    - `Counterparty`: добавлено поле `role` (enum `CounterpartyBusinessRole`) — бизнес-роль
+      контрагента (покупатель, поставщик, партнёр, перевозчик и т.п.). Отличается от `type`
+      (юридическая форма) и от `PartyRole` (роль в документе).
+    - `Representative`: добавлены поля `is_default` (boolean, флаг основного представителя)
+      и `description` (текстовый комментарий / примечание).
+
     ## Changelog v1.0.8.6
     - `OrderItem`, `OrderItemUpdate`, `OrderItemCreate`: добавлено поле `warehouse_id`
       (UUID, nullable) — склад, с которого был заказан товар. Позволяет передавать в 1С
@@ -2512,6 +2523,25 @@ components:
 
     # ── Counterparties ────────────────────────────────────────
 
+    CounterpartyBusinessRole:
+      type: string
+      enum:
+        - customer
+        - supplier
+        - partner
+        - carrier
+        - customer_supplier
+        - other
+      description: |
+        Бизнес-роль контрагента. Не следует путать с `CounterpartyType` (юридическая форма)
+        и `PartyRole` (роль в конкретном документе).
+        - `customer` — Покупатель
+        - `supplier` — Поставщик
+        - `partner` — Партнёр
+        - `carrier` — Перевозчик
+        - `customer_supplier` — И покупатель, и поставщик (наиболее частый случай в 1С)
+        - `other` — Прочее
+
     CounterpartyType:
       type: string
       enum:
@@ -2550,6 +2580,8 @@ components:
           description: ID контрагента в ERP (1С)
         type:
           $ref: "#/components/schemas/CounterpartyType"
+        role:
+          $ref: "#/components/schemas/CounterpartyBusinessRole"
         name:
           type: string
           description: Полное официальное наименование
@@ -2634,6 +2666,13 @@ components:
               position:
                 type: string
                 description: Должность
+              is_default:
+                type: boolean
+                default: false
+                description: Флаг основного представителя (главное контактное лицо)
+              description:
+                type: string
+                description: Свободный комментарий / примечание к представителю
         bank_accounts:
           type: array
           items:
@@ -2747,6 +2786,18 @@ components:
         description:
           type: string
           description: Описание / комментарий к документу
+        paid:
+          type: boolean
+          nullable: true
+          description: Флаг оплаты документа
+        document_date:
+          type: string
+          format: date
+          nullable: true
+          description: Дата документа (согласно выписанному документу, не дата загрузки)
+        document_amount:
+          $ref: "#/components/schemas/Money"
+          description: Сумма документа
         uploaded_at:
           type: string
           format: date-time

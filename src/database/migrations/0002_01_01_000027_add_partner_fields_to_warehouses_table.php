@@ -11,8 +11,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('warehouses', function (Blueprint $table) {
-            $table->boolean('is_partner')->nullable()->after('is_default');
-            $table->boolean('can_cancel_order')->nullable()->after('is_partner');
+            $table->boolean('is_partner')->nullable();
+            $table->boolean('can_cancel_order')->nullable();
         });
     }
 

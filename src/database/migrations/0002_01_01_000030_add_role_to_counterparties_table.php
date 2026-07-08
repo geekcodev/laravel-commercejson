@@ -10,15 +10,16 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('warehouses', function (Blueprint $table) {
-            $table->string('delivery_time', 255)->nullable();
+        Schema::table('counterparties', function (Blueprint $table) {
+            $table->string('role')->nullable()
+                ->index('counterparties_role_idx');
         });
     }
 
     public function down(): void
     {
-        Schema::table('warehouses', function (Blueprint $table) {
-            $table->dropColumn('delivery_time');
+        Schema::table('counterparties', function (Blueprint $table) {
+            $table->dropColumn('role');
         });
     }
 };

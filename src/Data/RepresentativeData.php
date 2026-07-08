@@ -19,5 +19,7 @@ class RepresentativeData extends Data
         public ?string $phone = null,
         public ?string $email = null,
         public ?string $position = null,
+        public ?bool $is_default = null,
+        public ?string $description = null,
     ) {}
 }
