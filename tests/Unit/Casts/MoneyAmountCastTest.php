@@ -29,6 +29,18 @@ it('handles integer amount', function () {
     expect($money->amount)->toBe('100');
 });
 
+it('converts empty string amount to zero', function () {
+    $money = MoneyData::from(['amount' => '', 'currency' => 'RUB']);
+
+    expect($money->amount)->toBe('0');
+});
+
+it('converts empty string amount to zero via validate', function () {
+    $result = MoneyData::validateAndCreate(['amount' => '', 'currency' => 'RUB']);
+
+    expect($result->amount)->toBe('0');
+});
+
 it('fails validation for invalid amount', function () {
     MoneyData::validateAndCreate(['amount' => 'abc', 'currency' => 'RUB']);
 })->throws(ValidationException::class);

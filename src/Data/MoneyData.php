@@ -15,9 +15,9 @@ use Spatie\LaravelData\Data;
 class MoneyData extends Data
 {
     public function __construct(
-        #[Required, WithCast(MoneyAmountCast::class), Regex('/^-?\d+([.,]\d+)?$/')]
-        public string $amount,
         #[Required, Enum(CurrencyEnum::class)]
-        public CurrencyEnum $currency
+        public CurrencyEnum $currency,
+        #[WithCast(MoneyAmountCast::class), Regex('/^(-?\d+([.,]\d+)?)?$/')]
+        public ?string $amount = null,
     ) {}
 }
