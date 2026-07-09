@@ -195,8 +195,6 @@ class UpsertOrderCommandHandler implements CommandHandlerInterface
         $products = $this->productRepository->findMany($productIds)->keyBy('id');
 
         foreach ($items as $item) {
-            assert($item instanceof OrderItemData);
-
             $product = $products->get($item->product_id);
             $defaultProductName = $product?->name;
             $defaultProductCode = $product?->code;
