@@ -176,7 +176,7 @@ class ExchangeManager
     public function exportOrdersSince(\DateTime $since, int $limit = 50, bool $useQueue = false): array
     {
         if ($useQueue) {
-            ExportOrdersJob::dispatch($limit, null, $since->format(DateTimeInterface::ATOM));
+            ExportOrdersJob::dispatch($limit, $since->format(DateTimeInterface::ATOM));
 
             return ['dispatched' => true];
         }

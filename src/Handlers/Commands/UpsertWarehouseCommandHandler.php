@@ -11,19 +11,16 @@ use Illuminate\Support\Facades\DB;
 
 class UpsertWarehouseCommandHandler implements CommandHandlerInterface
 {
-    private WarehouseRepository $repository;
-
-    public function __construct(WarehouseRepository $repository)
-    {
-        $this->repository = $repository;
-    }
+    public function __construct(
+        private readonly WarehouseRepository $warehouseRepository,
+    ) {}
 
     public function handle(CommandInterface $command): mixed
     {
         assert($command instanceof UpsertWarehouseCommand);
 
         return DB::transaction(function () use ($command) {
-            return $this->repository->updateOrCreate(
+            return $this->warehouseRepository->updateOrCreate(
                 ['id' => $command->warehouseData->id],
                 $command->warehouseData->toArray()
             );

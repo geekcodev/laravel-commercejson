@@ -157,7 +157,7 @@ describe('BulkUpsertOrderCommandHandler', function () {
         $command = new BulkUpsertOrderCommand(
             id: $orderId,
             status: OrderStatusEnum::New,
-            linkedDocuments: [
+            linked_documents: [
                 new LinkedDocumentData(
                     id: $linkedOrder->id,
                     type: DocumentTypeEnum::Order,
@@ -187,7 +187,7 @@ describe('BulkUpsertOrderCommandHandler', function () {
 
         $command = new BulkUpsertOrderCommand(
             id: $order->id,
-            linkedDocuments: [
+            linked_documents: [
                 new LinkedDocumentData(
                     id: $newLinked->id,
                     type: DocumentTypeEnum::Invoice,
@@ -220,7 +220,7 @@ describe('BulkUpsertOrderCommandHandler', function () {
 
         $command = new BulkUpsertOrderCommand(
             id: $order->id,
-            linkedDocuments: [],
+            linked_documents: [],
         );
 
         $handler = new BulkUpsertOrderCommandHandler(
@@ -241,7 +241,7 @@ describe('BulkUpsertOrderCommandHandler', function () {
         $command = new BulkUpsertOrderCommand(
             id: $orderId,
             status: OrderStatusEnum::New,
-            linkedDocuments: [
+            linked_documents: [
                 new LinkedDocumentData(
                     id: $orderId,
                     type: DocumentTypeEnum::Order,
@@ -269,7 +269,7 @@ describe('BulkUpsertOrderCommandHandler', function () {
         $command = new BulkUpsertOrderCommand(
             id: $order->id,
             status: OrderStatusEnum::Confirmed,
-            linkedDocuments: null,
+            linked_documents: null,
         );
 
         $handler = new BulkUpsertOrderCommandHandler(

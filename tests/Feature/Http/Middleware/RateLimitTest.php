@@ -23,20 +23,21 @@ describe('Rate limiting on write routes', function () {
         }
     });
 
-    it('returns 429 when rate limit is exceeded (default 60/min)', function () {
+    it('returns 429 when rate limit is exceeded', function () {
         $commandBus = mockCommandBus();
         $data = test()->createOrderData();
         $commandBus->shouldReceive('dispatch')
             ->zeroOrMoreTimes()
             ->andReturn($data);
 
+        $rateLimit = (int) config('commercejson.api_routes.rate_limit', 60);
+
         $payload = [
             'document_type' => DocumentTypeEnum::Order->value,
             'items' => [['product_id' => test()->createTestUuid(), 'quantity' => 1]],
         ];
 
-        // Make 61 requests — the 61st should hit the default rate limit (60/min)
-        for ($i = 0; $i < 60; $i++) {
+        for ($i = 0; $i < $rateLimit; $i++) {
             $this->postJson('/api/commercejson/orders', $payload);
         }
 
@@ -51,12 +52,14 @@ describe('Rate limiting on write routes', function () {
             ->zeroOrMoreTimes()
             ->andReturn(test()->createOrderData());
 
+        $rateLimit = (int) config('commercejson.api_routes.rate_limit', 60);
+
         $payload = [
             'document_type' => DocumentTypeEnum::Order->value,
             'items' => [['product_id' => test()->createTestUuid(), 'quantity' => 1]],
         ];
 
-        for ($i = 0; $i < 60; $i++) {
+        for ($i = 0; $i < $rateLimit; $i++) {
             $this->postJson('/api/commercejson/orders', $payload);
         }
 

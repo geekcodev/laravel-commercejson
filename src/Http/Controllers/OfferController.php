@@ -8,6 +8,7 @@ use GeekCo\CommerceJson\Bus\QueryBusInterface;
 use GeekCo\CommerceJson\Commands\UpsertOfferCommand;
 use GeekCo\CommerceJson\Commands\UpsertPriceTypeCommand;
 use GeekCo\CommerceJson\Commands\UpsertWarehouseCommand;
+use GeekCo\CommerceJson\Data\ErrorResponseData;
 use GeekCo\CommerceJson\Data\ImportResultData;
 use GeekCo\CommerceJson\Data\OfferData;
 use GeekCo\CommerceJson\Data\OfferImportData;
@@ -21,7 +22,9 @@ use Illuminate\Contracts\Bus\Dispatcher;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Spatie\LaravelData\DataCollection;
+use Spatie\LaravelData\Exceptions\CannotCreateData;
 
 class OfferController extends Controller
 {
@@ -51,6 +54,8 @@ class OfferController extends Controller
                 'total' => $offers->total(),
                 'has_next' => $offers->currentPage() < $offers->lastPage(),
             ],
+            'valid_from' => Carbon::now(),
+            'valid_to' => null,
         ];
 
         if ($offers->currentPage() === 1) {
@@ -69,7 +74,14 @@ class OfferController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $import = OfferImportData::from($request->all());
+        try {
+            $import = OfferImportData::from($request->all());
+        } catch (CannotCreateData $e) {
+            return response()->json(
+                ErrorResponseData::from(['error' => ['code' => 'VALIDATION_ERROR', 'message' => $e->getMessage()]]),
+                422
+            );
+        }
 
         $processed = 0;
         $errors = [];

@@ -420,8 +420,8 @@ describe('OrderController', function () {
             $commandBus->shouldReceive('dispatch')
                 ->once()
                 ->with(Mockery::on(function (BulkUpsertOrderCommand $command) use ($linkedOrderId) {
-                    expect($command->linkedDocuments)->toHaveCount(1);
-                    expect($command->linkedDocuments[0]->id)->toBe($linkedOrderId);
+                    expect($command->linked_documents)->toHaveCount(1);
+                    expect($command->linked_documents[0]->id)->toBe($linkedOrderId);
 
                     return true;
                 }))

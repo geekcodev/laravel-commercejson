@@ -8,7 +8,6 @@ use GeekCo\CommerceJson\Data\CapabilitiesData;
 use GeekCo\CommerceJson\Data\HandshakeResponseData;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Routing\Controller;
 use Illuminate\Support\Str;
 
 class HandshakeController extends Controller

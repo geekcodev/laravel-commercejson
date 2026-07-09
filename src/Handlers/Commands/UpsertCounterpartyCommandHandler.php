@@ -38,17 +38,10 @@ class UpsertCounterpartyCommandHandler implements CommandHandlerInterface
         'house', 'building', 'apartment', 'postal_code', 'full',
     ];
 
-    private CounterpartyRepository $counterpartyRepository;
-
-    private DocumentRepository $documentRepository;
-
     public function __construct(
-        CounterpartyRepository $counterpartyRepository,
-        DocumentRepository $documentRepository,
-    ) {
-        $this->counterpartyRepository = $counterpartyRepository;
-        $this->documentRepository = $documentRepository;
-    }
+        private readonly CounterpartyRepository $counterpartyRepository,
+        private readonly DocumentRepository $documentRepository,
+    ) {}
 
     public function handle(CommandInterface $command): mixed
     {

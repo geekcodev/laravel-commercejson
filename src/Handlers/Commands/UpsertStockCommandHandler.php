@@ -11,12 +11,9 @@ use Illuminate\Support\Facades\DB;
 
 class UpsertStockCommandHandler implements CommandHandlerInterface
 {
-    private StockRepository $stockRepository;
-
-    public function __construct(StockRepository $repository)
-    {
-        $this->stockRepository = $repository;
-    }
+    public function __construct(
+        private readonly StockRepository $stockRepository,
+    ) {}
 
     public function handle(CommandInterface $command): mixed
     {

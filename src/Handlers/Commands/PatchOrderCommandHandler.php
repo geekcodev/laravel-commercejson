@@ -58,7 +58,7 @@ class PatchOrderCommandHandler implements CommandHandlerInterface
             }
 
             if (! empty($updates)) {
-                $order->update($updates);
+                $this->orderRepository->update($order, $updates);
             }
 
             if ($patch->items !== null) {
@@ -113,6 +113,7 @@ class PatchOrderCommandHandler implements CommandHandlerInterface
                 'id' => $item->id ?? (string) Str::uuid(),
                 'product_id' => $productId,
                 'variant_id' => $item->variant_id ?? null,
+                'warehouse_id' => $item->warehouse_id ?? null,
                 'product_name' => $product ? $product->name : $productId,
                 'product_code' => $product?->code,
                 'unit_code' => $product?->unit_code,
@@ -127,7 +128,7 @@ class PatchOrderCommandHandler implements CommandHandlerInterface
             ]);
         }
 
-        $order->update([
+        $this->orderRepository->update($order, [
             'totals_subtotal_amount' => number_format($totalSum, 2, '.', ''),
             'totals_subtotal_currency' => $currency ?? $defaultCurrency->value,
             'totals_total_amount' => number_format($totalSum, 2, '.', ''),

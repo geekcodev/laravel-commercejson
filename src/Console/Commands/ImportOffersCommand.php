@@ -9,8 +9,8 @@ use GeekCo\CommerceJson\Data\OfferData;
 use GeekCo\CommerceJson\Data\OfferPriceData;
 use GeekCo\CommerceJson\Data\StockData;
 use GeekCo\CommerceJson\Events\OffersImported;
-use GeekCo\CommerceJson\Models\OfferPrice;
-use GeekCo\CommerceJson\Models\Stock;
+use GeekCo\CommerceJson\Repositories\OfferPriceRepository;
+use GeekCo\CommerceJson\Repositories\StockRepository;
 use GeekCo\CommerceJson\Services\OfferService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -21,6 +21,13 @@ use Illuminate\Support\Facades\DB;
 class ImportOffersCommand extends Command
 {
     use InteractsWithExchange;
+
+    public function __construct(
+        private readonly OfferPriceRepository $offerPriceRepository,
+        private readonly StockRepository $stockRepository,
+    ) {
+        parent::__construct();
+    }
 
     protected $signature = 'commercejson:import-offers
                             {--page=1 : Номер страницы}
@@ -107,7 +114,7 @@ class ImportOffersCommand extends Command
                         if (! empty($offerData->prices)) {
                             /** @var OfferPriceData $priceData */
                             foreach ($offerData->prices as $priceData) {
-                                OfferPrice::updateOrCreate(
+                                $this->offerPriceRepository->updateOrCreate(
                                     [
                                         'offer_id' => $offer->id,
                                         'price_type_id' => $priceData->price_type_id,
@@ -134,7 +141,7 @@ class ImportOffersCommand extends Command
                         if (! empty($offerData->stocks)) {
                             /** @var StockData $stockData */
                             foreach ($offerData->stocks as $stockData) {
-                                Stock::updateOrCreate(
+                                $this->stockRepository->updateOrCreate(
                                     [
                                         'offer_id' => $offer->id,
                                         'warehouse_id' => $stockData->warehouse_id,

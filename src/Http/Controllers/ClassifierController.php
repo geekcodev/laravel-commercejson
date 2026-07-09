@@ -10,6 +10,7 @@ use GeekCo\CommerceJson\Commands\UpsertPriceTypeCommand;
 use GeekCo\CommerceJson\Commands\UpsertPropertyDefinitionCommand;
 use GeekCo\CommerceJson\Data\CategoryData;
 use GeekCo\CommerceJson\Data\ClassifierData;
+use GeekCo\CommerceJson\Data\ErrorResponseData;
 use GeekCo\CommerceJson\Data\ImportResultData;
 use GeekCo\CommerceJson\Data\PriceTypeData;
 use GeekCo\CommerceJson\Data\PropertyDefinitionData;
@@ -23,6 +24,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Spatie\LaravelData\DataCollection;
+use Spatie\LaravelData\Exceptions\CannotCreateData;
 
 class ClassifierController extends Controller
 {
@@ -61,7 +63,14 @@ class ClassifierController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $classifierData = ClassifierData::from($request->all());
+        try {
+            $classifierData = ClassifierData::from($request->all());
+        } catch (CannotCreateData $e) {
+            return response()->json(
+                ErrorResponseData::from(['error' => ['code' => 'VALIDATION_ERROR', 'message' => $e->getMessage()]]),
+                422
+            );
+        }
 
         $processed = 0;
         $errors = [];
@@ -75,7 +84,7 @@ class ClassifierController extends Controller
                     $fe = new ForeignKeyViolationException($e);
                     $errors[] = ['id' => $categoryData->id, 'code' => $fe->errorCode, 'message' => $fe->getMessage()];
                 } catch (\Exception $e) {
-                    $errors[] = ['id' => $categoryData->id, 'message' => $e->getMessage()];
+                    $errors[] = ['id' => $categoryData->id, 'code' => 'INTERNAL_ERROR', 'message' => $e->getMessage()];
                 }
             }
         }
@@ -89,7 +98,7 @@ class ClassifierController extends Controller
                     $fe = new ForeignKeyViolationException($e);
                     $errors[] = ['id' => $propertyData->id, 'code' => $fe->errorCode, 'message' => $fe->getMessage()];
                 } catch (\Exception $e) {
-                    $errors[] = ['id' => $propertyData->id, 'message' => $e->getMessage()];
+                    $errors[] = ['id' => $propertyData->id, 'code' => 'INTERNAL_ERROR', 'message' => $e->getMessage()];
                 }
             }
         }
@@ -103,7 +112,7 @@ class ClassifierController extends Controller
                     $fe = new ForeignKeyViolationException($e);
                     $errors[] = ['id' => $priceTypeData->id, 'code' => $fe->errorCode, 'message' => $fe->getMessage()];
                 } catch (\Exception $e) {
-                    $errors[] = ['id' => $priceTypeData->id, 'message' => $e->getMessage()];
+                    $errors[] = ['id' => $priceTypeData->id, 'code' => 'INTERNAL_ERROR', 'message' => $e->getMessage()];
                 }
             }
         }

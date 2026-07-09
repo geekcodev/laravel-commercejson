@@ -6,8 +6,8 @@ namespace GeekCo\CommerceJson\Handlers\Commands;
 
 use GeekCo\CommerceJson\Commands\BulkUpsertOrderCommand;
 use GeekCo\CommerceJson\Commands\CommandInterface;
-use GeekCo\CommerceJson\Data\OrderBulkUpdateItemData;
 use GeekCo\CommerceJson\Data\OrderDeliveryTrackData;
+use GeekCo\CommerceJson\Data\OrderItemUpdateData;
 use GeekCo\CommerceJson\Enums\CurrencyEnum;
 use GeekCo\CommerceJson\Enums\DocumentTypeEnum;
 use GeekCo\CommerceJson\Enums\OrderStatusEnum;
@@ -25,44 +25,13 @@ class BulkUpsertOrderCommandHandler implements CommandHandlerInterface
         private readonly ProductRepository $productRepository,
     ) {}
 
-    public static function buildItems(OrderBulkUpdateItemData $bulkItem): ?array
-    {
-        if (! $bulkItem->items) {
-            return null;
-        }
-
-        $defaultCurrency = CurrencyEnum::tryFrom(config('commercejson.default_currency')) ?? CurrencyEnum::RUB;
-        $items = [];
-
-        foreach ($bulkItem->items as $item) {
-            if ($item->product_id === null) {
-                Log::warning('Skipping bulk order item without product_id', [
-                    'item_id' => $item->id,
-                ]);
-
-                continue;
-            }
-
-            $currency = $item->price ? $item->price->currency->value : $defaultCurrency->value;
-            $amount = $item->price ? $item->price->amount : '0';
-            $items[] = [
-                'id' => $item->id ?? (string) Str::uuid(),
-                'product_id' => $item->product_id,
-                'variant_id' => $item->variant_id,
-                'quantity' => $item->quantity ?? 1,
-                'price' => ['amount' => $amount, 'currency' => $currency],
-                'total' => ['amount' => $amount, 'currency' => $currency],
-            ];
-        }
-
-        return $items;
-    }
-
     public function handle(CommandInterface $command): mixed
     {
         assert($command instanceof BulkUpsertOrderCommand);
 
         return DB::transaction(function () use ($command) {
+            $items = $this->buildRawItems($command->items);
+
             $existing = $this->orderRepository->find($command->id);
 
             if (! $existing instanceof Order && $command->external_id !== null) {
@@ -70,14 +39,14 @@ class BulkUpsertOrderCommandHandler implements CommandHandlerInterface
             }
 
             if ($existing instanceof Order) {
-                return $this->updateExisting($existing, $command);
+                return $this->updateExisting($existing, $command, $items);
             }
 
-            return $this->createNew($command);
+            return $this->createNew($command, $items);
         });
     }
 
-    private function createNew(BulkUpsertOrderCommand $command): Order
+    private function createNew(BulkUpsertOrderCommand $command, ?array $items): Order
     {
         $order = $this->orderRepository->create([
             'id' => $command->id ?? (string) Str::uuid(),
@@ -90,22 +59,22 @@ class BulkUpsertOrderCommandHandler implements CommandHandlerInterface
 
         assert($order instanceof Order);
 
-        if ($command->items !== null) {
-            $this->syncItems($order, $command->items);
+        if ($items !== null) {
+            $this->syncItems($order, $items);
         }
 
-        if ($command->deliveryTrack) {
-            $this->applyDeliveryTracking($order, $command->deliveryTrack);
+        if ($command->delivery_track) {
+            $this->applyDeliveryTracking($order, $command->delivery_track);
         }
 
-        if ($command->linkedDocuments !== null) {
-            $this->orderRepository->syncLinkedDocuments($order, $command->linkedDocuments);
+        if ($command->linked_documents !== null) {
+            $this->orderRepository->syncLinkedDocuments($order, $command->linked_documents);
         }
 
-        return $order->fresh('linkedDocuments');
+        return $order->fresh(['items', 'linkedDocuments']);
     }
 
-    private function updateExisting(Order $order, BulkUpsertOrderCommand $command): Order
+    private function updateExisting(Order $order, BulkUpsertOrderCommand $command, ?array $items): Order
     {
         $updates = array_filter([
             'external_id' => $command->external_id,
@@ -114,23 +83,63 @@ class BulkUpsertOrderCommandHandler implements CommandHandlerInterface
         ], fn ($v) => $v !== null);
 
         if (! empty($updates)) {
-            $order->update($updates);
+            $this->orderRepository->update($order, $updates);
         }
 
-        if ($command->items !== null) {
+        if ($items !== null) {
             $order->items()->delete();
-            $this->syncItems($order, $command->items);
+            $this->syncItems($order, $items);
         }
 
-        if ($command->deliveryTrack) {
-            $this->applyDeliveryTracking($order, $command->deliveryTrack);
+        if ($command->delivery_track) {
+            $this->applyDeliveryTracking($order, $command->delivery_track);
         }
 
-        if ($command->linkedDocuments !== null) {
-            $this->orderRepository->syncLinkedDocuments($order, $command->linkedDocuments);
+        if ($command->linked_documents !== null) {
+            $this->orderRepository->syncLinkedDocuments($order, $command->linked_documents);
         }
 
-        return $order->fresh('linkedDocuments');
+        return $order->fresh(['items', 'linkedDocuments']);
+    }
+
+    private function buildRawItems(?array $rawItems): ?array
+    {
+        if ($rawItems === null) {
+            return null;
+        }
+
+        $defaultCurrency = CurrencyEnum::tryFrom(config('commercejson.default_currency')) ?? CurrencyEnum::RUB;
+        $items = [];
+
+        foreach ($rawItems as $item) {
+            if ($item instanceof OrderItemUpdateData) {
+                if ($item->product_id === null) {
+                    Log::warning('Skipping bulk order item without product_id', [
+                        'item_id' => $item->id,
+                    ]);
+
+                    continue;
+                }
+
+                $currency = $item->price ? $item->price->currency->value : $defaultCurrency->value;
+                $amount = $item->price ? $item->price->amount : '0';
+                $items[] = [
+                    'id' => $item->id ?? (string) Str::uuid(),
+                    'product_id' => $item->product_id,
+                    'variant_id' => $item->variant_id,
+                    'warehouse_id' => $item->warehouse_id,
+                    'quantity' => $item->quantity ?? 1,
+                    'price' => ['amount' => $amount, 'currency' => $currency],
+                    'total' => ['amount' => $amount, 'currency' => $currency],
+                ];
+            } elseif (is_array($item) && isset($item['product_id'])) {
+                $items[] = $item;
+            } else {
+                Log::warning('Skipping bulk order item with unknown format');
+            }
+        }
+
+        return $items;
     }
 
     private function syncItems(Order $order, array $items): void
@@ -145,7 +154,8 @@ class BulkUpsertOrderCommandHandler implements CommandHandlerInterface
             : collect();
 
         foreach ($items as $item) {
-            $itemCurrency = $item['price']['currency'] ?? $defaultCurrency->value;
+            $priceData = is_array($item['price'] ?? null) ? $item['price'] : [];
+            $itemCurrency = $priceData['currency'] ?? $defaultCurrency->value;
 
             if ($currency === null) {
                 $currency = $itemCurrency;
@@ -157,9 +167,9 @@ class BulkUpsertOrderCommandHandler implements CommandHandlerInterface
                 ]);
             }
 
-            $priceAmount = $item['price']['amount'] ?? '0';
+            $priceAmount = $priceData['amount'] ?? '0';
             $quantity = (float) ($item['quantity'] ?? 1);
-            $lineTotal = $item['total']['amount'] ?? number_format($priceAmount * $quantity, 2, '.', '');
+            $lineTotal = $item['total']['amount'] ?? number_format((float) $priceAmount * $quantity, 2, '.', '');
             $lineCurrency = $item['total']['currency'] ?? $itemCurrency;
             $totalSum += (float) $lineTotal;
 
@@ -185,7 +195,7 @@ class BulkUpsertOrderCommandHandler implements CommandHandlerInterface
             ]);
         }
 
-        $order->update([
+        $this->orderRepository->update($order, [
             'totals_subtotal_amount' => number_format($totalSum, 2, '.', ''),
             'totals_subtotal_currency' => $currency ?? $defaultCurrency->value,
             'totals_total_amount' => number_format($totalSum, 2, '.', ''),
@@ -202,7 +212,7 @@ class BulkUpsertOrderCommandHandler implements CommandHandlerInterface
         ], fn ($v) => $v !== null);
 
         if (! empty($updates)) {
-            $order->update($updates);
+            $this->orderRepository->update($order, $updates);
         }
     }
 }

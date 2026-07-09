@@ -98,6 +98,7 @@ use GeekCo\CommerceJson\Repositories\StockRepository;
 use GeekCo\CommerceJson\Repositories\WarehouseRepository;
 use GeekCo\CommerceJson\Services\ClassifierService;
 use GeekCo\CommerceJson\Services\CounterpartyService;
+use GeekCo\CommerceJson\Services\OfferPriceResolver;
 use GeekCo\CommerceJson\Services\OfferService;
 use GeekCo\CommerceJson\Services\OrderService;
 use GeekCo\CommerceJson\Services\ProductService;
@@ -158,6 +159,7 @@ class CommerceJsonServiceProvider extends ServiceProvider
         $this->app->singleton(ClassifierService::class);
         $this->app->singleton(WarehouseService::class);
         $this->app->singleton(CounterpartyService::class);
+        $this->app->singleton(OfferPriceResolver::class);
 
         // Регистрация Exchange компонентов
         $this->app->singleton(ProductImporter::class);

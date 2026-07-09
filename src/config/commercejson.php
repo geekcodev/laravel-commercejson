@@ -36,6 +36,9 @@ return [
         'password' => env('COMMERCEJSON_PASSWORD'),
     ],
 
+    // Принудительное HTTPS (OWASP A02)
+    'force_https' => env('COMMERCEJSON_FORCE_HTTPS', false),
+
     // Таймаут HTTP запросов (секунды)
     'timeout' => env('COMMERCEJSON_TIMEOUT', 30),
 

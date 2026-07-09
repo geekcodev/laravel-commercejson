@@ -11,12 +11,9 @@ use Illuminate\Support\Facades\DB;
 
 class UpsertOfferPriceCommandHandler implements CommandHandlerInterface
 {
-    private OfferPriceRepository $offerPriceRepository;
-
-    public function __construct(OfferPriceRepository $repository)
-    {
-        $this->offerPriceRepository = $repository;
-    }
+    public function __construct(
+        private readonly OfferPriceRepository $offerPriceRepository,
+    ) {}
 
     public function handle(CommandInterface $command): mixed
     {

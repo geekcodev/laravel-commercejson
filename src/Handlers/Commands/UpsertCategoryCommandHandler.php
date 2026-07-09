@@ -11,12 +11,9 @@ use Illuminate\Support\Facades\DB;
 
 class UpsertCategoryCommandHandler implements CommandHandlerInterface
 {
-    private CategoryRepository $repository;
-
-    public function __construct(CategoryRepository $repository)
-    {
-        $this->repository = $repository;
-    }
+    public function __construct(
+        private readonly CategoryRepository $categoryRepository,
+    ) {}
 
     public function handle(CommandInterface $command): mixed
     {
@@ -29,7 +26,7 @@ class UpsertCategoryCommandHandler implements CommandHandlerInterface
                 $data['parent_id'] = null;
             }
 
-            return $this->repository->updateOrCreate(
+            return $this->categoryRepository->updateOrCreate(
                 ['id' => $command->categoryData->id],
                 $data
             );

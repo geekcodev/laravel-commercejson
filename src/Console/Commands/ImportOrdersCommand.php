@@ -5,13 +5,11 @@ declare(strict_types=1);
 namespace GeekCo\CommerceJson\Console\Commands;
 
 use GeekCo\CommerceJson\Console\Concerns\InteractsWithExchange;
-use GeekCo\CommerceJson\Data\OrderData;
 use GeekCo\CommerceJson\Data\OrderItemData;
 use GeekCo\CommerceJson\Data\OrderItemTaxData;
 use GeekCo\CommerceJson\Events\OrderImported;
 use GeekCo\CommerceJson\Models\Order;
-use GeekCo\CommerceJson\Models\OrderItem;
-use GeekCo\CommerceJson\Models\OrderItemTax;
+use GeekCo\CommerceJson\Repositories\OrderRepository;
 use GeekCo\CommerceJson\Services\OrderService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -22,6 +20,12 @@ use Illuminate\Support\Facades\DB;
 class ImportOrdersCommand extends Command
 {
     use InteractsWithExchange;
+
+    public function __construct(
+        private readonly OrderRepository $orderRepository,
+    ) {
+        parent::__construct();
+    }
 
     protected $signature = 'commercejson:import-orders
                             {--page=1 : Номер страницы}
@@ -102,8 +106,8 @@ class ImportOrdersCommand extends Command
                 try {
                     DB::transaction(function () use ($orderData, $stats) {
                         // Синхронизация заказа
-                        /** @var OrderData $orderData */
-                        $order = Order::updateOrCreate(
+                        /** @var Order $order */
+                        $order = $this->orderRepository->updateOrCreate(
                             ['id' => $orderData->id],
                             [
                                 'number' => $orderData->number,
@@ -157,44 +161,18 @@ class ImportOrdersCommand extends Command
                         if (! empty($orderData->items)) {
                             /** @var OrderItemData $itemData */
                             foreach ($orderData->items as $itemData) {
-                                $orderItem = OrderItem::updateOrCreate(
-                                    ['id' => $itemData->id],
-                                    [
-                                        'order_id' => $order->id,
-                                        'product_id' => $itemData->product_id,
-                                        'variant_id' => $itemData->variant_id,
-                                        'product_name' => $itemData->product_name,
-                                        'product_code' => $itemData->product_code,
-                                        'quantity' => $itemData->quantity,
-                                        'unit_code' => $itemData->unit?->code,
-                                        'unit_short_name' => $itemData->unit?->short_name,
-                                        'price_amount' => $itemData->price->amount,
-                                        'price_currency' => $itemData->price->currency,
-                                        'discount_amount' => $itemData->discount?->amount,
-                                        'discount_currency' => $itemData->discount?->currency,
-                                        'total_amount' => $itemData->total->amount,
-                                        'total_currency' => $itemData->total->currency,
-                                        'country_of_origin' => $itemData->country_of_origin,
-                                        'customs_declaration_number' => $itemData->customs_declaration_number,
-                                        'tax_rate' => $itemData->tax_rate,
-                                    ]
+                                $orderItem = $this->orderRepository->updateOrCreateItem(
+                                    $order,
+                                    $itemData->toArray()
                                 );
 
                                 // Синхронизация налогов позиции
                                 if (! empty($itemData->taxes)) {
                                     /** @var OrderItemTaxData $taxData */
                                     foreach ($itemData->taxes as $taxData) {
-                                        OrderItemTax::updateOrCreate(
-                                            [
-                                                'order_item_id' => $orderItem->id,
-                                                'type' => $taxData->type,
-                                            ],
-                                            [
-                                                'rate' => $taxData->rate,
-                                                'amount' => $taxData->amount->amount,
-                                                'currency' => $taxData->amount->currency,
-                                                'is_included' => $taxData->is_included,
-                                            ]
+                                        $this->orderRepository->updateOrCreateItemTax(
+                                            $orderItem,
+                                            $taxData->toArray()
                                         );
                                     }
                                 }

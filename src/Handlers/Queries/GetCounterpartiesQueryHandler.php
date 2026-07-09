@@ -8,10 +8,10 @@ use GeekCo\CommerceJson\Queries\GetCounterpartiesQuery;
 use GeekCo\CommerceJson\Queries\QueryInterface;
 use GeekCo\CommerceJson\Repositories\CounterpartyRepository;
 
-readonly class GetCounterpartiesQueryHandler implements QueryHandlerInterface
+class GetCounterpartiesQueryHandler implements QueryHandlerInterface
 {
     public function __construct(
-        private CounterpartyRepository $counterpartyRepository,
+        private readonly CounterpartyRepository $counterpartyRepository,
     ) {}
 
     public function handle(QueryInterface $query): mixed

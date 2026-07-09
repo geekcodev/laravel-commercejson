@@ -41,14 +41,6 @@ class OrderItemUpdateData extends Data
             $validator->errors()->add('quantity', 'Quantity is required');
         }
 
-        if ($hasId && ! $hasQuantity) {
-            $validator->errors()->add('id', 'id requires quantity');
-        }
-
-        if ($hasProductId && ! $hasQuantity) {
-            $validator->errors()->add('product_id', 'product_id requires quantity');
-        }
-
         if (! $hasId && ! $hasProductId) {
             $validator->errors()->add('id', 'Either id or product_id is required');
             $validator->errors()->add('product_id', 'Either id or product_id is required');

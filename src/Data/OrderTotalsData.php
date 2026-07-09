@@ -13,13 +13,13 @@ class OrderTotalsData extends Data
     public function __construct(
         #[Required]
         public MoneyData $subtotal,
-        #[Nullable]
-        public ?MoneyData $discount,
-        #[Nullable]
-        public ?MoneyData $delivery,
-        #[Nullable]
-        public ?MoneyData $tax,
         #[Required]
         public MoneyData $total,
+        #[Nullable]
+        public ?MoneyData $discount = null,
+        #[Nullable]
+        public ?MoneyData $delivery = null,
+        #[Nullable]
+        public ?MoneyData $tax = null,
     ) {}
 }
