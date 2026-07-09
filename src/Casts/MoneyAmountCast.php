@@ -13,8 +13,12 @@ class MoneyAmountCast implements Cast
 {
     public function cast(DataProperty $property, mixed $value, array $properties, CreationContext $context): mixed
     {
-        if ($value === null || $value === '') {
+        if ($value === null) {
             return Uncastable::create();
+        }
+
+        if ($value === '') {
+            return '0';
         }
 
         return str_replace(',', '.', (string) $value);
