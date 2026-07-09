@@ -8,10 +8,10 @@ use GeekCo\CommerceJson\Queries\GetPropertyDefinitionsQuery;
 use GeekCo\CommerceJson\Queries\QueryInterface;
 use GeekCo\CommerceJson\Repositories\PropertyDefinitionRepository;
 
-readonly class GetPropertyDefinitionsQueryHandler implements QueryHandlerInterface
+class GetPropertyDefinitionsQueryHandler implements QueryHandlerInterface
 {
     public function __construct(
-        private PropertyDefinitionRepository $propertyDefinitionRepository,
+        private readonly PropertyDefinitionRepository $propertyDefinitionRepository,
     ) {}
 
     public function handle(QueryInterface $query): mixed

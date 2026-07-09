@@ -36,7 +36,7 @@ class UpsertProductCommandHandler implements CommandHandlerInterface
             }
 
             if ($product) {
-                $product->update($this->buildFlatAttributes($data));
+                $product = $this->productRepository->update($product, $this->buildFlatAttributes($data));
             } else {
                 $product = $this->productRepository->create($this->buildFlatAttributes($data));
             }

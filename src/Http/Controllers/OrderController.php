@@ -15,8 +15,6 @@ use GeekCo\CommerceJson\Data\OrderData;
 use GeekCo\CommerceJson\Data\OrderImportData;
 use GeekCo\CommerceJson\Data\OrderPatchData;
 use GeekCo\CommerceJson\Exceptions\ForeignKeyViolationException;
-use GeekCo\CommerceJson\Handlers\Commands\BulkUpsertOrderCommandHandler;
-use GeekCo\CommerceJson\Models\Order;
 use GeekCo\CommerceJson\Queries\GetOrderQuery;
 use GeekCo\CommerceJson\Queries\GetOrdersQuery;
 use Illuminate\Contracts\Bus\Dispatcher;
@@ -25,7 +23,9 @@ use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Spatie\LaravelData\DataCollection;
 use Spatie\LaravelData\Exceptions\CannotCastEnum;
+use Spatie\LaravelData\Exceptions\CannotCreateData;
 
 class OrderController extends Controller
 {
@@ -45,10 +45,7 @@ class OrderController extends Controller
         );
         $orders = $this->queryBus->ask($query);
 
-        $items = array_map(
-            fn (Order $order) => OrderData::fromModel($order),
-            collect($orders->items())->all()
-        );
+        $items = OrderData::collect($orders->items(), DataCollection::class);
 
         return response()->json([
             'orders' => $items,
@@ -107,6 +104,14 @@ class OrderController extends Controller
     {
         try {
             $patch = OrderPatchData::from($request->all());
+        } catch (CannotCreateData $e) {
+            return response()->json(
+                ErrorResponseData::from(['error' => ['code' => 'VALIDATION_ERROR', 'message' => $e->getMessage()]]),
+                422
+            );
+        }
+
+        try {
             $order = $this->commandBus->dispatch(new PatchOrderCommand($id, $patch));
 
             return response()->json(OrderData::fromModel($order));
@@ -133,17 +138,15 @@ class OrderController extends Controller
 
         foreach ($importData->orders as $bulkItem) {
             try {
-                $items = BulkUpsertOrderCommandHandler::buildItems($bulkItem);
-
                 $this->commandBus->dispatch(new BulkUpsertOrderCommand(
                     id: $bulkItem->id,
                     external_id: $bulkItem->external_id,
                     status: $bulkItem->status,
                     comment: $bulkItem->comment,
                     custom_attributes: $bulkItem->custom_attributes,
-                    items: $items,
-                    deliveryTrack: $bulkItem->delivery,
-                    linkedDocuments: $bulkItem->linked_documents,
+                    items: $bulkItem->items,
+                    delivery_track: $bulkItem->delivery,
+                    linked_documents: $bulkItem->linked_documents,
                 ));
                 $processed++;
             } catch (QueryException $e) {

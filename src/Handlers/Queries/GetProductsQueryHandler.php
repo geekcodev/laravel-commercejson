@@ -11,10 +11,10 @@ use GeekCo\CommerceJson\Repositories\ProductRepository;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
-readonly class GetProductsQueryHandler implements QueryHandlerInterface
+class GetProductsQueryHandler implements QueryHandlerInterface
 {
     public function __construct(
-        private ProductRepository $productRepository,
+        private readonly ProductRepository $productRepository,
     ) {}
 
     public function handle(QueryInterface $query): mixed

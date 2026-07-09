@@ -20,6 +20,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Spatie\LaravelData\DataCollection;
+use Spatie\LaravelData\Exceptions\CannotCreateData;
 
 class ProductController extends Controller
 {
@@ -69,7 +70,14 @@ class ProductController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $import = ProductImportData::from($request->all());
+        try {
+            $import = ProductImportData::from($request->all());
+        } catch (CannotCreateData $e) {
+            return response()->json(
+                ErrorResponseData::from(['error' => ['code' => 'VALIDATION_ERROR', 'message' => $e->getMessage()]]),
+                422
+            );
+        }
 
         $processed = 0;
         $errors = [];

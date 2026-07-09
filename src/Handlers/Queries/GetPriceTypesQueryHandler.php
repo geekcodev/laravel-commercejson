@@ -8,10 +8,10 @@ use GeekCo\CommerceJson\Queries\GetPriceTypesQuery;
 use GeekCo\CommerceJson\Queries\QueryInterface;
 use GeekCo\CommerceJson\Repositories\PriceTypeRepository;
 
-readonly class GetPriceTypesQueryHandler implements QueryHandlerInterface
+class GetPriceTypesQueryHandler implements QueryHandlerInterface
 {
     public function __construct(
-        private PriceTypeRepository $priceTypeRepository,
+        private readonly PriceTypeRepository $priceTypeRepository,
     ) {}
 
     public function handle(QueryInterface $query): mixed

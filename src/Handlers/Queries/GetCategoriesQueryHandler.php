@@ -8,10 +8,10 @@ use GeekCo\CommerceJson\Queries\GetCategoriesQuery;
 use GeekCo\CommerceJson\Queries\QueryInterface;
 use GeekCo\CommerceJson\Repositories\CategoryRepository;
 
-readonly class GetCategoriesQueryHandler implements QueryHandlerInterface
+class GetCategoriesQueryHandler implements QueryHandlerInterface
 {
     public function __construct(
-        private CategoryRepository $categoryRepository,
+        private readonly CategoryRepository $categoryRepository,
     ) {}
 
     public function handle(QueryInterface $query): mixed

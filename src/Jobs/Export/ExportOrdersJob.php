@@ -33,7 +33,6 @@ class ExportOrdersJob implements ShouldQueue
      */
     public function __construct(
         protected int $limit = 50,
-        protected ?string $status = null,
         protected ?string $since = null
     ) {
         $this->onQueue(config('commercejson.exchange.queue.export_queue', 'commercejson-export'));

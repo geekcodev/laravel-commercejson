@@ -12,6 +12,7 @@ use GeekCo\CommerceJson\Models\Order;
 use GeekCo\CommerceJson\Models\Product;
 use GeekCo\CommerceJson\Repositories\OrderRepository;
 use GeekCo\CommerceJson\Repositories\ProductRepository;
+use GeekCo\CommerceJson\Services\OfferPriceResolver;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -20,6 +21,7 @@ class CreateOrderCommandHandler implements CommandHandlerInterface
     public function __construct(
         private readonly OrderRepository $orderRepository,
         private readonly ProductRepository $productRepository,
+        private readonly OfferPriceResolver $priceResolver,
     ) {}
 
     public function handle(CommandInterface $command): mixed
@@ -58,7 +60,7 @@ class CreateOrderCommandHandler implements CommandHandlerInterface
 
             if ($createData->delivery) {
                 $d = $createData->delivery;
-                $data['delivery_type'] = $d->type;
+                $data['delivery_type'] = $d->type->value;
                 $data['delivery_method_id'] = $d->method_id;
                 $data['delivery_method_name'] = $d->method_name;
                 $data['delivery_cost_amount'] = $d->cost?->amount;
@@ -83,14 +85,15 @@ class CreateOrderCommandHandler implements CommandHandlerInterface
 
             if ($createData->payment) {
                 $p = $createData->payment;
-                $data['payment_type'] = $p->type;
-                $data['payment_status'] = $p->status;
+                $data['payment_type'] = $p->type->value;
+                $data['payment_status'] = $p->status->value;
                 $data['payment_amount'] = $p->amount?->amount;
                 $data['payment_currency'] = $p->amount?->currency;
                 $data['payment_paid_at'] = $p->paid_at;
             }
 
             $order = $this->orderRepository->create($data);
+            assert($order instanceof Order);
 
             if ($createData->custom_attributes) {
                 foreach ($createData->custom_attributes as $attr) {
@@ -124,7 +127,6 @@ class CreateOrderCommandHandler implements CommandHandlerInterface
             }
 
             if ($createData->linked_documents) {
-                assert($order instanceof Order);
                 $this->orderRepository->syncLinkedDocuments($order, $createData->linked_documents);
             }
 
@@ -135,6 +137,7 @@ class CreateOrderCommandHandler implements CommandHandlerInterface
                 ->get()
                 ->keyBy('id');
 
+            $priceTypeId = $createData->price_type_id;
             $totalSum = 0;
 
             foreach ($createData->items as $item) {
@@ -143,9 +146,11 @@ class CreateOrderCommandHandler implements CommandHandlerInterface
 
                 $priceAmount = '0';
                 $firstOffer = $product?->offers->first();
-                $firstPrice = $firstOffer?->prices->first();
-                if ($firstPrice !== null) {
-                    $priceAmount = $firstPrice->price_amount;
+                if ($firstOffer !== null) {
+                    $resolvedPrice = $this->priceResolver->resolve($firstOffer->prices, $priceTypeId);
+                    if ($resolvedPrice !== null) {
+                        $priceAmount = $resolvedPrice->price_amount;
+                    }
                 }
 
                 $quantity = (float) $item->quantity;
@@ -167,7 +172,7 @@ class CreateOrderCommandHandler implements CommandHandlerInterface
                 ]);
             }
 
-            $order->update([
+            $this->orderRepository->update($order, [
                 'totals_subtotal_amount' => number_format($totalSum, 2, '.', ''),
                 'totals_subtotal_currency' => $currency->value,
                 'totals_total_amount' => number_format($totalSum, 2, '.', ''),

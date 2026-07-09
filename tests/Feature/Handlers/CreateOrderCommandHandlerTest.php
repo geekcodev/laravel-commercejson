@@ -10,6 +10,7 @@ use GeekCo\CommerceJson\Models\Order;
 use GeekCo\CommerceJson\Models\Product;
 use GeekCo\CommerceJson\Repositories\OrderRepository;
 use GeekCo\CommerceJson\Repositories\ProductRepository;
+use GeekCo\CommerceJson\Services\OfferPriceResolver;
 
 beforeEach(function () {
     $this->product = Product::factory()->create();
@@ -38,6 +39,7 @@ describe('CreateOrderCommandHandler', function () {
         $handler = new CreateOrderCommandHandler(
             new OrderRepository(new Order),
             new ProductRepository(new Product),
+            new OfferPriceResolver,
         );
 
         $result = $handler->handle(new CreateOrderCommand($createData));

@@ -7,31 +7,29 @@ namespace GeekCo\CommerceJson\Database\Factories;
 use GeekCo\CommerceJson\Enums\CurrencyEnum;
 use GeekCo\CommerceJson\Models\Counterparty;
 use GeekCo\CommerceJson\Models\Document;
-use Illuminate\Database\Eloquent\Factories\Factory;
-use Illuminate\Support\Str;
 
-class DocumentFactory extends Factory
+class DocumentFactory extends CommerceJsonFactory
 {
     protected $model = Document::class;
 
     public function definition(): array
     {
         return [
-            'id' => (string) Str::uuid(),
+            'id' => static::uuid(),
             'documentable_type' => (new Counterparty)->getMorphClass(),
-            'documentable_id' => (string) Str::uuid(),
-            'external_id' => (string) Str::uuid(),
+            'documentable_id' => static::uuid(),
+            'external_id' => static::externalId(),
             'type' => 'contract',
-            'name' => $this->faker->words(3, true),
+            'name' => fake()->words(3, true),
             'file_name' => 'document.pdf',
             'file_path' => 'commercejson/documents/test/document.pdf',
             'disk' => 'public',
             'mime_type' => 'application/pdf',
             'file_size' => 1024,
             'description' => null,
-            'paid' => $this->faker->boolean(50),
-            'document_date' => $this->faker->date(),
-            'document_amount_amount' => $this->faker->randomFloat(2, 1000, 500000),
+            'paid' => fake()->boolean(50),
+            'document_date' => fake()->date(),
+            'document_amount_amount' => fake()->randomFloat(2, 1000, 500000),
             'document_amount_currency' => CurrencyEnum::RUB->value,
         ];
     }

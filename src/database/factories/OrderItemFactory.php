@@ -30,6 +30,7 @@ class OrderItemFactory extends CommerceJsonFactory
             'order_id' => OrderFactory::new(),
             'product_id' => ProductFactory::new(),
             'variant_id' => null,
+            'warehouse_id' => null,
             'product_name' => fake()->words(3, true),
             'product_code' => 'PRD-'.Str::upper(Str::random(8)),
             'quantity' => $quantity,

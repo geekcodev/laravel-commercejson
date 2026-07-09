@@ -8,10 +8,10 @@ use GeekCo\CommerceJson\Queries\GetWarehousesQuery;
 use GeekCo\CommerceJson\Queries\QueryInterface;
 use GeekCo\CommerceJson\Repositories\WarehouseRepository;
 
-readonly class GetWarehousesQueryHandler implements QueryHandlerInterface
+class GetWarehousesQueryHandler implements QueryHandlerInterface
 {
     public function __construct(
-        private WarehouseRepository $warehouseRepository,
+        private readonly WarehouseRepository $warehouseRepository,
     ) {}
 
     public function handle(QueryInterface $query): mixed

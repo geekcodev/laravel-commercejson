@@ -74,6 +74,11 @@ info:
     - `Counterparty`: добавлены поля `credit_limit_remaining` (Money), `payment_deferral_days` (integer,
       min 0), `outstanding_debt` (Money) — остаток кредитного лимита, отсрочка платежа и текущая
       задолженность соответственно.
+    - `OfferPriceResolver` — новый сервис для разрешения цен по типу цен. `resolve(Collection $prices,
+      ?string $priceTypeId)`: приоритет — точное совпадение по `price_type_id`, fallback — первая цена.
+    - `OrderCreate`: добавлено опциональное поле `price_type_id` (UUID) — тип цен для автоматического
+      разрешения цены при создании заказа. Если не указан — поведение не меняется (первая цена).
+      Используется в `CreateOrderCommandHandler` через `OfferPriceResolver`.
     - `UpsertCounterpartyCommandHandler`: исправлен баг — `toArray()` передавал MoneyData/AddressData
       как вложенные объекты вместо плоских колонок (например, `credit_limit_remaining: {amount, currency}`
       вместо `credit_limit_remaining_amount`/`credit_limit_remaining_currency`).
@@ -2084,6 +2089,13 @@ components:
           type: string
           format: uuid
           description: UUID контрагента (для B2B)
+        price_type_id:
+          type: string
+          format: uuid
+          description: >
+            UUID типа цен для автоматического разрешения цены товарных позиций.
+            Если не указан — система использует первую доступную цену для каждой позиции
+            (обратная совместимость).
         delivery:
           $ref: "#/components/schemas/OrderDelivery"
         payment:

@@ -6,6 +6,8 @@ namespace GeekCo\CommerceJson\Repositories;
 
 use GeekCo\CommerceJson\Data\LinkedDocumentData;
 use GeekCo\CommerceJson\Models\Order;
+use GeekCo\CommerceJson\Models\OrderItem;
+use GeekCo\CommerceJson\Models\OrderItemTax;
 use Illuminate\Support\Collection;
 
 class OrderRepository extends BaseRepository
@@ -55,5 +57,27 @@ class OrderRepository extends BaseRepository
         }
 
         $order->linkedDocuments()->sync($sync);
+    }
+
+    public function updateOrCreateItem(Order $order, array $data): OrderItem
+    {
+        /** @var OrderItem $item */
+        $item = $order->items()->updateOrCreate(
+            ['id' => $data['id']],
+            $data
+        );
+
+        return $item;
+    }
+
+    public function updateOrCreateItemTax(OrderItem $orderItem, array $data): OrderItemTax
+    {
+        /** @var OrderItemTax $tax */
+        $tax = $orderItem->taxes()->updateOrCreate(
+            ['order_item_id' => $orderItem->id, 'type' => $data['type']],
+            $data
+        );
+
+        return $tax;
     }
 }

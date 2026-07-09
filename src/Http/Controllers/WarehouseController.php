@@ -6,6 +6,7 @@ namespace GeekCo\CommerceJson\Http\Controllers;
 
 use GeekCo\CommerceJson\Bus\QueryBusInterface;
 use GeekCo\CommerceJson\Commands\UpsertWarehouseCommand;
+use GeekCo\CommerceJson\Data\ErrorResponseData;
 use GeekCo\CommerceJson\Data\ImportResultData;
 use GeekCo\CommerceJson\Data\WarehouseData;
 use GeekCo\CommerceJson\Data\WarehouseImportData;
@@ -16,6 +17,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Spatie\LaravelData\DataCollection;
+use Spatie\LaravelData\Exceptions\CannotCreateData;
 
 class WarehouseController extends Controller
 {
@@ -36,7 +38,15 @@ class WarehouseController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $import = WarehouseImportData::from($request->all());
+        try {
+            $import = WarehouseImportData::from($request->all());
+        } catch (CannotCreateData $e) {
+            return response()->json(
+                ErrorResponseData::from(['error' => ['code' => 'VALIDATION_ERROR', 'message' => $e->getMessage()]]),
+                422
+            );
+        }
+
         $processed = 0;
         $errors = [];
 

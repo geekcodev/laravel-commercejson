@@ -16,19 +16,25 @@ class LogApiRequestsMiddleware
 
     public function handle(Request $request, Closure $next): Response
     {
-        if (! $this->isLoggingEnabled($request)) {
-            return $next($request);
+        $loggingEnabled = $this->isLoggingEnabled($request);
+
+        $start = $loggingEnabled ? microtime(true) : null;
+        $logger = $loggingEnabled ? $this->getLogger() : null;
+
+        if ($loggingEnabled) {
+            $this->logRequest($logger, $request);
         }
-
-        $start = microtime(true);
-        $logger = $this->getLogger();
-
-        $this->logRequest($logger, $request);
 
         $response = $next($request);
 
-        $duration = (microtime(true) - $start) * 1000;
-        $this->logResponse($logger, $request, $response, $duration);
+        if ($request->headers->has('X-Request-ID')) {
+            $response->headers->set('X-Request-ID', $request->header('X-Request-ID'));
+        }
+
+        if ($loggingEnabled) {
+            $duration = (microtime(true) - $start) * 1000;
+            $this->logResponse($logger, $request, $response, $duration);
+        }
 
         return $response;
     }

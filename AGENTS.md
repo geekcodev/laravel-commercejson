@@ -308,6 +308,7 @@ Guzzle-обёртка):
 
 - `ProductService`, `OfferService`, `OrderService`
 - `ClassifierService`, `CounterpartyService`, `WarehouseService`
+- `OfferPriceResolver` — разрешение цены по типу цен (`resolve(Collection, ?string): ?OfferPrice`)
 
 ---
 
@@ -747,6 +748,22 @@ docker compose exec app vendor/bin/pint --test                       # Pint то
 - **`ForeignKeyViolationException`:** добавлен `warehouse_id` в список известных FK (MISSING_WAREHOUSE)
 - **214 тестов (1092 assertions), PHPStan 0 errors, Pint clean**
 
+### Сессия 19 — OfferPriceResolver + price_type_id в OrderCreate (разрешение цен по типу)
+
+- **`OfferPriceResolver`** — новый сервис в `src/Services/OfferPriceResolver.php`:
+  `resolve(Collection $prices, ?string $priceTypeId): ?OfferPrice`.
+  Приоритет: точное совпадение по `price_type_id` → первый попавшийся.
+  Зарегистрирован как singleton в `CommerceJsonServiceProvider`.
+- **`OrderCreateData`:** добавлено `#[Nullable, StringType, Uuid] public ?string $price_type_id = null` —
+  опциональный UUID типа цен для автоматического разрешения цены при создании заказа.
+- **`CreateOrderCommandHandler`:** inject `OfferPriceResolver`, переписан блок разрешения цен —
+  вместо `$product->offers->first()->prices->first()` (всегда первая цена) теперь
+  `$this->priceResolver->resolve($firstOffer->prices, $createData->price_type_id)`.
+- **`spec.yaml` v1.0.8.7:** changelog + `OrderCreate.price_type_id` (UUID, optional).
+- **Тесты:** 5 unit-тестов `OfferPriceResolverTest` (пустая коллекция, null, точное совпадение,
+  fallback, одна цена).
+- **214 тестов (1092 assertions), PHPStan 0 errors, Pint clean**
+
 ### Сессия 16 — exclude_request_body_paths / exclude_response_body_paths (выборочное логирование body)
 
 - **Новые конфиг-опции** в секции `api_logging`:
@@ -773,6 +790,7 @@ docker compose exec app vendor/bin/pint --test                       # Pint то
 | `src/Models/`                                             | 24 Eloquent-модели                                               |
 | `src/Repositories/`                                       | RepositoryInterface + 11 реализаций                              |
 | `src/Exchange/`                                           | Координация синхронизации (импортёры, экспортёры, jobs, команды) |
+| `src/Services/OfferPriceResolver.php`                     | Сервис разрешения цен по типу цен (price_type_id → fallback)     |
 | `tests/TestCase.php`                                      | Testbench bootstrap                                              |
 | `tests/Pest.php`                                          | Глобальные хелперы и конфигурация                                |
 | `src/Commands/BulkUpsertOrderCommand.php`                 | Bulk-команда для `POST /orders/bulk` (не зависит от `OrderData`) |

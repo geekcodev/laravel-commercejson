@@ -8,10 +8,10 @@ use GeekCo\CommerceJson\Queries\GetOrdersQuery;
 use GeekCo\CommerceJson\Queries\QueryInterface;
 use GeekCo\CommerceJson\Repositories\OrderRepository;
 
-readonly class GetOrdersQueryHandler implements QueryHandlerInterface
+class GetOrdersQueryHandler implements QueryHandlerInterface
 {
     public function __construct(
-        private OrderRepository $orderRepository,
+        private readonly OrderRepository $orderRepository,
     ) {}
 
     public function handle(QueryInterface $query): mixed

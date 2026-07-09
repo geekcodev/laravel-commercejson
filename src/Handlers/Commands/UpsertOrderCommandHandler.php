@@ -31,7 +31,11 @@ class UpsertOrderCommandHandler implements CommandHandlerInterface
 
             $existing = $this->orderRepository->find($data->id);
 
-            if ($existing) {
+            if (! $existing instanceof Order && $data->external_id !== null) {
+                $existing = $this->orderRepository->findByExternalId($data->external_id);
+            }
+
+            if ($existing instanceof Order) {
                 unset($flat['number'], $flat['document_type']);
                 $order = $this->orderRepository->update($existing, $flat);
             } else {
@@ -79,15 +83,15 @@ class UpsertOrderCommandHandler implements CommandHandlerInterface
                 }
             }
 
-            if ($command->deliveryTrack) {
+            if ($command->delivery_track) {
                 $updates = array_filter([
-                    'delivery_tracking_number' => $command->deliveryTrack->tracking_number,
-                    'delivery_shipped_at' => $command->deliveryTrack->shipped_at,
-                    'delivery_estimated_date' => $command->deliveryTrack->estimated_date,
+                    'delivery_tracking_number' => $command->delivery_track->tracking_number,
+                    'delivery_shipped_at' => $command->delivery_track->shipped_at,
+                    'delivery_estimated_date' => $command->delivery_track->estimated_date,
                 ], fn ($v) => $v !== null);
 
                 if (! empty($updates)) {
-                    $order->update($updates);
+                    $this->orderRepository->update($order, $updates);
                 }
             }
 
@@ -182,12 +186,15 @@ class UpsertOrderCommandHandler implements CommandHandlerInterface
     {
         $order->items()->delete();
 
-        $productIds = array_map(fn (OrderItemData $i) => $i->product_id, $items);
+        $productIds = [];
+        foreach ($items as $item) {
+            assert($item instanceof OrderItemData);
+            $productIds[] = $item->product_id;
+        }
+
         $products = $this->productRepository->findMany($productIds)->keyBy('id');
 
         foreach ($items as $item) {
-            assert($item instanceof OrderItemData);
-
             $product = $products->get($item->product_id);
             $defaultProductName = $product?->name;
             $defaultProductCode = $product?->code;

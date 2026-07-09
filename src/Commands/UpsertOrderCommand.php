@@ -11,6 +11,6 @@ class UpsertOrderCommand extends Command
 {
     public function __construct(
         public OrderData $orderData,
-        public ?OrderDeliveryTrackData $deliveryTrack = null,
+        public ?OrderDeliveryTrackData $delivery_track = null,
     ) {}
 }

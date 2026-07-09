@@ -37,6 +37,8 @@ class OrderCreateData extends Data
         #[Nullable]
         public ?OrderPaymentData $payment = null,
         #[Nullable, StringType, Uuid]
+        public ?string $price_type_id = null,
+        #[Nullable, StringType, Uuid]
         public ?string $warehouse_id = null,
         #[Nullable, Enum(CurrencyEnum::class)]
         public ?CurrencyEnum $base_currency = null,
